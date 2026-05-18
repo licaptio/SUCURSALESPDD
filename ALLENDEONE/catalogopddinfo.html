@@ -27,7 +27,7 @@ body{
 }
 .filtros{
   display:grid;
-  grid-template-columns:minmax(340px,1.6fr) 180px 140px 160px;
+  grid-template-columns:minmax(340px,1.6fr) 180px 140px 160px 170px;
   gap:10px;
   align-items:center;
 }
@@ -345,6 +345,7 @@ th{
     </select>
     <button id="btnBuscarPrincipal">Buscar</button>
     <button id="btnReset" class="btn-gray">Ver todos</button>
+    <button id="btnNuevoProducto" class="btn-green">Nuevo producto</button>
   </div>
 
   <div class="meta" id="meta">Cargando...</div>
@@ -417,6 +418,7 @@ import {
   collection,
   onSnapshot,
   doc,
+  setDoc,
   updateDoc,
   deleteDoc,
   serverTimestamp,
@@ -427,6 +429,7 @@ const txtBuscarPrincipal = document.getElementById("txtBuscarPrincipal");
 const selActivo = document.getElementById("selActivo");
 const btnBuscarPrincipal = document.getElementById("btnBuscarPrincipal");
 const btnReset = document.getElementById("btnReset");
+const btnNuevoProducto = document.getElementById("btnNuevoProducto");
 const tbody = document.getElementById("tbody");
 const meta = document.getElementById("meta");
 
@@ -450,11 +453,18 @@ let filtrados = [];
 let resultadosBusqueda = [];
 let idxBusqueda = -1;
 let productoActual = null;
+let modoEditor = "editar";
 let bloqueoReaperturaBuscador = false;
 let ultimoElementoConFoco = null;
 let unsubscribeProductos = null;
 
 const CAMPOS_BLOQUEADOS = ["id", "codigoBarra"];
+
+function campoBloqueado(key){
+  if (key === "id") return true;
+  if (key === "codigoBarra" && modoEditor === "editar") return true;
+  return false;
+}
 
 const ESQUEMA_BASE = {
   activo: true,
@@ -592,6 +602,20 @@ function construirProductoEditable(producto){
     }));
 
   return merged;
+}
+
+function construirProductoNuevo(){
+  return {
+    id: "NUEVO - se creará con el código de barras",
+    ...ESQUEMA_BASE,
+    activo: true,
+    cantidadPorCaja: 1,
+    ivaTasa: 0,
+    iepsTasa: 0,
+    comision_valor: 0,
+    codigosEquivalentes: [],
+    preciosPorCantidad: []
+  };
 }
 
 function ordenarCamposProducto(producto){
@@ -1196,7 +1220,7 @@ function renderCampo(key, value){
   }
 
   const tipo = detectarTipo(value);
-  const bloqueado = CAMPOS_BLOQUEADOS.includes(key);
+  const bloqueado = campoBloqueado(key);
 
   if (key === "id") {
     return `
@@ -1276,10 +1300,16 @@ function actualizarBotonesActivo(){
 }
 
 window.abrirEditor = function(id){
+  modoEditor = "editar";
   productoActual = productos.find(x => String(x.id) === String(id));
   if (!productoActual) return;
 
   setStatus("", "");
+  btnGuardar.textContent = "Guardar cambios";
+  btnActivar.style.display = "inline-block";
+  btnDesactivar.style.display = "inline-block";
+  btnEliminarReal.style.display = "inline-block";
+
   const productoEditable = construirProductoEditable(productoActual);
   const keysOrdenadas = ordenarCamposProducto(productoEditable);
   editorCampos.innerHTML = keysOrdenadas.map(k => renderCampo(k, productoEditable[k])).join("");
@@ -1287,6 +1317,24 @@ window.abrirEditor = function(id){
   actualizarBotonesActivo();
   modalEditor.classList.add("show");
 };
+
+function abrirNuevoProducto(){
+  modoEditor = "nuevo";
+  productoActual = null;
+  setStatus("Captura el artículo nuevo. El código de barras será el ID del documento.", "info");
+
+  btnGuardar.textContent = "Dar de alta producto";
+  btnActivar.style.display = "none";
+  btnDesactivar.style.display = "none";
+  btnEliminarReal.style.display = "none";
+
+  const productoNuevo = construirProductoNuevo();
+  const keysOrdenadas = ordenarCamposProducto(productoNuevo);
+  editorCampos.innerHTML = keysOrdenadas.map(k => renderCampo(k, productoNuevo[k])).join("");
+  enlazarEventosEditorDinamico();
+  modalEditor.classList.add("show");
+}
+
 
 function validarAntesDeGuardar(data){
   if (!Array.isArray(data.codigosEquivalentes)) data.codigosEquivalentes = [];
@@ -1370,6 +1418,29 @@ function validarAntesDeGuardar(data){
   return data;
 }
 
+function validarAltaNueva(data){
+  const codigo = String(data.codigoBarra || "").trim();
+  const concepto = String(data.concepto || "").trim();
+
+  if (!codigo) throw new Error("El código de barras es obligatorio para dar de alta.");
+  if (!concepto) throw new Error("El concepto es obligatorio para dar de alta.");
+
+  const codigoNorm = norm(codigo);
+  const duplicado = productos.find(p => {
+    if (norm(p.codigoBarra) === codigoNorm) return true;
+    const eqs = Array.isArray(p.codigosEquivalentes) ? p.codigosEquivalentes : [];
+    return eqs.some(eq => norm(eq) === codigoNorm);
+  });
+
+  if (duplicado) {
+    throw new Error(`Ya existe un producto con ese código: ${duplicado.codigoBarra || duplicado.id}`);
+  }
+
+  data.codigoBarra = codigo;
+  data.concepto = concepto;
+  return data;
+}
+
 function recolectarCambios(){
   const campos = editorCampos.querySelectorAll("[data-key]");
   const data = {};
@@ -1377,7 +1448,7 @@ function recolectarCambios(){
   for (const el of campos) {
     const key = el.dataset.key;
     const type = el.dataset.type;
-    if (CAMPOS_BLOQUEADOS.includes(key)) continue;
+    if (campoBloqueado(key)) continue;
 
     let value = el.value;
 
@@ -1397,6 +1468,12 @@ function recolectarCambios(){
   }
 
   data.updatedAt = serverTimestamp();
+
+  if (modoEditor === "nuevo") {
+    data.createdAt = serverTimestamp();
+    validarAltaNueva(data);
+  }
+
   return validarAntesDeGuardar(data);
 }
 
@@ -1405,13 +1482,28 @@ function refrescar(){
 }
 
 async function guardarCambios(){
-  if (!productoActual?.id) return;
-
   try{
     btnGuardar.disabled = true;
-    setStatus("Guardando cambios...", "info");
 
     const cambios = recolectarCambios();
+
+    if (modoEditor === "nuevo") {
+      setStatus("Dando de alta producto...", "info");
+
+      const codigo = String(cambios.codigoBarra || "").trim();
+      const refDoc = doc(db, "productos", codigo);
+
+      await setDoc(refDoc, cambios);
+
+      txtBuscarPrincipal.value = codigo;
+      setStatus("Producto dado de alta correctamente.", "ok");
+      modalEditor.classList.remove("show");
+      return;
+    }
+
+    if (!productoActual?.id) return;
+
+    setStatus("Guardando cambios...", "info");
     const refDoc = doc(db, "productos", productoActual.id);
 
     await updateDoc(refDoc, cambios);
@@ -1511,6 +1603,8 @@ btnReset.addEventListener("click", () => {
   selActivo.value = "todos";
   reaplicarVistaActual();
 });
+
+btnNuevoProducto.addEventListener("click", abrirNuevoProducto);
 
 selActivo.addEventListener("change", () => {
   reaplicarVistaActual();

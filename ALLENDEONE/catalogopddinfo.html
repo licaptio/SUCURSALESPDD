@@ -415,7 +415,7 @@ th{
 import { db } from "./config.js";
 import {
   collection,
-  getDocs,
+  onSnapshot,
   doc,
   updateDoc,
   deleteDoc,
@@ -452,6 +452,7 @@ let idxBusqueda = -1;
 let productoActual = null;
 let bloqueoReaperturaBuscador = false;
 let ultimoElementoConFoco = null;
+let unsubscribeProductos = null;
 
 const CAMPOS_BLOQUEADOS = ["id", "codigoBarra"];
 
@@ -658,17 +659,39 @@ function cerrarModalBuscador({
   }, 250);
 }
 
-async function cargar(){
-  try{
-    meta.textContent = "Cargando productos...";
-    const snap = await getDocs(collection(db, "productos"));
-    productos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    filtrados = [...productos];
-    renderTabla();
-  }catch(err){
-    console.error(err);
-    meta.textContent = "Error cargando productos";
+function cargar(){
+  meta.textContent = "Conectando catálogo en vivo...";
+
+  if (unsubscribeProductos) {
+    unsubscribeProductos();
+    unsubscribeProductos = null;
   }
+
+  unsubscribeProductos = onSnapshot(
+    collection(db, "productos"),
+    (snap) => {
+      productos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+      if (productoActual?.id) {
+        productoActual = productos.find(x => String(x.id) === String(productoActual.id)) || productoActual;
+      }
+
+      reaplicarVistaActual();
+
+      if (modalBuscador.classList.contains("show")) {
+        const textoModal = txtBuscarModal.value.trim();
+        renderResultadosBusqueda(buscarCoincidencias(textoModal), textoModal);
+      }
+
+      if (modalEditor.classList.contains("show") && productoActual?.id) {
+        actualizarBotonesActivo();
+      }
+    },
+    (err) => {
+      console.error(err);
+      meta.textContent = "Error conectando catálogo en vivo";
+    }
+  );
 }
 
 function renderTabla(){
@@ -694,6 +717,28 @@ function renderTabla(){
       </td>
     </tr>
   `).join("");
+}
+
+function reaplicarVistaActual(){
+  const texto = txtBuscarPrincipal.value.trim();
+
+  if (!texto) {
+    filtrados = productos.filter(p => coincideActivo(p));
+    renderTabla();
+    meta.textContent = `Catálogo en vivo | Total: ${productos.length} | Mostrando: ${filtrados.length}`;
+    return;
+  }
+
+  const exacto = buscarCoincidenciaExacta(texto);
+
+  if (exacto) {
+    filtrados = [exacto];
+  } else {
+    filtrados = buscarCoincidencias(texto);
+  }
+
+  renderTabla();
+  meta.textContent = `Catálogo en vivo | Total: ${productos.length} | Mostrando: ${filtrados.length}`;
 }
 
 function filtrarTablaPorProducto(p){
@@ -1355,29 +1400,8 @@ function recolectarCambios(){
   return validarAntesDeGuardar(data);
 }
 
-async function refrescar(){
-  const snap = await getDocs(collection(db, "productos"));
-  productos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-
-  if (productoActual?.id) {
-    productoActual = productos.find(x => x.id === productoActual.id) || productoActual;
-  }
-
-  const texto = txtBuscarPrincipal.value.trim();
-  if (!texto){
-    filtrados = productos.filter(p => coincideActivo(p));
-    renderTabla();
-    return;
-  }
-
-  const exacto = buscarCoincidenciaExacta(texto);
-  if (exacto){
-    filtrarTablaPorProducto(exacto);
-    return;
-  }
-
-  filtrados = productos.filter(p => coincideActivo(p));
-  renderTabla();
+function refrescar(){
+  reaplicarVistaActual();
 }
 
 async function guardarCambios(){
@@ -1485,8 +1509,11 @@ txtBuscarPrincipal.addEventListener("keydown", (e) => {
 btnReset.addEventListener("click", () => {
   txtBuscarPrincipal.value = "";
   selActivo.value = "todos";
-  filtrados = [...productos];
-  renderTabla();
+  reaplicarVistaActual();
+});
+
+selActivo.addEventListener("change", () => {
+  reaplicarVistaActual();
 });
 
 btnCerrarBuscador.addEventListener("click", (e) => {

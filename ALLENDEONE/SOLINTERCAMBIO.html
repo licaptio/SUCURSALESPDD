@@ -221,6 +221,7 @@ canvas{
   justify-content:center;
   align-items:center;
   padding:15px;
+  z-index:999;
 }
 
 .modal-box{
@@ -241,7 +242,6 @@ canvas{
 }
 
 @media(max-width:700px){
-
   .header{
     flex-direction:column;
     text-align:center;
@@ -251,16 +251,21 @@ canvas{
     flex-direction:column;
   }
 
+  table{
+    font-size:13px;
+  }
+
+  th,td{
+    padding:8px;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOADING -->
 <div class="loading" id="loading">
-
-  <img src="logo.png">
+  <img src="logo.png" onerror="this.style.display='none'">
 
   <h1>PROVEEDORA</h1>
 
@@ -271,34 +276,21 @@ canvas{
   <div class="barra-wrap">
     <div class="barra" id="barra"></div>
   </div>
-
 </div>
 
 <div class="app">
 
-  <!-- HEADER -->
   <div class="header">
-
-    <img src="logo.png">
+    <img src="logo.png" onerror="this.style.display='none'">
 
     <div>
-      <h2>
-        Solicitud de Intercambio
-      </h2>
-
-      <p>
-        ALLENDE 1 → ALLENDE 2
-      </p>
+      <h2>Solicitud de Intercambio</h2>
+      <p>ALLENDE 1 → ALLENDE 2</p>
     </div>
-
   </div>
 
-  <!-- BUSCADOR -->
   <div class="box">
-
-    <h3>
-      Buscar producto
-    </h3>
+    <h3>Buscar producto</h3>
 
     <input
       id="buscar"
@@ -307,18 +299,12 @@ canvas{
     >
 
     <div class="sugerencias" id="sugerencias"></div>
-
   </div>
 
-  <!-- CARRITO -->
   <div class="box">
-
-    <h3>
-      Carrito
-    </h3>
+    <h3>Carrito</h3>
 
     <table>
-
       <thead>
         <tr>
           <th>Código</th>
@@ -329,17 +315,11 @@ canvas{
       </thead>
 
       <tbody id="tbodyCarrito"></tbody>
-
     </table>
-
   </div>
 
-  <!-- SOLICITUD -->
   <div class="box">
-
-    <h3>
-      Solicitud
-    </h3>
+    <h3>Solicitud</h3>
 
     <input
       id="solicitadoPor"
@@ -349,7 +329,6 @@ canvas{
     <canvas id="firma"></canvas>
 
     <div class="actions">
-
       <button
         class="btn-sec"
         onclick="guardarTemporal()"
@@ -363,18 +342,13 @@ canvas{
       >
         Solicitar intercambio
       </button>
-
     </div>
-
   </div>
 
 </div>
 
-<!-- MODAL PRODUCTO -->
 <div class="modal" id="modal">
-
   <div class="modal-box">
-
     <h3 id="tituloProducto"></h3>
 
     <input
@@ -391,8 +365,13 @@ canvas{
       Agregar
     </button>
 
+    <button
+      class="btn-sec"
+      onclick="cerrarModal()"
+    >
+      Cancelar
+    </button>
   </div>
-
 </div>
 
 <script type="module">
@@ -416,6 +395,10 @@ const buscarInput = document.getElementById('buscar');
 const sugerencias = document.getElementById('sugerencias');
 const tbodyCarrito = document.getElementById('tbodyCarrito');
 
+const DB_NAME = 'PROVSOFT_INTERCAMBIOS';
+const DB_VERSION = 1;
+const STORE_PRODUCTOS = 'catalogo_allende1';
+
 function estado(txt){
   document.getElementById('estadoCarga').textContent = txt;
 }
@@ -425,13 +408,102 @@ function barra(v){
 }
 
 function normalizar(txt=''){
-  return txt
+  return String(txt || '')
     .toUpperCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g,'')
     .replace(/[^A-Z0-9 ]/g,' ')
     .replace(/\s+/g,' ')
     .trim();
+}
+
+function abrirDB(){
+
+  return new Promise((resolve,reject)=>{
+
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+    req.onupgradeneeded = e=>{
+
+      const dbi = e.target.result;
+
+      if(!dbi.objectStoreNames.contains(STORE_PRODUCTOS)){
+        dbi.createObjectStore(
+          STORE_PRODUCTOS,
+          { keyPath:'id' }
+        );
+      }
+
+    };
+
+    req.onsuccess = ()=>resolve(req.result);
+
+    req.onerror = ()=>reject(req.error);
+
+  });
+
+}
+
+async function guardarCatalogoIndexedDB(data){
+
+  const dbi = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbi.transaction(
+      STORE_PRODUCTOS,
+      'readwrite'
+    );
+
+    const store = tx.objectStore(STORE_PRODUCTOS);
+
+    store.clear();
+
+    data.forEach(p=>{
+      store.put(p);
+    });
+
+    tx.oncomplete = ()=>{
+      dbi.close();
+      resolve();
+    };
+
+    tx.onerror = ()=>{
+      dbi.close();
+      reject(tx.error);
+    };
+
+  });
+
+}
+
+async function cargarCatalogoIndexedDB(){
+
+  const dbi = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbi.transaction(
+      STORE_PRODUCTOS,
+      'readonly'
+    );
+
+    const store = tx.objectStore(STORE_PRODUCTOS);
+
+    const req = store.getAll();
+
+    req.onsuccess = ()=>{
+      dbi.close();
+      resolve(req.result || []);
+    };
+
+    req.onerror = ()=>{
+      dbi.close();
+      reject(req.error);
+    };
+
+  });
+
 }
 
 function textoProducto(p){
@@ -441,19 +513,21 @@ function textoProducto(p){
     p.concepto,
     p.marca,
     p.departamento,
-    ...(p.codigosEquivalentes || [])
+    ...(Array.isArray(p.codigosEquivalentes) ? p.codigosEquivalentes : [])
   ].join(' '));
 
 }
 
-async function cargarCatalogo(){
+async function cargarCatalogoFirebase(){
 
   estado('Descargando catálogo...');
-  barra(20);
+  barra(35);
 
-  const snap = await getDocs(collection(db,'productos'));
+  const snap = await getDocs(
+    collection(db,'productos')
+  );
 
-  catalogo = [];
+  const nuevoCatalogo = [];
 
   snap.forEach(docu=>{
 
@@ -461,7 +535,7 @@ async function cargarCatalogo(){
 
     if(d.activo === true){
 
-      catalogo.push({
+      nuevoCatalogo.push({
         id:docu.id,
         ...d
       });
@@ -470,24 +544,14 @@ async function cargarCatalogo(){
 
   });
 
-  localStorage.setItem(
-    'catalogo_intercambios_a1',
-    JSON.stringify(catalogo)
-  );
+  catalogo = nuevoCatalogo;
 
-  barra(60);
+  estado('Guardando catálogo en IndexedDB...');
+  barra(65);
 
-}
+  await guardarCatalogoIndexedDB(catalogo);
 
-function cargarCatalogoLocal(){
-
-  const local = localStorage.getItem(
-    'catalogo_intercambios_a1'
-  );
-
-  if(local){
-    catalogo = JSON.parse(local);
-  }
+  barra(80);
 
 }
 
@@ -502,38 +566,46 @@ function buscarProductos(){
     return;
   }
 
-  const tokens = q.split(' ');
+  const tokens = q.split(' ').filter(Boolean);
 
   const resultados = catalogo
+    .map(p=>{
 
-  .map(p=>{
+      const texto = textoProducto(p);
 
-    const texto = textoProducto(p);
+      let score = 0;
 
-    let score = 0;
+      if(texto.includes(q)){
+        score += 100;
+      }
 
-    if(texto.includes(q))
-      score += 100;
+      tokens.forEach(t=>{
+        if(texto.includes(t)){
+          score += 30;
+        }
+      });
 
-    tokens.forEach(t=>{
+      return {
+        ...p,
+        score
+      };
 
-      if(texto.includes(t))
-        score += 30;
+    })
+    .filter(x=>x.score > 0)
+    .sort((a,b)=>b.score - a.score)
+    .slice(0,25);
 
-    });
+  if(!resultados.length){
 
-    return {
-      ...p,
-      score
-    };
+    sugerencias.innerHTML = `
+      <div class="item">
+        No se encontraron productos
+      </div>
+    `;
 
-  })
-
-  .filter(x=>x.score>0)
-
-  .sort((a,b)=>b.score-a.score)
-
-  .slice(0,25);
+    sugerencias.style.display='block';
+    return;
+  }
 
   resultados.forEach(p=>{
 
@@ -542,8 +614,8 @@ function buscarProductos(){
     div.className='item';
 
     div.innerHTML = `
-      <b>${p.codigoBarra}</b>
-      <div>${p.concepto}</div>
+      <b>${p.codigoBarra || ''}</b>
+      <div>${p.concepto || ''}</div>
       <small>${p.marca || ''}</small>
     `;
 
@@ -561,9 +633,8 @@ function abrirProducto(p){
 
   productoActual = p;
 
-  document.getElementById(
-    'tituloProducto'
-  ).textContent = p.concepto;
+  document.getElementById('tituloProducto').textContent =
+    p.concepto || 'Producto';
 
   document.getElementById('cantidad').value = 1;
 
@@ -571,39 +642,65 @@ function abrirProducto(p){
 
 }
 
+window.cerrarModal = function(){
+
+  productoActual = null;
+
+  document.getElementById('modal').style.display='none';
+
+}
+
 window.agregarProducto = function(){
+
+  if(!productoActual){
+    alert('Selecciona un producto');
+    return;
+  }
 
   const cantidad = Number(
     document.getElementById('cantidad').value
   );
 
+  if(!cantidad || cantidad <= 0){
+    alert('Cantidad inválida');
+    return;
+  }
+
   carrito.push({
-
-    codigo: productoActual.codigoBarra,
-
-    descripcion: productoActual.concepto,
-
+    codigo: productoActual.codigoBarra || '',
+    descripcion: productoActual.concepto || '',
+    marca: productoActual.marca || '',
     cantidad_solicitada: cantidad,
-
     estado_item:'PENDIENTE'
-
   });
 
   renderCarrito();
-
-  guardarTemporal();
+  guardarTemporal(false);
 
   document.getElementById('modal').style.display='none';
 
   buscarInput.value='';
-
   sugerencias.style.display='none';
+  productoActual = null;
 
 }
 
 function renderCarrito(){
 
   tbodyCarrito.innerHTML='';
+
+  if(!carrito.length){
+
+    tbodyCarrito.innerHTML = `
+      <tr>
+        <td colspan="4">
+          Sin productos agregados
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
 
   carrito.forEach((x,i)=>{
 
@@ -632,31 +729,27 @@ window.eliminarItem = function(i){
 
   renderCarrito();
 
-  guardarTemporal();
+  guardarTemporal(false);
 
 }
 
-window.guardarTemporal = function(){
+window.guardarTemporal = function(mostrarAlerta = true){
+
+  const data = {
+    carrito,
+    solicitadoPor:document.getElementById('solicitadoPor').value,
+    firma:firmaBase64,
+    guardado_en:new Date().toISOString()
+  };
 
   localStorage.setItem(
-
     'borrador_intercambio_a1',
-
-    JSON.stringify({
-
-      carrito,
-
-      solicitadoPor:document.getElementById(
-        'solicitadoPor'
-      ).value,
-
-      firma:firmaBase64
-
-    })
-
+    JSON.stringify(data)
   );
 
-  alert('Borrador guardado');
+  if(mostrarAlerta){
+    alert('Borrador guardado');
+  }
 
 }
 
@@ -666,26 +759,35 @@ function recuperarTemporal(){
     'borrador_intercambio_a1'
   );
 
-  if(!local) return;
+  if(!local){
+    renderCarrito();
+    return;
+  }
 
-  const data = JSON.parse(local);
+  try{
 
-  carrito = data.carrito || [];
+    const data = JSON.parse(local);
 
-  document.getElementById(
-    'solicitadoPor'
-  ).value = data.solicitadoPor || '';
+    carrito = data.carrito || [];
 
-  firmaBase64 = data.firma || '';
+    document.getElementById('solicitadoPor').value =
+      data.solicitadoPor || '';
 
-  renderCarrito();
+    firmaBase64 = data.firma || '';
+
+    renderCarrito();
+
+  }catch(e){
+
+    console.warn('Borrador dañado', e);
+    renderCarrito();
+
+  }
 
 }
 
 function folio(){
-
   return 'INT-A1-' + Date.now();
-
 }
 
 window.generarSolicitud = async function(){
@@ -707,29 +809,18 @@ window.generarSolicitud = async function(){
   const f = folio();
 
   const documento = {
-
     folio:f,
-
     tienda_solicita:'ALLENDE 1',
-
     tienda_contesta:'ALLENDE 2',
-
     estado:'PENDIENTE_AUTORIZAR',
-
     solicitado_por:solicitadoPor,
-
     firma_solicitud:firmaBase64,
-
     fecha_solicitud:serverTimestamp(),
-
     inventario_aplicado:false,
-
     items:carrito
-
   };
 
   await setDoc(
-
     doc(
       db,
       'TIENDAS',
@@ -737,18 +828,22 @@ window.generarSolicitud = async function(){
       'INTERCAMBIOS',
       f
     ),
-
     documento
-
   );
 
-  imprimir(documento);
+  imprimir({
+    ...documento,
+    fecha_impresion:new Date().toLocaleString('es-MX')
+  });
 
   localStorage.removeItem(
     'borrador_intercambio_a1'
   );
 
-  carrito=[];
+  carrito = [];
+  firmaBase64 = '';
+
+  document.getElementById('solicitadoPor').value = '';
 
   renderCarrito();
 
@@ -763,74 +858,71 @@ function imprimir(docu){
   win.document.write(`
 
     <html>
-
     <head>
-
       <title>${docu.folio}</title>
 
       <style>
-
         body{
           font-family:Arial;
           padding:20px;
         }
 
+        h2{
+          margin-bottom:5px;
+        }
+
         table{
           width:100%;
           border-collapse:collapse;
+          margin-top:20px;
         }
 
         td,th{
           border:1px solid #ccc;
           padding:8px;
+          font-size:13px;
         }
 
+        th{
+          background:#f1f1f1;
+        }
       </style>
-
     </head>
 
     <body>
 
       <img
         src="logo.png"
-        style="width:240px"
+        style="width:220px"
+        onerror="this.style.display='none'"
       >
 
-      <h2>
-        Solicitud de Intercambio
-      </h2>
+      <h2>Solicitud de Intercambio</h2>
 
       <b>Folio:</b> ${docu.folio}<br>
       <b>Solicita:</b> ALLENDE 1<br>
       <b>Contesta:</b> ALLENDE 2<br>
-      <b>Estado:</b> ${docu.estado}<br><br>
+      <b>Estado:</b> ${docu.estado}<br>
+      <b>Fecha:</b> ${docu.fecha_impresion || ''}<br><br>
 
       <table>
-
         <thead>
-
           <tr>
             <th>Código</th>
             <th>Producto</th>
             <th>Cantidad</th>
           </tr>
-
         </thead>
 
         <tbody>
-
           ${docu.items.map(x=>`
-
             <tr>
               <td>${x.codigo}</td>
               <td>${x.descripcion}</td>
               <td>${x.cantidad_solicitada}</td>
             </tr>
-
           `).join('')}
-
         </tbody>
-
       </table>
 
       <br><br>
@@ -840,17 +932,17 @@ function imprimir(docu){
 
       <br><br>
 
-      <img
-        src="${docu.firma_solicitud}"
-        style="width:220px"
-      >
+      ${
+        docu.firma_solicitud
+        ? `<img src="${docu.firma_solicitud}" style="width:220px">`
+        : `<div style="height:80px;border-bottom:1px solid #000;width:220px"></div>`
+      }
 
       <script>
         window.print()
       <\/script>
 
     </body>
-
     </html>
 
   `);
@@ -860,13 +952,11 @@ function imprimir(docu){
 function iniciarFirma(){
 
   const canvas = document.getElementById('firma');
-
   const ctx = canvas.getContext('2d');
 
   let dibujando = false;
 
   canvas.width = canvas.offsetWidth;
-
   canvas.height = canvas.offsetHeight;
 
   function pos(e){
@@ -874,23 +964,21 @@ function iniciarFirma(){
     const r = canvas.getBoundingClientRect();
 
     return {
-
-      x:(e.touches?e.touches[0].clientX:e.clientX)-r.left,
-
-      y:(e.touches?e.touches[0].clientY:e.clientY)-r.top
-
+      x:(e.touches ? e.touches[0].clientX : e.clientX) - r.left,
+      y:(e.touches ? e.touches[0].clientY : e.clientY) - r.top
     };
 
   }
 
   function start(e){
 
-    dibujando=true;
+    e.preventDefault();
+
+    dibujando = true;
 
     const p = pos(e);
 
     ctx.beginPath();
-
     ctx.moveTo(p.x,p.y);
 
   }
@@ -899,16 +987,15 @@ function iniciarFirma(){
 
     if(!dibujando) return;
 
+    e.preventDefault();
+
     const p = pos(e);
 
-    ctx.lineWidth=2;
-
-    ctx.lineCap='round';
-
-    ctx.strokeStyle='#111';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#111';
 
     ctx.lineTo(p.x,p.y);
-
     ctx.stroke();
 
     firmaBase64 = canvas.toDataURL();
@@ -917,63 +1004,94 @@ function iniciarFirma(){
 
   function end(){
 
-    dibujando=false;
+    dibujando = false;
 
     firmaBase64 = canvas.toDataURL();
+
+    guardarTemporal(false);
 
   }
 
   canvas.addEventListener('mousedown',start);
-
   canvas.addEventListener('mousemove',move);
-
   canvas.addEventListener('mouseup',end);
+  canvas.addEventListener('mouseleave',end);
 
-  canvas.addEventListener('touchstart',start);
-
-  canvas.addEventListener('touchmove',move);
-
+  canvas.addEventListener('touchstart',start,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
   canvas.addEventListener('touchend',end);
 
 }
 
 async function init(){
 
-  estado('Recuperando catálogo local...');
+  try{
 
-  cargarCatalogoLocal();
+    estado('Cargando catálogo local...');
+    barra(10);
 
-  barra(15);
+    const local = await cargarCatalogoIndexedDB();
 
-  await cargarCatalogo();
+    if(local.length){
 
-  estado('Recuperando borrador...');
+      catalogo = local;
 
-  recuperarTemporal();
+      estado(`Catálogo local cargado: ${local.length} productos`);
+      barra(25);
 
-  barra(90);
+    }else{
 
-  iniciarFirma();
+      estado('Sin catálogo local');
 
-  estado('Aplicación lista');
+    }
 
-  barra(100);
+    try{
 
-  setTimeout(()=>{
+      await cargarCatalogoFirebase();
 
-    document.getElementById(
-      'loading'
-    ).style.opacity='0';
+    }catch(errFirebase){
+
+      console.warn('No se pudo actualizar desde Firebase, usando catálogo local', errFirebase);
+
+      if(!catalogo.length){
+        throw errFirebase;
+      }
+
+    }
+
+    estado('Recuperando borrador...');
+    barra(90);
+
+    recuperarTemporal();
+
+    iniciarFirma();
+
+    estado('Aplicación lista');
+    barra(100);
 
     setTimeout(()=>{
 
-      document.getElementById(
-        'loading'
-      ).style.display='none';
+      document.getElementById('loading').style.opacity='0';
 
-    },400);
+      setTimeout(()=>{
 
-  },500);
+        document.getElementById('loading').style.display='none';
+
+      },400);
+
+    },500);
+
+  }catch(err){
+
+    console.error(err);
+
+    estado('Error cargando aplicación');
+
+    alert(
+      'Error cargando aplicación. Revisa consola.'
+    );
+
+  }
 
 }
 

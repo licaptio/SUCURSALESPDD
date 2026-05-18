@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>ALLENDE UNO ADMON</title>
+
+  <style>
+    :root{
+      --bg:#eef3f8;
+      --panel:#ffffff;
+      --panel-soft:#f8fbff;
+      --line:#d9e2ec;
+      --text:#183153;
+      --muted:#6b7a90;
+      --brand:#0c6cbd;
+      --brand-dark:#00416A;
+      --brand-light:#eaf4ff;
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+      --radius:18px;
+    }
+
+    *{
+      box-sizing:border-box;
+    }
+
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:linear-gradient(180deg,#f4f7fb 0%, #eaf0f7 100%);
+      color:var(--text);
+      min-height:100vh;
+      padding:22px;
+    }
+
+    .app{
+      width:100%;
+      max-width:1200px;
+      margin:0 auto;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--brand-dark),var(--brand));
+      color:#fff;
+      border-radius:16px;
+      padding:18px 22px;
+      box-shadow:var(--shadow);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    .topbar-left{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      min-width:0;
+    }
+
+    .logo-box{
+      width:46px;
+      height:46px;
+      border-radius:12px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      flex-shrink:0;
+    }
+
+    .title-wrap{
+      min-width:0;
+    }
+
+    .title{
+      margin:0;
+      font-size:24px;
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+
+    .subtitle{
+      margin-top:4px;
+      font-size:13px;
+      opacity:.9;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .status{
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:12px;
+      padding:10px 14px;
+      font-size:13px;
+      font-weight:700;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+
+    .status::before{
+      content:"●";
+      color:#6ee787;
+      margin-right:8px;
+      font-size:12px;
+    }
+
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .panel-header{
+      padding:18px 20px 12px;
+      border-bottom:1px solid #edf2f7;
+      background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
+    }
+
+    .panel-header h2{
+      margin:0;
+      font-size:20px;
+      color:var(--brand-dark);
+    }
+
+    .panel-header p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .menu-grid{
+      padding:20px;
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+      gap:16px;
+    }
+
+    .menu-btn{
+      border:none;
+      border-radius:16px;
+      padding:18px 18px 16px;
+      background:linear-gradient(180deg,#ffffff 0%, #f7fbff 100%);
+      border:1px solid #dce8f5;
+      box-shadow:0 6px 16px rgba(12,108,189,.08);
+      cursor:pointer;
+      text-align:left;
+      transition:.18s ease;
+      min-height:110px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+
+    .menu-btn:hover{
+      transform:translateY(-2px);
+      border-color:#b9d5f2;
+      box-shadow:0 12px 24px rgba(12,108,189,.14);
+    }
+
+    .menu-btn:active{
+      transform:scale(.985);
+    }
+
+    .menu-top{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:10px;
+    }
+
+    .menu-icon{
+      width:42px;
+      height:42px;
+      border-radius:12px;
+      background:var(--brand-light);
+      color:var(--brand);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:20px;
+      flex-shrink:0;
+    }
+
+    .menu-title{
+      font-size:16px;
+      font-weight:700;
+      color:var(--text);
+      line-height:1.2;
+    }
+
+    .menu-desc{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+
+    .footer-bar{
+      margin-top:18px;
+      background:linear-gradient(135deg,var(--brand-dark),var(--brand));
+      color:#fff;
+      border-radius:14px;
+      padding:12px 18px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      font-size:12px;
+      box-shadow:var(--shadow);
+    }
+
+    .footer-bar span:last-child{
+      opacity:.9;
+    }
+
+    @media (max-width: 768px){
+      body{
+        padding:14px;
+      }
+
+      .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .title{
+        font-size:21px;
+      }
+
+      .subtitle{
+        white-space:normal;
+      }
+
+      .panel-header h2{
+        font-size:18px;
+      }
+
+      .menu-grid{
+        grid-template-columns:1fr;
+        padding:14px;
+        gap:12px;
+      }
+
+      .menu-btn{
+        min-height:96px;
+        padding:16px;
+      }
+
+      .footer-bar{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="logo-box">🏬</div>
+        <div class="title-wrap">
+          <h1 class="title">ALLENDE UNO ADMON</h1>
+          <div class="subtitle">
+            Panel administrativo de accesos rápidos y operación interna
+          </div>
+        </div>
+      </div>
+
+      <div class="status">Sistema activo</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Módulos disponibles</h2>
+        <p>Selecciona una opción para entrar al módulo correspondiente.</p>
+      </div>
+
+      <div class="menu-grid">
+
+        <button class="menu-btn" onclick="location.href='CATALOGO.html'">
+          <div class="menu-top">
+            <div class="menu-icon">📦</div>
+            <div class="menu-title">CATÁLOGO</div>
+          </div>
+          <div class="menu-desc">
+            Consulta y revisión general del catálogo de productos.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='SOLTRANAPP.html'">
+          <div class="menu-top">
+            <div class="menu-icon">🔄</div>
+            <div class="menu-title">TRANSFERENCIAS</div>
+          </div>
+          <div class="menu-desc">
+            Gestión y control de transferencias entre áreas o sucursales.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='APPMODTRANSALLENDE.html'">
+          <div class="menu-top">
+            <div class="menu-icon">🚚</div>
+            <div class="menu-title">ENVÍO TRANSFER ALLENDE ADMON</div>
+          </div>
+          <div class="menu-desc">
+            Registro y envío administrativo de transferencias.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='INVSORAPP.html'">
+          <div class="menu-top">
+            <div class="menu-icon">🎲</div>
+            <div class="menu-title">GENERACIÓN DE INVENTARIO ALEATORIO</div>
+          </div>
+          <div class="menu-desc">
+            Genera inventario aleatorio para revisión o conteo operativo.
+          </div>
+        </button>
+
+          <button class="menu-btn" onclick="location.href='RESPUESTACICLICO.html'">
+          <div class="menu-top">
+            <div class="menu-icon">🎲</div>
+            <div class="menu-title">RESPUESTA INVENTARIO CICLICO</div>
+          </div>
+          <div class="menu-desc">
+            Genera inventario aleatorio para revisión o conteo operativo.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='INVENTARIOCOSTEOALLENDE1.html'">
+          <div class="menu-top">
+            <div class="menu-icon">💰</div>
+            <div class="menu-title">INVENTARIO COSTEO</div>
+          </div>
+          <div class="menu-desc">
+            Consulta de costeo e información valorizada del inventario.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='INVLISTAALLE.html'">
+          <div class="menu-top">
+            <div class="menu-icon">📋</div>
+            <div class="menu-title">LISTA INVENTARIO</div>
+          </div>
+          <div class="menu-desc">
+            Visualización general y consulta de listas de inventario.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='intercambio.html'">
+          <div class="menu-top">
+            <div class="menu-icon">🏪</div>
+            <div class="menu-title">TRASPASO ENTRE SUCURSALES</div>
+          </div>
+          <div class="menu-desc">
+            Módulo para traspasos y movimientos entre sucursales.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='VISORTRANSALLENDE.html'">
+          <div class="menu-top">
+            <div class="menu-icon">👁️</div>
+            <div class="menu-title">VISOR DE TRANSFERENCIAS</div>
+          </div>
+          <div class="menu-desc">
+            Revisión y seguimiento de transferencias registradas.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='responderasolicitudalle1.html'">
+          <div class="menu-top">
+            <div class="menu-icon">✉️</div>
+            <div class="menu-title">RESPONDER SOLICITUD</div>
+          </div>
+          <div class="menu-desc">
+            Atención y respuesta de solicitudes operativas pendientes.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='solicitudinventarioalle1.html'">
+          <div class="menu-top">
+            <div class="menu-icon">📝</div>
+            <div class="menu-title">SOLICITUD DE INVENTARIO</div>
+          </div>
+          <div class="menu-desc">
+            Generación o captura de solicitudes relacionadas con inventario.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='CATAADMONVER.html'">
+          <div class="menu-top">
+            <div class="menu-icon">🗂️</div>
+            <div class="menu-title">CATÁLOGO DE PRODUCTOS ADMON PDD</div>
+          </div>
+          <div class="menu-desc">
+            Consulta administrativa del catálogo de productos PDD.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='VISORTICKETS.html'">
+          <div class="menu-top">
+            <div class="menu-icon">🧾</div>
+            <div class="menu-title">VER VENTAS</div>
+          </div>
+          <div class="menu-desc">
+            Consulta de tickets y visualización de ventas registradas.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='CARGARPTVENTA.html'">
+          <div class="menu-top">
+            <div class="menu-icon">📤</div>
+            <div class="menu-title">CARGAR VENTAS</div>
+          </div>
+          <div class="menu-desc">
+            Carga y procesamiento de información de ventas.
+          </div>
+        </button>
+
+        <button class="menu-btn" onclick="location.href='catalogopddinfo.html'">
+          <div class="menu-top">
+            <div class="menu-icon">📤</div>
+            <div class="menu-title">CATALOGO INFORMATIVO PDD</div>
+          </div>
+          <div class="menu-desc">
+            CATALOGO DE PRODUCTOS ONLINE PDD
+          </div>
+        </button>
+
+                <button class="menu-btn" onclick="location.href='CORRECCIONES-ALLENDE1.html'">
+          <div class="menu-top">
+            <div class="menu-icon">📤</div>
+            <div class="menu-title">CORRECCIONES TRANSFERENCIAS</div>
+          </div>
+          <div class="menu-desc">
+            MODULO PARA CORRECCIONES A TRANSFERENCIAS
+          </div>
+        </button>
+
+        
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span>PROVSOFT · Panel administrativo</span>
+      <span>Diseño estilo moderno tipo dashboard</span>
+    </div>
+
+  </div>
+</body>
+</html>

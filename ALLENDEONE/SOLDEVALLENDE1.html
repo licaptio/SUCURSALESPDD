@@ -224,6 +224,7 @@ let carrito = [];
 let productoSeleccionado = null;
 let pasoActual = 1;
 let firmaTieneContenido = false;
+let reiniciandoFormulario = false;
 
 const LS_BORRADOR = "provsoft_devolucion_matriz_borrador";
 const DB_NAME = "provsoft_catalogo_devoluciones";
@@ -703,6 +704,12 @@ function cargarFirmaBase64(dataUrl){
   img.src = dataUrl;
 }
 
+function formularioTieneDatos(){
+  const encargado = document.getElementById("encargado").value.trim();
+  const notas = document.getElementById("notas").value.trim();
+  return encargado || notas || carrito.length > 0 || firmaTieneContenido || pasoActual > 1;
+}
+
 function obtenerDatosFormulario(){
   return {
     tienda:document.getElementById("tienda").value,
@@ -717,12 +724,24 @@ function obtenerDatosFormulario(){
 }
 
 function guardarBorrador(){
+  if(!formularioTieneDatos()){
+    alert("No hay información para guardar.");
+    return;
+  }
+
   localStorage.setItem(LS_BORRADOR,JSON.stringify(obtenerDatosFormulario()));
   alert("Borrador guardado.");
 }
 
 function guardarBorradorSilencioso(){
+  if(reiniciandoFormulario) return;
+
   try{
+    if(!formularioTieneDatos()){
+      localStorage.removeItem(LS_BORRADOR);
+      return;
+    }
+
     localStorage.setItem(LS_BORRADOR,JSON.stringify(obtenerDatosFormulario()));
   }catch(err){
     console.warn("No se pudo autosalvar.",err);
@@ -737,13 +756,33 @@ function recuperarBorrador(){
     return;
   }
 
-  if(!confirm("Se encontró un borrador pendiente de devolución. ¿Deseas recuperarlo?")){
+  let b = null;
+
+  try{
+    b = JSON.parse(raw);
+  }catch(err){
     localStorage.removeItem(LS_BORRADOR);
     pintarCarrito();
     return;
   }
 
-  const b = JSON.parse(raw);
+  const tieneDatos =
+    (b.encargado && String(b.encargado).trim()) ||
+    (b.notas && String(b.notas).trim()) ||
+    (Array.isArray(b.carrito) && b.carrito.length > 0) ||
+    b.firma;
+
+  if(!tieneDatos){
+    localStorage.removeItem(LS_BORRADOR);
+    pintarCarrito();
+    return;
+  }
+
+  if(!confirm("Se encontró un borrador pendiente de devolución. ¿Deseas recuperarlo?")){
+    localStorage.removeItem(LS_BORRADOR);
+    pintarCarrito();
+    return;
+  }
 
   document.getElementById("tienda").value = b.tienda || "ALLENDE 1";
   document.getElementById("encargado").value = b.encargado || "";
@@ -754,6 +793,46 @@ function recuperarBorrador(){
   pintarCarrito();
 
   setTimeout(()=>cargarFirmaBase64(b.firma),300);
+}
+
+function reiniciarFormularioDespuesDeGrabar(){
+  reiniciandoFormulario = true;
+
+  carrito = [];
+  productoSeleccionado = null;
+  pasoActual = 1;
+
+  document.getElementById("encargado").value = "";
+  document.getElementById("notas").value = "";
+  document.getElementById("folio").value = generarFolio();
+  document.getElementById("buscarProducto").value = "";
+  document.getElementById("resultados").innerHTML = "";
+  document.getElementById("resumenRevision").innerHTML = "";
+  document.getElementById("resumenFinal").innerHTML = "";
+
+  document.getElementById("modalCantidad").value = "";
+  document.getElementById("modalComentario").value = "";
+  document.getElementById("modalProducto").classList.add("oculto");
+
+  const canvas = document.getElementById("firmaCanvas");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  firmaTieneContenido = false;
+
+  pintarCarrito();
+
+  document.querySelectorAll(".paso").forEach(p=>p.classList.remove("activo"));
+  document.getElementById("paso1").classList.add("activo");
+
+  document.querySelectorAll(".step").forEach(s=>s.classList.remove("active"));
+  document.querySelector(`.step[data-step="1"]`).classList.add("active");
+
+  localStorage.removeItem(LS_BORRADOR);
+
+  setTimeout(()=>{
+    reiniciandoFormulario = false;
+    localStorage.removeItem(LS_BORRADOR);
+  },300);
 }
 
 function construirDocumentoDevolucion(){
@@ -874,7 +953,8 @@ async function generarSolicitud(){
     );
 
     generarPDF(documentoDevolucion);
-    localStorage.removeItem(LS_BORRADOR);
+
+    reiniciarFormularioDespuesDeGrabar();
 
     alert("Devolución a matriz generada correctamente.");
   }catch(err){

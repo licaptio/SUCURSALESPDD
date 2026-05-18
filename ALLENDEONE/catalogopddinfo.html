@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"
+  />
+  <title>Consulta de Productos - PROVSOFT</title>
+<style>
+:root{
+  --azul:#00416A;
+  --azul2:#0c6cbd;
+  --azul3:#0a4f80;
+  --gris:#e5e7eb;
+  --gris2:#f8fafc;
+  --gris3:#cbd5e1;
+  --texto:#1f2937;
+  --texto2:#475569;
+  --verde:#166534;
+  --rojo:#991b1b;
+  --blanco:#ffffff;
+  --shadow:0 10px 28px rgba(0,0,0,.10);
+  --shadow2:0 16px 40px rgba(15,23,42,.12);
+  --radius:18px;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,body{
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  font-family:Arial, Helvetica, sans-serif;
+  background:linear-gradient(135deg,#eef4f9,#f8fbff);
+  color:var(--texto);
+  overflow:hidden;
+}
+
+body{
+  padding:12px;
+  height:100vh;
+}
+
+/* APP */
+.app{
+  width:100%;
+  height:100%;
+  max-width:1600px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.card{
+  background:rgba(255,255,255,.82);
+  backdrop-filter:blur(8px);
+  border:1px solid rgba(226,232,240,.9);
+  border-radius:24px;
+  box-shadow:var(--shadow2);
+  overflow:hidden;
+  flex:1;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+/* HEADER */
+.head{
+  background:linear-gradient(135deg,var(--azul3),var(--azul2));
+  color:#fff;
+  padding:14px 18px 12px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  flex:0 0 auto;
+}
+
+.head h1{
+  margin:0;
+  font-size:20px;
+  line-height:1.15;
+  font-weight:900;
+  letter-spacing:.2px;
+}
+
+.head p{
+  margin:4px 0 0;
+  font-size:12px;
+  opacity:.96;
+}
+
+/* PANEL DE BUSQUEDA */
+.panel{
+  padding:12px 16px 10px;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fbff 100%);
+  border-bottom:1px solid #e5e7eb;
+  flex:0 0 auto;
+}
+
+.panel-grid{
+  display:grid;
+  grid-template-columns:minmax(320px,560px) auto;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.buscador-wrap{
+  position:relative;
+  width:100%;
+  max-width:560px;
+}
+
+input{
+  width:100%;
+  height:44px;
+  padding:0 14px;
+  border-radius:14px;
+  border:1px solid #d1d5db;
+  background:#fff;
+  color:#0f172a;
+  font-size:15px;
+  font-weight:600;
+  transition:.18s ease;
+}
+
+input::placeholder{
+  color:#94a3b8;
+  font-weight:500;
+}
+
+input:focus{
+  outline:none;
+  border-color:var(--azul2);
+  box-shadow:0 0 0 4px rgba(12,108,189,.12);
+}
+
+.acciones{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+}
+
+.btn-sec{
+  height:44px;
+  padding:0 16px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#eef6ff,#dbeafe);
+  color:#003a61;
+  font-weight:800;
+  font-size:13px;
+  cursor:pointer;
+  white-space:nowrap;
+  box-shadow:0 4px 10px rgba(12,108,189,.08);
+  transition:.18s ease;
+}
+
+.btn-sec:hover{
+  transform:translateY(-1px);
+  background:linear-gradient(135deg,#dbeafe,#bfdbfe);
+}
+
+.status{
+  margin-top:10px;
+  padding:9px 12px;
+  border-radius:12px;
+  font-size:12px;
+  display:none;
+  font-weight:700;
+}
+
+.status.ok{
+  display:block;
+  background:#ecfdf3;
+  color:var(--verde);
+  border:1px solid #bbf7d0;
+}
+
+.status.error{
+  display:block;
+  background:#fef2f2;
+  color:var(--rojo);
+  border:1px solid #fecaca;
+}
+
+.status.info{
+  display:block;
+  background:#eff6ff;
+  color:#1d4ed8;
+  border:1px solid #bfdbfe;
+}
+
+/* SUGERENCIAS */
+.sugerencias{
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  right:0;
+  background:#fff;
+  border:1px solid #dbe2ea;
+  border-radius:16px;
+  box-shadow:0 18px 40px rgba(0,0,0,.14);
+  display:none;
+  z-index:50;
+  max-height:320px;
+  overflow:auto;
+}
+
+.sugerencias.show{
+  display:block;
+}
+
+.sugerencia-item{
+  padding:10px 12px;
+  border-bottom:1px solid #eef2f7;
+  cursor:pointer;
+  transition:.15s;
+}
+
+.sugerencia-item:last-child{
+  border-bottom:none;
+}
+
+.sugerencia-item:hover,
+.sugerencia-item.active{
+  background:#f0f7ff;
+}
+
+.sugerencia-title{
+  font-size:14px;
+  font-weight:900;
+  color:#111827;
+  margin-bottom:3px;
+}
+
+.sugerencia-meta{
+  font-size:11px;
+  color:#475569;
+  line-height:1.35;
+}
+
+.main{
+  flex:1;
+  min-height:0;
+  padding:12px 16px 16px;
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(420px,1fr);
+  grid-template-rows:130px 170px minmax(190px,1fr);
+  grid-template-areas:
+    "producto fotos"
+    "precio fotos"
+    "especial ficha";
+  gap:12px;
+  overflow:hidden;
+  align-items:stretch;
+}
+
+
+/* AREAS */
+.concepto-main{
+  grid-area:producto;
+  min-height:0;
+}
+
+.precio-publico-wrap{
+  grid-area:precio;
+  min-height:0;
+}
+
+.precio-especial-wrap-col{
+  grid-area:especial;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.ficha-col{
+  grid-area:ficha;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.fotos-col{
+  grid-area:fotos;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+/* TARJETAS GENERALES */
+.box{
+  background:linear-gradient(180deg,#ffffff 0%, #f8fbff 100%);
+  border:1px solid #e7edf5;
+  border-radius:22px;
+  padding:14px;
+  min-height:0;
+  height:100%;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 6px 18px rgba(15,23,42,.05);
+}
+
+.concepto-section{
+  position:relative;
+  background:linear-gradient(180deg,#ffffff 0%, #f8fbff 100%);
+  border:1px solid #dbe7f3;
+  border-radius:22px;
+  box-shadow:0 8px 24px rgba(15,23,42,.08);
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.concepto-section::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  bottom:0;
+  width:5px;
+  background:linear-gradient(180deg,#f59e0b,#fbbf24);
+}
+
+.concepto-label{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#92400e;
+  padding:12px 16px 8px 18px;
+  border-bottom:1px solid rgba(148,163,184,.18);
+  background:linear-gradient(180deg,#fffdf7 0%, #fff7df 100%);
+  margin:0;
+}
+
+.concepto-texto{
+  font-size:30px;
+  font-weight:900;
+  color:#78350f;
+  line-height:1.08;
+  letter-spacing:-.02em;
+  padding:14px 16px 4px 18px;
+  word-break:break-word;
+}
+
+.codigo-texto{
+  font-size:13px;
+  color:#92400e;
+  font-weight:800;
+  padding:0 16px 14px 18px;
+  margin:0;
+  font-family:inherit;
+}
+
+/* PANEL PRECIO */
+.precio-panel{
+  position:relative;
+  border-radius:22px;
+  overflow:hidden;
+  border:1px solid #dbe7f3;
+  box-shadow:0 8px 24px rgba(15,23,42,.08);
+  background:#fff;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+.precio-panel::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  bottom:0;
+  width:5px;
+  background:linear-gradient(180deg,#00416A,#0c6cbd);
+}
+
+.precio-panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 16px 10px;
+  border-bottom:1px solid rgba(148,163,184,.18);
+  flex:0 0 auto;
+}
+
+.precio-panel-kicker{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#00416A;
+}
+
+.precio-panel-mini{
+  margin-top:3px;
+  font-size:11px;
+  color:#64748b;
+  font-weight:700;
+}
+
+.precio-panel-icon{
+  width:40px;
+  height:40px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:19px;
+  background:linear-gradient(135deg,#eef6ff,#dbeafe);
+  border:1px solid #bfdbfe;
+  flex:0 0 auto;
+}
+
+.precio-panel-body{
+  padding:12px 16px 14px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height:0;
+}
+
+.precio-publico{
+  background:linear-gradient(135deg,#00416A 0%, #0c6cbd 100%);
+  border:none;
+  min-height:140px;
+}
+
+.precio-publico .precio-panel-head{
+  border-bottom:1px solid rgba(255,255,255,.14);
+}
+
+.precio-publico .precio-panel-kicker{
+  color:#dbeafe;
+}
+
+.precio-publico .precio-panel-icon{
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.18);
+}
+
+.precio-publico .precio-panel-body{
+  justify-content:center;
+}
+
+.precio-panel-amount{
+  font-size:40px;
+  font-weight:900;
+  line-height:1.02;
+  letter-spacing:-.02em;
+  margin-bottom:8px;
+  color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,.12);
+  word-break:break-word;
+}
+
+.precio-panel-note{
+  font-size:13px;
+  font-weight:700;
+  color:#d9ebff;
+}
+
+.precio-especial{
+  background:linear-gradient(180deg,#ffffff 0%, #f8fbff 100%);
+  min-height:0;
+  height:100%;
+}
+
+.precio-especial .precio-panel-body{
+  padding:10px 14px 14px;
+  overflow:visible;
+  height:auto;
+  display:block;
+}
+
+.precio-especial-scroller{
+  height:auto;
+  min-height:0;
+  overflow:visible;
+  padding-right:0;
+}
+
+
+
+.precio-especial-empty{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:120px;
+  border:1px dashed #cbd5e1;
+  border-radius:18px;
+  background:#f8fafc;
+  color:#64748b;
+  font-size:13px;
+  font-weight:800;
+  text-align:center;
+  padding:16px;
+}
+
+.tabla-precios-pro{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 6px;
+}
+
+.tabla-precios-pro thead th{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:#64748b;
+  text-align:left;
+  padding:0 8px 2px;
+  font-weight:900;
+}
+
+.tabla-precios-pro tbody td{
+  padding:7px 8px;
+  font-size:12px;
+  font-weight:800;
+  color:#0f172a;
+  border-top:1px solid #eef2f7;
+  border-bottom:1px solid #eef2f7;
+}
+
+.tag-cantidad{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 8px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#e0f2fe,#dbeafe);
+  border:1px solid #bfdbfe;
+  color:#00416A;
+  font-size:10px;
+  font-weight:900;
+}
+
+.tabla-precios-pro tbody td:first-child{
+  border-left:1px solid #eef2f7;
+  border-radius:14px 0 0 14px;
+}
+
+.tabla-precios-pro tbody td:last-child{
+  border-right:1px solid #eef2f7;
+  border-radius:0 14px 14px 0;
+}
+
+.tag-cantidad{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:5px 10px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#e0f2fe,#dbeafe);
+  border:1px solid #bfdbfe;
+  color:#00416A;
+  font-size:11px;
+  font-weight:900;
+}
+
+.precio-unit{
+  color:#0f172a;
+  font-weight:900;
+}
+
+.precio-total{
+  color:#00416A;
+  font-weight:900;
+}
+
+/* FICHA */
+.section-title{
+  margin:0 0 10px;
+  font-size:14px;
+  font-weight:900;
+  color:var(--azul);
+  flex:0 0 auto;
+}
+
+.info-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:8px;
+  overflow:auto;
+  min-height:0;
+  padding-right:2px;
+  flex:1;
+}
+
+.info-item{
+  background:#f8fafc;
+  border-radius:14px;
+  padding:10px;
+  border:1px solid #eef2ff;
+}
+
+.info-item-label{
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  color:#64748b;
+  margin-bottom:5px;
+  font-weight:900;
+}
+
+.info-item-value{
+  font-size:12px;
+  font-weight:800;
+  color:#1e293b;
+  word-break:break-word;
+  line-height:1.35;
+}
+
+/* FOTOS */
+.fotos-box{
+  min-height:100%;
+  max-height:none;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+.fotos-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.fotos-count{
+  font-size:11px;
+  font-weight:800;
+  color:#64748b;
+  background:#f1f5f9;
+  border:1px solid #e2e8f0;
+  padding:5px 9px;
+  border-radius:999px;
+}
+
+.fotos-scroller{
+  display:flex;
+  gap:12px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:4px 4px 10px;
+  scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;
+  min-height:0;
+  flex:1;
+  align-items:stretch;
+}
+
+.fotos-empty{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:100%;
+  min-height:260px;
+  border:1px dashed #cbd5e1;
+  border-radius:18px;
+  background:#f8fafc;
+  color:#64748b;
+  font-size:13px;
+  font-weight:800;
+  text-align:center;
+  padding:16px;
+}
+
+.foto-card{
+  width:240px;
+  min-width:240px;
+  max-width:240px;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(15,23,42,.08);
+  scroll-snap-align:start;
+  flex-shrink:0;
+}
+
+.foto-stage{
+  width:100%;
+  height:220px;
+  background:#f1f5f9;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+.foto-stage img{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+}
+
+.foto-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px 10px;
+  border-top:1px solid #eef2f7;
+  background:#fff;
+}
+
+.foto-label{
+  font-size:11px;
+  font-weight:800;
+  color:#0f172a;
+}
+
+.btn-rotar{
+  border:none;
+  background:#00416A;
+  color:#fff;
+  padding:6px 10px;
+  border-radius:10px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+/* OVERLAY DE CARGA REAL */
+.overlay-carga{
+  position:fixed;
+  inset:0;
+  background:rgba(248,250,252,.88);
+  backdrop-filter:blur(4px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:2000;
+}
+
+.overlay-carga.hidden{
+  display:none;
+}
+
+.caja-carga{
+  width:min(460px, calc(100% - 40px));
+  background:#fff;
+  border:1px solid #dbe2ea;
+  border-radius:24px;
+  box-shadow:0 24px 60px rgba(0,0,0,.18);
+  padding:22px 20px 18px;
+  text-align:center;
+}
+
+.caja-carga h2{
+  margin:0 0 8px;
+  font-size:22px;
+  color:#00416A;
+  font-weight:900;
+}
+
+.caja-carga .sub{
+  font-size:13px;
+  color:#64748b;
+  font-weight:700;
+}
+
+.barra{
+  height:14px;
+  background:#e5e7eb;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:18px;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.08);
+}
+
+.barra-fill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(135deg,#00416A,#0c6cbd);
+  border-radius:999px;
+  transition:width .25s ease;
+}
+
+.carga-texto{
+  margin-top:10px;
+  font-size:13px;
+  color:#334155;
+  font-weight:700;
+}
+
+/* SCANNER */
+.scanner-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.75);
+  z-index:3000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
+
+.scanner-modal.hidden{
+  display:none;
+}
+
+.scanner-box{
+  width:min(100%, 500px);
+  background:#fff;
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.28);
+}
+
+.scanner-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 16px;
+  background:linear-gradient(135deg,#00416A,#0c6cbd);
+  color:#fff;
+}
+
+.scanner-head h3{
+  margin:0;
+  font-size:17px;
+}
+
+.scanner-close{
+  border:none;
+  background:transparent;
+  color:#fff;
+  font-size:24px;
+  cursor:pointer;
+}
+
+.scanner-body{
+  position:relative;
+  background:#000;
+  aspect-ratio:3/4;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+#scannerVideo{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.scanner-line{
+  position:absolute;
+  left:10%;
+  right:10%;
+  top:50%;
+  height:2px;
+  background:#22c55e;
+  box-shadow:0 0 12px rgba(34,197,94,.8);
+}
+
+.scanner-msg{
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:12px;
+  background:rgba(0,0,0,.55);
+  color:#fff;
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:12px;
+  text-align:center;
+}
+
+.scanner-actions{
+  display:flex;
+  gap:10px;
+  padding:12px;
+  flex-wrap:wrap;
+}
+
+.scanner-actions .btn-sec{
+  flex:1;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1100px){
+  html,body{
+    overflow:auto;
+    height:auto;
+  }
+
+  body{
+    padding:10px;
+    height:auto;
+  }
+
+  .app{
+    height:auto;
+    min-height:100vh;
+  }
+
+  .card{
+    height:auto;
+  }
+
+  .panel-grid{
+    grid-template-columns:1fr;
+  }
+
+  .buscador-wrap{
+    max-width:none;
+  }
+
+  .main{
+    grid-template-columns:1fr;
+    grid-template-rows:auto;
+    grid-template-areas:
+      "producto"
+      "precio"
+      "especial"
+      "fotos"
+      "ficha";
+    overflow:visible;
+  }
+
+  .ficha-col,
+  .precio-especial-wrap-col,
+  .fotos-col,
+  .info-grid,
+  .precio-especial-scroller{
+    height:auto;
+    max-height:none;
+    overflow:visible;
+  }
+
+  .fotos-box{
+    min-height:200px;
+    max-height:none;
+  }
+}
+
+@media (max-width: 768px){
+  body{
+    padding:8px;
+  }
+
+  .head{
+    padding:10px 12px;
+  }
+
+  .head h1{
+    font-size:18px;
+  }
+
+  .head p{
+    font-size:10px;
+  }
+
+  .panel{
+    padding:10px 12px;
+  }
+
+  .input{
+    font-size:15px;
+  }
+
+  .main{
+    padding:10px;
+    gap:10px;
+  }
+
+  .concepto-texto{
+    font-size:15px;
+  }
+
+  .precio-panel-amount{
+    font-size:34px;
+  }
+
+  .info-grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+
+</head>
+<body>
+  <div class="overlay-carga" id="overlayCarga">
+    <div class="caja-carga">
+      <h2>Cargando catálogo</h2>
+      <div>Preparando catálogo local...</div>
+      <div class="barra">
+        <div class="barra-fill" id="barraFill"></div>
+      </div>
+      <div class="carga-texto" id="cargaTexto">Iniciando...</div>
+    </div>
+  </div>
+
+  <div class="app">
+    <div class="card">
+      <div class="head">
+        <h1>Consulta de Productos - PROVSOFT</h1>
+        <p>Búsqueda local por código o texto. Solo carga productos activos. Interfaz optimizada para PC y celular.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-grid">
+          <div class="buscador-wrap">
+            <input
+              type="text"
+              id="busquedaInput"
+              placeholder="Escribe código de barras o nombre del producto..."
+              autocomplete="off"
+            />
+            <div class="sugerencias" id="sugerenciasBox"></div>
+          </div>
+
+          <div class="acciones">
+            <button class="btn-sec" id="btnEscanear">Escanear código</button>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="main">
+        <div class="concepto-section concepto-main">
+          <div class="concepto-label">PRODUCTO</div>
+          <div class="concepto-texto" id="conceptoValor">Sin consultar</div>
+          <div class="codigo-texto" id="codigoTexto">Código: --</div>
+        </div>
+
+        <div class="fotos-col">
+          <section class="box fotos-box">
+            <div class="fotos-head">
+              <div class="section-title" style="margin:0;">📸 Fotos del producto</div>
+              <div class="fotos-count" id="fotosCount">0 fotos</div>
+            </div>
+            <div class="fotos-scroller" id="fotosScroller">
+              <div class="fotos-empty" style="min-width:100%;">Sin fotos por ahora</div>
+            </div>
+          </section>
+        </div>
+
+        <div class="precio-publico-wrap">
+          <section class="precio-panel precio-publico">
+            <div class="precio-panel-head">
+              <div class="precio-panel-kicker">Precio público</div>
+              <div class="precio-panel-icon">💰</div>
+            </div>
+            <div class="precio-panel-body">
+              <div class="precio-panel-amount" id="precioPublicoValor">$---</div>
+              <div class="precio-panel-note">Precio de lista / mostrador</div>
+            </div>
+          </section>
+        </div>
+
+        <div class="box ficha-col">
+          <div class="section-title">📋 Ficha técnica</div>
+          <div class="info-grid" id="infoGrid"></div>
+        </div>
+
+        <div class="precio-especial-wrap-col">
+          <section class="precio-panel precio-especial">
+            <div class="precio-panel-head">
+              <div>
+                <div class="precio-panel-kicker">Precio especial</div>
+                <div class="precio-panel-mini">Escalas por volumen</div>
+              </div>
+              <div class="precio-panel-icon">📦</div>
+            </div>
+            <div class="precio-panel-body">
+              <div class="precio-especial-scroller" id="preciosVolumenBox">
+                <div class="precio-especial-empty">Sin precios especiales definidos</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="scannerModal" class="scanner-modal hidden">
+    <div class="scanner-box">
+      <div class="scanner-head">
+        <h3>Escanear código</h3>
+        <button type="button" class="scanner-close" id="btnCerrarScanner">✕</button>
+      </div>
+
+      <div class="scanner-body">
+        <video id="scannerVideo" playsinline autoplay muted></video>
+        <div class="scanner-line"></div>
+        <div class="scanner-msg" id="scannerMsg">Apunta la cámara al código de barras</div>
+      </div>
+
+      <div class="scanner-actions">
+        <button type="button" class="btn-sec" id="btnCambiarCamara">Cambiar cámara</button>
+        <button type="button" class="btn-sec" id="btnDetenerScanner">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+  import { firebaseConfig } from "./config.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    query,
+    where,
+    Timestamp,
+    doc,
+    getDoc,
+    limit
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  import {
+    getStorage,
+    ref,
+    getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  const COLECCION = "productos";
+  const COLECCION_FOTOS_META = "productos_fotos_meta";
+
+  const DB_NAME = "provsoft_local_db";
+  const DB_VERSION = 2;
+  const STORE_NAME = "catalogo_productos";
+  const META_STORE = "meta_store";
+  const FOTO_META_STORE = "productos_fotos_meta_cache";
+  const FOTO_BLOB_STORE = "productos_fotos_blob_cache";
+  const CATALOGO_KEY = "productos";
+  const AUTO_SYNC_HOURS = 24;
+  const FOTO_META_TTL_HOURS = 24;
+  const FOTO_BLOB_TTL_DAYS = 7;
+
+  const busquedaInput = document.getElementById("busquedaInput");
+  const sugerenciasBox = document.getElementById("sugerenciasBox");
+  const statusBox = document.getElementById("status");
+
+  const conceptoValor = document.getElementById("conceptoValor");
+  const codigoTexto = document.getElementById("codigoTexto");
+  const precioPublicoValor = document.getElementById("precioPublicoValor");
+  const infoGrid = document.getElementById("infoGrid");
+  const preciosVolumenBoxEl = document.getElementById("preciosVolumenBox");
+  const fotosScroller = document.getElementById("fotosScroller");
+  const fotosCount = document.getElementById("fotosCount");
+
+  const overlayCarga = document.getElementById("overlayCarga");
+  const barraFill = document.getElementById("barraFill");
+  const cargaTexto = document.getElementById("cargaTexto");
+
+  const btnEscanear = document.getElementById("btnEscanear");
+  const scannerModal = document.getElementById("scannerModal");
+  const scannerVideo = document.getElementById("scannerVideo");
+  const scannerMsg = document.getElementById("scannerMsg");
+  const btnCerrarScanner = document.getElementById("btnCerrarScanner");
+  const btnDetenerScanner = document.getElementById("btnDetenerScanner");
+  const btnCambiarCamara = document.getElementById("btnCambiarCamara");
+
+  let scannerStream = null;
+  let scannerInterval = null;
+  let currentFacingMode = "environment";
+  let barcodeDetector = null;
+
+  let catalogoProductos = [];
+  let sugerenciasActuales = [];
+  let indiceActivo = -1;
+
+  // cache simple para no releer metas de fotos ya consultadas
+  const cacheFotosMeta = new Map();
+  let currentPhotoObjectUrls = [];
+
+  function mostrarStatus(msg, tipo = "ok") {
+    statusBox.className = `status ${tipo}`;
+    statusBox.textContent = msg;
+  }
+
+  function limpiarVista() {
+    conceptoValor.textContent = "Sin datos";
+    codigoTexto.textContent = "Código: --";
+    precioPublicoValor.textContent = "$---";
+    infoGrid.innerHTML = "";
+    preciosVolumenBoxEl.innerHTML = `<div class="precio-especial-empty">Sin consultar</div>`;
+    limpiarFotosUI("Sin fotos por ahora");
+  }
+
+  function liberarObjectUrlsActuales() {
+    if (!Array.isArray(currentPhotoObjectUrls) || !currentPhotoObjectUrls.length) return;
+    currentPhotoObjectUrls.forEach(url => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {}
+    });
+    currentPhotoObjectUrls = [];
+  }
+
+  function limpiarFotosUI(texto = "Sin fotos por ahora") {
+    liberarObjectUrlsActuales();
+    fotosCount.textContent = "0 fotos";
+    fotosScroller.innerHTML = `<div class="fotos-empty" style="min-width:100%;">${texto}</div>`;
+  }
+
+  function formatearFecha(valor) {
+    try {
+      if (!valor) return "--";
+
+      let fecha = null;
+
+      if (valor instanceof Timestamp) {
+        fecha = valor.toDate();
+      } else if (valor?.seconds !== undefined) {
+        fecha = new Date(valor.seconds * 1000);
+      } else if (valor instanceof Date) {
+        fecha = valor;
+      } else {
+        fecha = new Date(valor);
+      }
+
+      if (isNaN(fecha.getTime())) return "--";
+
+      return new Intl.DateTimeFormat("es-MX", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(fecha);
+    } catch {
+      return "--";
+    }
+  }
+
+  function normalizarTexto(txt) {
+    return String(txt || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .trim();
+  }
+
+  function tokenizarTexto(txt) {
+    return normalizarTexto(txt)
+      .split(/\s+/)
+      .map(x => x.trim())
+      .filter(Boolean);
+  }
+
+  function valorLegible(v) {
+    if (v === null || v === undefined || v === "") return "--";
+    if (v instanceof Timestamp) return formatearFecha(v);
+    if (typeof v === "boolean") return v ? "Sí" : "No";
+    if (Array.isArray(v)) return v.length ? v.join(", ") : "--";
+    if (typeof v === "object") return JSON.stringify(v);
+    return String(v);
+  }
+
+  function toNumberSeguro(v) {
+    if (v === null || v === undefined || v === "") return 0;
+    if (typeof v === "number") return isFinite(v) ? v : 0;
+
+    const limpio = String(v).replace(/[^0-9.-]/g, "");
+    const num = Number(limpio);
+    return isNaN(num) ? 0 : num;
+  }
+
+  function tomarPrimerValor(obj, keys = []) {
+    for (const key of keys) {
+      const value = obj?.[key];
+      if (value !== undefined && value !== null && value !== "") {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  function renderPreciosVolumen(data) {
+    let lista =
+      tomarPrimerValor(data, ["preciosPorCantidad", "preciosVolumen", "precioEspecial", "precios_especiales"]) || [];
+
+    if (!Array.isArray(lista)) lista = [];
+    lista = lista.filter(item => item && typeof item === "object");
+
+    if (!lista.length) {
+      preciosVolumenBoxEl.innerHTML = `
+        <div class="precio-especial-empty">
+          Sin precios especiales definidos
+        </div>
+      `;
+      return;
+    }
+
+    const filas = lista
+      .sort((a, b) => {
+        const ca = toNumberSeguro(a.cantidadMinima ?? a.cantidad ?? a.desde ?? 0);
+        const cb = toNumberSeguro(b.cantidadMinima ?? b.cantidad ?? b.desde ?? 0);
+        return ca - cb;
+      })
+      .map(item => {
+        const cantidad = toNumberSeguro(item.cantidadMinima ?? item.cantidad ?? item.desde ?? 0);
+        const unitario = toNumberSeguro(item.precioUnitario ?? item.precio ?? item.unitario ?? 0);
+        const total = toNumberSeguro(item.precioTotal ?? item.total ?? (cantidad * unitario));
+
+        return `
+          <tr>
+            <td><span class="tag-cantidad">${cantidad}+ unidades</span></td>
+            <td class="precio-unit">$${unitario.toFixed(2)}</td>
+            <td class="precio-total">$${total.toFixed(2)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    preciosVolumenBoxEl.innerHTML = `
+      <table class="tabla-precios-pro">
+        <thead>
+          <tr>
+            <th>Cantidad</th>
+            <th>Precio unitario</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function abrirDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = (event) => {
+        const dbLocal = event.target.result;
+
+        if (!dbLocal.objectStoreNames.contains(STORE_NAME)) {
+          dbLocal.createObjectStore(STORE_NAME, { keyPath: "key" });
+        }
+
+        if (!dbLocal.objectStoreNames.contains(META_STORE)) {
+          dbLocal.createObjectStore(META_STORE, { keyPath: "key" });
+        }
+
+        if (!dbLocal.objectStoreNames.contains(FOTO_META_STORE)) {
+          dbLocal.createObjectStore(FOTO_META_STORE, { keyPath: "key" });
+        }
+
+        if (!dbLocal.objectStoreNames.contains(FOTO_BLOB_STORE)) {
+          const fotoBlobStore = dbLocal.createObjectStore(FOTO_BLOB_STORE, { keyPath: "key" });
+          fotoBlobStore.createIndex("codigo", "codigo", { unique: false });
+        } else {
+          const tx = event.target.transaction;
+          const fotoBlobStore = tx.objectStore(FOTO_BLOB_STORE);
+          if (!fotoBlobStore.indexNames.contains("codigo")) {
+            fotoBlobStore.createIndex("codigo", "codigo", { unique: false });
+          }
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function renderFotos(urls = [], opciones = {}) {
+    liberarObjectUrlsActuales();
+
+    const lista = Array.isArray(urls)
+      ? urls.filter(u => typeof u === "string" && u.trim())
+      : [];
+
+    if (!lista.length) {
+      limpiarFotosUI("Sin fotos por ahora");
+      return;
+    }
+
+    if (opciones.trackObjectUrls) {
+      currentPhotoObjectUrls = [...lista];
+    }
+
+    fotosCount.textContent = `${lista.length} foto${lista.length === 1 ? "" : "s"}`;
+
+    fotosScroller.innerHTML = lista.map((url, index) => `
+      <div class="foto-card">
+        <div class="foto-stage">
+          <img
+            src="${url}"
+            alt="Foto ${index + 1}"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            onerror="this.closest('.foto-card').style.display='none';"
+          />
+        </div>
+        <div class="foto-toolbar">
+          <div class="foto-label">Foto ${index + 1}</div>
+          <button type="button" class="btn-rotar" data-rotate="0">Rotar</button>
+        </div>
+      </div>
+    `).join("");
+
+    const botones = fotosScroller.querySelectorAll(".btn-rotar");
+    botones.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const card = btn.closest(".foto-card");
+        const img = card?.querySelector("img");
+        if (!img) return;
+
+        let current = Number(btn.dataset.rotate || "0");
+        current = (current + 90) % 360;
+        btn.dataset.rotate = String(current);
+        img.style.transform = `rotate(${current}deg)`;
+      });
+    });
+  }
+
+  async function resolverUrlsDesdeStoragePaths(storagePaths = []) {
+    if (!Array.isArray(storagePaths) || !storagePaths.length) return [];
+
+    const urls = await Promise.all(
+      storagePaths.map(async (path) => {
+        try {
+          if (!path || typeof path !== "string") return null;
+          const storageRef = ref(storage, path);
+          return await getDownloadURL(storageRef);
+        } catch (error) {
+          console.warn("No se pudo resolver storagePath:", path, error);
+          return null;
+        }
+      })
+    );
+
+    return urls.filter(Boolean);
+  }
+
+  function esFechaVigente(fechaIso, horasMaximas) {
+    if (!fechaIso) return false;
+
+    const fecha = new Date(fechaIso).getTime();
+    if (isNaN(fecha)) return false;
+
+    const ahora = Date.now();
+    const diffHoras = (ahora - fecha) / (1000 * 60 * 60);
+    return diffHoras <= horasMaximas;
+  }
+
+  function esBlobCacheVigente(fechaIso) {
+    return esFechaVigente(fechaIso, FOTO_BLOB_TTL_DAYS * 24);
+  }
+
+  function construirFirmaMeta(meta = {}) {
+    const firma = {
+      estatus: meta?.estatus || null,
+      versionFotos: meta?.versionFotos || meta?.version || null,
+      updatedAt: meta?.updatedAt || meta?.fechaActualizacion || null,
+      urlsFotos: Array.isArray(meta?.urlsFotos) ? meta.urlsFotos : [],
+      storagePaths: Array.isArray(meta?.storagePaths) ? meta.storagePaths : [],
+      totalFotos: meta?.totalFotos || meta?.cantidadFotos || null
+    };
+
+    return JSON.stringify(firma);
+  }
+
+  async function leerMetaFotosIndexedDB(codigo) {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_META_STORE, "readonly");
+      const request = tx.objectStore(FOTO_META_STORE).get(String(codigo));
+
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function guardarMetaFotosIndexedDB(codigo, meta, firma) {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_META_STORE, "readwrite");
+      tx.objectStore(FOTO_META_STORE).put({
+        key: String(codigo),
+        codigo: String(codigo),
+        meta,
+        firma,
+        fecha_cache: new Date().toISOString()
+      });
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function leerFotosBlobIndexedDB(codigo) {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_BLOB_STORE, "readonly");
+      const index = tx.objectStore(FOTO_BLOB_STORE).index("codigo");
+      const request = index.getAll(String(codigo));
+
+      request.onsuccess = () => {
+        const items = Array.isArray(request.result) ? request.result : [];
+        items.sort((a, b) => (a.index || 0) - (b.index || 0));
+        resolve(items);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function borrarFotosBlobIndexedDB(codigo) {
+    const existentes = await leerFotosBlobIndexedDB(codigo);
+    if (!existentes.length) return true;
+
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_BLOB_STORE, "readwrite");
+      const store = tx.objectStore(FOTO_BLOB_STORE);
+
+      existentes.forEach(item => {
+        if (item?.key) store.delete(item.key);
+      });
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function guardarFotosBlobIndexedDB(codigo, blobs = [], firma = "") {
+    const codigoLimpio = String(codigo || "").trim();
+    if (!codigoLimpio || !Array.isArray(blobs) || !blobs.length) return false;
+
+    await borrarFotosBlobIndexedDB(codigoLimpio);
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_BLOB_STORE, "readwrite");
+      const store = tx.objectStore(FOTO_BLOB_STORE);
+      const fechaCache = new Date().toISOString();
+
+      blobs.forEach((blob, index) => {
+        store.put({
+          key: `${codigoLimpio}::${index}`,
+          codigo: codigoLimpio,
+          index,
+          blob,
+          mimeType: blob?.type || "image/jpeg",
+          firma,
+          fecha_cache: fechaCache
+        });
+      });
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function leerFotosCacheLocal(codigo) {
+    const codigoLimpio = String(codigo || "").trim();
+    if (!codigoLimpio) return null;
+
+    const [metaCache, blobsCache] = await Promise.all([
+      leerMetaFotosIndexedDB(codigoLimpio).catch(() => null),
+      leerFotosBlobIndexedDB(codigoLimpio).catch(() => [])
+    ]);
+
+    const blobsValidos = Array.isArray(blobsCache)
+      ? blobsCache.filter(item => item?.blob instanceof Blob && esBlobCacheVigente(item?.fecha_cache))
+      : [];
+
+    return {
+      metaCache,
+      blobsCache: blobsValidos
+    };
+  }
+
+  function construirObjectUrlsDesdeBlobs(blobsCache = []) {
+    return blobsCache
+      .filter(item => item?.blob instanceof Blob)
+      .map(item => URL.createObjectURL(item.blob));
+  }
+
+  async function descargarBlobsDesdeUrls(urls = []) {
+    if (!Array.isArray(urls) || !urls.length) return [];
+
+    const blobs = await Promise.all(
+      urls.map(async (url) => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return await response.blob();
+        } catch (error) {
+          console.warn("No se pudo descargar blob de imagen:", url, error);
+          return null;
+        }
+      })
+    );
+
+    return blobs.filter(blob => blob instanceof Blob);
+  }
+
+  async function resolverUrlsDeMeta(meta = {}) {
+    let urls = Array.isArray(meta?.urlsFotos) ? meta.urlsFotos.filter(Boolean) : [];
+
+    if (!urls.length && Array.isArray(meta?.storagePaths) && meta.storagePaths.length) {
+      urls = await resolverUrlsDesdeStoragePaths(meta.storagePaths);
+    }
+
+    return urls;
+  }
+
+  async function obtenerMetaFotosPorCodigo(codigo) {
+    const codigoLimpio = String(codigo || "").trim();
+    if (!codigoLimpio) return null;
+
+    if (cacheFotosMeta.has(codigoLimpio)) {
+      return cacheFotosMeta.get(codigoLimpio);
+    }
+
+    // 1) intento directo por ID del documento
+    try {
+      const docRef = doc(db, COLECCION_FOTOS_META, codigoLimpio);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        cacheFotosMeta.set(codigoLimpio, data);
+        return data;
+      }
+    } catch (error) {
+      console.warn("No se pudo leer meta por ID:", codigoLimpio, error);
+    }
+
+    // 2) fallback por campo codigoBarra
+    try {
+      const q = query(
+        collection(db, COLECCION_FOTOS_META),
+        where("codigoBarra", "==", codigoLimpio),
+        limit(1)
+      );
+
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const data = snap.docs[0].data();
+        cacheFotosMeta.set(codigoLimpio, data);
+        return data;
+      }
+    } catch (error) {
+      console.warn("No se pudo leer meta por codigoBarra:", codigoLimpio, error);
+    }
+
+    cacheFotosMeta.set(codigoLimpio, null);
+    return null;
+  }
+
+  async function cargarFotosProducto(producto) {
+    try {
+      const data = producto?.data || {};
+      const codigo = tomarPrimerValor(data, ["codigoBarra", "codigo", "barcode"]) || producto?.id;
+
+      if (!codigo) {
+        limpiarFotosUI("Producto sin código válido");
+        return;
+      }
+
+      if (data.tieneFotos === false) {
+        limpiarFotosUI("Este producto no tiene fotos");
+        return;
+      }
+
+      fotosCount.textContent = "...";
+      fotosScroller.innerHTML = `<div class="fotos-empty" style="min-width:100%;">Buscando fotos locales...</div>`;
+
+      const cacheLocal = await leerFotosCacheLocal(codigo);
+
+      if (cacheLocal?.blobsCache?.length) {
+        const urlsLocales = construirObjectUrlsDesdeBlobs(cacheLocal.blobsCache);
+        renderFotos(urlsLocales, { trackObjectUrls: true });
+
+        if (
+          cacheLocal.metaCache?.fecha_cache &&
+          esFechaVigente(cacheLocal.metaCache.fecha_cache, FOTO_META_TTL_HOURS)
+        ) {
+          return;
+        }
+
+        fotosCount.textContent = `${urlsLocales.length} foto${urlsLocales.length === 1 ? "" : "s"} · actualizando`;
+      } else {
+        fotosScroller.innerHTML = `<div class="fotos-empty" style="min-width:100%;">Cargando fotos...</div>`;
+      }
+
+      const meta = await obtenerMetaFotosPorCodigo(codigo);
+
+      if (!meta) {
+        if (!cacheLocal?.blobsCache?.length) {
+          limpiarFotosUI("Sin fotos registradas");
+        }
+        return;
+      }
+
+      if (meta.estatus && String(meta.estatus).toUpperCase() !== "OK") {
+        if (!cacheLocal?.blobsCache?.length) {
+          limpiarFotosUI("Las fotos existen pero no están listas");
+        }
+        return;
+      }
+
+      const firmaRemota = construirFirmaMeta(meta);
+
+      if (
+        cacheLocal?.metaCache?.firma === firmaRemota &&
+        cacheLocal?.blobsCache?.length &&
+        cacheLocal.blobsCache.every(item => esBlobCacheVigente(item?.fecha_cache))
+      ) {
+        await guardarMetaFotosIndexedDB(codigo, meta, firmaRemota);
+        return;
+      }
+
+      const urls = await resolverUrlsDeMeta(meta);
+
+      if (!urls.length) {
+        if (!cacheLocal?.blobsCache?.length) {
+          limpiarFotosUI("No se pudieron resolver las fotos");
+        }
+        return;
+      }
+
+      const blobs = await descargarBlobsDesdeUrls(urls);
+
+      if (blobs.length === urls.length && blobs.length > 0) {
+        await guardarMetaFotosIndexedDB(codigo, meta, firmaRemota);
+        await guardarFotosBlobIndexedDB(codigo, blobs, firmaRemota);
+
+        const urlsLocales = construirObjectUrlsDesdeBlobs(
+          blobs.map((blob, index) => ({ blob, index, fecha_cache: new Date().toISOString() }))
+        );
+        renderFotos(urlsLocales, { trackObjectUrls: true });
+        return;
+      }
+
+      await guardarMetaFotosIndexedDB(codigo, meta, firmaRemota);
+      renderFotos(urls);
+    } catch (error) {
+      console.error("Error cargando fotos del producto:", error);
+      limpiarFotosUI("Error cargando fotos");
+    }
+  }
+
+  function renderProducto(producto) {
+    const data = producto?.data || {};
+
+    const codigo = tomarPrimerValor(data, ["codigoBarra", "codigo", "barcode"]) || producto.id || "--";
+    const concepto = tomarPrimerValor(data, ["concepto", "descripcion", "nombre", "producto"]) || "Sin concepto";
+
+    const precioPublicoRaw = tomarPrimerValor(data, [
+      "precioPublico",
+      "precio",
+      "precio_mostrador",
+      "precioLista",
+      "precio_publico"
+    ]);
+
+    const precioPublico = toNumberSeguro(precioPublicoRaw);
+
+    conceptoValor.textContent = concepto;
+    codigoTexto.textContent = `Código: ${codigo}`;
+    precioPublicoValor.textContent = precioPublico > 0 ? `$${precioPublico.toFixed(2)}` : "$0.00";
+
+    const camposSecundarios = [
+      ["Código de barras", codigo],
+      ["Clave SAT", tomarPrimerValor(data, ["claveSat", "claveSAT", "sat", "clave_sat"])],
+      ["Unidad SAT", tomarPrimerValor(data, ["unidadMedidaSat", "unidadSAT", "unidadSat", "unidad_medida_sat"])],
+      ["Departamento", tomarPrimerValor(data, ["departamento", "depto", "categoria"])],
+      ["Marca", tomarPrimerValor(data, ["marca", "brand"])],
+      ["Activo", tomarPrimerValor(data, ["activo"])],
+      ["Última actualización", tomarPrimerValor(data, ["updatedAt", "fechaActualizacion", "updated_at"])],
+      ["Creado", tomarPrimerValor(data, ["createdAt", "fechaCreacion", "created_at"])]
+    ];
+
+    infoGrid.innerHTML = camposSecundarios.map(([label, valor]) => `
+      <div class="info-item">
+        <div class="info-item-label">${label}</div>
+        <div class="info-item-value">${valorLegible(valor)}</div>
+      </div>
+    `).join("");
+
+    renderPreciosVolumen(data);
+
+    // importante: primero limpiamos y luego cargamos async
+    limpiarFotosUI("Cargando fotos...");
+    cargarFotosProducto(producto);
+  }
+
+  function ocultarSugerencias() {
+    sugerenciasBox.classList.remove("show");
+    sugerenciasBox.innerHTML = "";
+    sugerenciasActuales = [];
+    indiceActivo = -1;
+  }
+
+  function seleccionarProducto(producto) {
+    const data = producto.data || {};
+    busquedaInput.value = data.codigoBarra || data.codigo || data.concepto || data.descripcion || producto.id || "";
+    renderProducto(producto);
+    ocultarSugerencias();
+    mostrarStatus(`Producto cargado: ${data.concepto || data.descripcion || producto.id}`, "ok");
+  }
+
+  function renderSugerencias(lista) {
+    sugerenciasBox.innerHTML = "";
+    sugerenciasActuales = lista;
+    indiceActivo = -1;
+
+    if (!lista.length) {
+      ocultarSugerencias();
+      return;
+    }
+
+    lista.forEach((producto, i) => {
+      const data = producto.data || {};
+      const codigo = data.codigoBarra || data.codigo || producto.id || "--";
+      const concepto = data.concepto || data.descripcion || data.nombre || "Sin concepto";
+      const marca = data.marca || "--";
+      const precio = tomarPrimerValor(data, ["precioPublico", "precio", "precio_mostrador", "precioLista"]);
+
+      const div = document.createElement("div");
+      div.className = "sugerencia-item";
+      div.dataset.index = i;
+      div.innerHTML = `
+        <div class="sugerencia-title">${concepto}</div>
+        <div class="sugerencia-meta">
+          <strong>Código:</strong> ${codigo}
+          &nbsp; | &nbsp;
+          <strong>Marca:</strong> ${marca}
+          &nbsp; | &nbsp;
+          <strong>Precio:</strong> ${precio !== null && precio !== undefined ? precio : "--"}
+        </div>
+      `;
+
+      div.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        seleccionarProducto(producto);
+      });
+
+      sugerenciasBox.appendChild(div);
+    });
+
+    sugerenciasBox.classList.add("show");
+  }
+
+  function actualizarItemActivo() {
+    const items = sugerenciasBox.querySelectorAll(".sugerencia-item");
+    items.forEach((item, idx) => item.classList.toggle("active", idx === indiceActivo));
+
+    if (indiceActivo >= 0 && items[indiceActivo]) {
+      items[indiceActivo].scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function buscarLocal(texto) {
+    const t = normalizarTexto(texto);
+    if (!t) return [];
+
+    const tokens = tokenizarTexto(texto);
+    const esNumerico = /^[0-9]+$/.test(t);
+
+    return catalogoProductos
+      .map(p => {
+        const codigo = p.busquedaCodigo;
+        const concepto = p.busquedaConcepto;
+        const equivalentes = p.busquedaEquivalentes;
+        const textoGeneral = p.busquedaGeneral;
+
+        let score = 9999;
+
+        if (codigo === t) score = 1;
+        else if (equivalentes.includes(t)) score = 2;
+        else if (codigo.startsWith(t)) score = 3;
+        else if (concepto.startsWith(t)) score = 4;
+        else if (concepto.includes(t)) score = 5;
+        else if (!esNumerico && equivalentes.some(eq => eq.includes(t))) score = 6;
+        else if (codigo.includes(t)) score = 7;
+        else if (tokens.length && tokens.every(tok => textoGeneral.includes(tok))) score = 8;
+        else if (tokens.length && tokens.some(tok => textoGeneral.includes(tok))) score = 9;
+
+        return { ...p, score };
+      })
+      .filter(x => x.score < 9999)
+      .sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        return String(a.data.concepto || a.data.descripcion || "").localeCompare(
+          String(b.data.concepto || b.data.descripcion || ""),
+          "es"
+        );
+      })
+      .slice(0, 12);
+  }
+
+  function manejarInput() {
+    const texto = busquedaInput.value.trim();
+    if (!texto) {
+      ocultarSugerencias();
+      return;
+    }
+
+    const resultados = buscarLocal(texto);
+    renderSugerencias(resultados);
+  }
+
+  async function guardarCatalogoIndexedDB(lista) {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction([STORE_NAME, META_STORE], "readwrite");
+
+      tx.objectStore(STORE_NAME).put({
+        key: CATALOGO_KEY,
+        items: lista
+      });
+
+      tx.objectStore(META_STORE).put({
+        key: "ultima_sync",
+        fecha: new Date().toISOString(),
+        total: lista.length
+      });
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function leerCatalogoIndexedDB() {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(STORE_NAME, "readonly");
+      const request = tx.objectStore(STORE_NAME).get(CATALOGO_KEY);
+
+      request.onsuccess = () => resolve(request.result ? request.result.items : null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function leerMetaIndexedDB() {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(META_STORE, "readonly");
+      const request = tx.objectStore(META_STORE).get("ultima_sync");
+
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function prepararCatalogo(lista) {
+    catalogoProductos = (Array.isArray(lista) ? lista : [])
+      .filter(item => item?.data?.activo === true)
+      .map(item => {
+        const data = item.data || {};
+        const equivalentesRaw = tomarPrimerValor(data, ["codigosEquivalentes", "equivalentes", "codigos_alt"]);
+        const equivalentes = Array.isArray(equivalentesRaw) ? equivalentesRaw : [];
+
+        const codigo = normalizarTexto(data.codigoBarra || data.codigo || item.id);
+        const concepto = normalizarTexto(data.concepto || data.descripcion || data.nombre);
+        const marca = normalizarTexto(data.marca || "");
+        const depto = normalizarTexto(data.departamento || data.depto || data.categoria || "");
+
+        return {
+          id: item.id,
+          data,
+          busquedaCodigo: codigo,
+          busquedaConcepto: concepto,
+          busquedaEquivalentes: equivalentes.map(x => normalizarTexto(x)),
+          busquedaGeneral: [codigo, concepto, marca, depto, ...equivalentes.map(x => normalizarTexto(x))].join(" ")
+        };
+      });
+  }
+
+  async function descargarCatalogoDesdeFirebase() {
+    cargaTexto.textContent = "Consultando productos activos...";
+    barraFill.style.width = "15%";
+
+    const q = query(
+      collection(db, COLECCION),
+      where("activo", "==", true)
+    );
+
+    const snap = await getDocs(q);
+    const total = snap.size || 1;
+    let procesados = 0;
+    const lista = [];
+
+    snap.forEach(docSnap => {
+      procesados++;
+      lista.push({
+        id: docSnap.id,
+        data: docSnap.data()
+      });
+
+      const porcentaje = 15 + Math.round((procesados / total) * 85);
+      barraFill.style.width = `${porcentaje}%`;
+      cargaTexto.textContent = `Bajando catálogo... ${procesados} / ${total}`;
+    });
+
+    return lista;
+  }
+
+  function necesitaAutoSync(meta) {
+    if (!meta?.fecha) return true;
+
+    const ultima = new Date(meta.fecha).getTime();
+    if (isNaN(ultima)) return true;
+
+    const ahora = Date.now();
+    const diffHoras = (ahora - ultima) / (1000 * 60 * 60);
+    return diffHoras >= AUTO_SYNC_HOURS;
+  }
+
+  async function sincronizarCatalogoSilencioso() {
+    try {
+      mostrarStatus("Actualizando catálogo en segundo plano...", "info");
+      const lista = await descargarCatalogoDesdeFirebase();
+      prepararCatalogo(lista);
+      await guardarCatalogoIndexedDB(lista);
+      mostrarStatus(`Catálogo actualizado automáticamente (${catalogoProductos.length} productos).`, "ok");
+    } catch (error) {
+      console.error("Error en sync silenciosa:", error);
+      mostrarStatus("Se mantuvo el catálogo local actual. No se pudo actualizar en segundo plano.", "info");
+    }
+  }
+
+  async function iniciarCatalogo() {
+    try {
+      limpiarVista();
+      mostrarStatus("Revisando catálogo local...", "info");
+
+      const local = await leerCatalogoIndexedDB();
+      const meta = await leerMetaIndexedDB();
+
+      if (local && local.length) {
+        prepararCatalogo(local);
+        overlayCarga.classList.add("hidden");
+
+        mostrarStatus(
+          `Catálogo local listo (${catalogoProductos.length} productos)` +
+          (meta?.fecha ? ` | última sync: ${new Date(meta.fecha).toLocaleString("es-MX")}` : ""),
+          "ok"
+        );
+
+        if (necesitaAutoSync(meta)) {
+          sincronizarCatalogoSilencioso();
+        }
+        return;
+      }
+
+      mostrarStatus("No existe catálogo local. Descargando desde Firebase...", "info");
+      overlayCarga.classList.remove("hidden");
+      barraFill.style.width = "10%";
+      cargaTexto.textContent = "Descargando catálogo inicial...";
+
+      const lista = await descargarCatalogoDesdeFirebase();
+      prepararCatalogo(lista);
+      await guardarCatalogoIndexedDB(lista);
+
+      barraFill.style.width = "100%";
+      cargaTexto.textContent = `Catálogo descargado: ${catalogoProductos.length} productos`;
+      overlayCarga.classList.add("hidden");
+      mostrarStatus(`Catálogo listo (${catalogoProductos.length} productos).`, "ok");
+    } catch (error) {
+      console.error(error);
+      overlayCarga.classList.add("hidden");
+      mostrarStatus("Error cargando catálogo: " + error.message, "error");
+    }
+  }
+
+  async function iniciarScanner() {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        mostrarStatus("Este navegador no permite abrir la cámara.", "error");
+        return;
+      }
+
+      if (!("BarcodeDetector" in window)) {
+        mostrarStatus("Este celular/navegador no soporta escaneo nativo. Usa Chrome actualizado en Android.", "error");
+        return;
+      }
+
+      const formatosSoportados = await BarcodeDetector.getSupportedFormats();
+      const formatosDeseados = ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e"];
+      const formatosFinales = formatosDeseados.filter(f => formatosSoportados.includes(f));
+
+      if (!formatosFinales.length) {
+        mostrarStatus("El navegador no soporta formatos de código compatibles.", "error");
+        return;
+      }
+
+      barcodeDetector = new BarcodeDetector({ formats: formatosFinales });
+
+      scannerModal.classList.remove("hidden");
+      scannerMsg.textContent = "Abriendo cámara...";
+
+      scannerStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: currentFacingMode } },
+        audio: false
+      });
+
+      scannerVideo.srcObject = scannerStream;
+      await scannerVideo.play();
+
+      scannerMsg.textContent = "Apunta la cámara al código de barras";
+
+      if (scannerInterval) clearInterval(scannerInterval);
+
+      scannerInterval = setInterval(async () => {
+        try {
+          if (!barcodeDetector || scannerVideo.readyState < 2) return;
+
+          const barcodes = await barcodeDetector.detect(scannerVideo);
+
+          if (barcodes && barcodes.length) {
+            const codigo = (barcodes[0].rawValue || "").trim();
+            if (!codigo) return;
+
+            detenerScanner();
+            busquedaInput.value = codigo;
+
+            const resultados = buscarLocal(codigo);
+            if (resultados.length) {
+              seleccionarProducto(resultados[0]);
+              mostrarStatus(`Código escaneado: ${codigo}`, "ok");
+            } else {
+              renderSugerencias([]);
+              mostrarStatus(`Código escaneado: ${codigo}, pero no existe en el catálogo local.`, "error");
+            }
+          }
+        } catch (err) {
+          console.error("Error detectando código:", err);
+        }
+      }, 400);
+    } catch (error) {
+      console.error(error);
+      detenerScanner();
+      mostrarStatus("No se pudo abrir la cámara: " + error.message, "error");
+    }
+  }
+
+  function detenerScanner() {
+    if (scannerInterval) {
+      clearInterval(scannerInterval);
+      scannerInterval = null;
+    }
+
+    if (scannerStream) {
+      scannerStream.getTracks().forEach(track => track.stop());
+      scannerStream = null;
+    }
+
+    scannerVideo.srcObject = null;
+    scannerModal.classList.add("hidden");
+  }
+
+  async function cambiarCamara() {
+    currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+    detenerScanner();
+    await iniciarScanner();
+  }
+
+  busquedaInput.addEventListener("input", manejarInput);
+
+  busquedaInput.addEventListener("keydown", (e) => {
+    if (!sugerenciasActuales.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      indiceActivo = Math.min(indiceActivo + 1, sugerenciasActuales.length - 1);
+      actualizarItemActivo();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      indiceActivo = Math.max(indiceActivo - 1, 0);
+      actualizarItemActivo();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (indiceActivo >= 0 && sugerenciasActuales[indiceActivo]) {
+        seleccionarProducto(sugerenciasActuales[indiceActivo]);
+      } else if (sugerenciasActuales[0]) {
+        seleccionarProducto(sugerenciasActuales[0]);
+      }
+    } else if (e.key === "Escape") {
+      ocultarSugerencias();
+    }
+  });
+
+  busquedaInput.addEventListener("focus", () => {
+    if (busquedaInput.value.trim()) manejarInput();
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".buscador-wrap")) {
+      ocultarSugerencias();
+    }
+  });
+
+  btnEscanear.addEventListener("click", iniciarScanner);
+  btnCerrarScanner.addEventListener("click", detenerScanner);
+  btnDetenerScanner.addEventListener("click", detenerScanner);
+  btnCambiarCamara.addEventListener("click", cambiarCamara);
+
+  window.addEventListener("beforeunload", () => {
+    liberarObjectUrlsActuales();
+    detenerScanner();
+  });
+
+  iniciarCatalogo();
+</script>
+</body>
+</html>

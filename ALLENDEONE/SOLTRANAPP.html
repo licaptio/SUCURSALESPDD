@@ -301,6 +301,18 @@
       background:#e0f2fe;
     }
 
+    .badge-activo{
+      color:#16a34a;
+      font-weight:800;
+      font-size:11px;
+    }
+
+    .badge-inactivo{
+      color:#e31b23;
+      font-weight:800;
+      font-size:11px;
+    }
+
     .acciones-row{
       display:grid;
       grid-template-columns:1fr 1fr;
@@ -330,6 +342,7 @@
     }
   </style>
 </head>
+
 <body>
 
 <div class="titulo-app">
@@ -403,7 +416,13 @@
 <script type="module">
   import { firebaseConfig } from "./config.js";
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    doc,
+    setDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
@@ -422,38 +441,155 @@
   const btnLimpiar = document.getElementById("btnLimpiar");
   const btnFinalizarBarra = document.getElementById("btnFinalizarBarra");
 
-  async function cargarCatalogo() {
-    try {
-      const q = query(collection(db, "productos"), where("activo", "==", true));
-      const snap = await getDocs(q);
+  const DB_NAME = "PROVSOFT_PDD_MOVIL";
+  const DB_VERSION = 1;
+  const STORE_PRODUCTOS = "catalogo_productos_completo";
 
-      catalogo = snap.docs.map(d => {
-        const data = d.data();
-        const codigo = String(data.codigoBarra || "").trim();
-        const concepto = String(data.concepto || "").trim();
+  function abrirDB(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
 
-        return {
-          ...data,
-          codigoBarra: codigo,
-          concepto,
-          precioPublico: Number(data.precioPublico || 0),
-          _search: `${codigo} ${concepto}`.toLowerCase()
-        };
+      req.onupgradeneeded = e => {
+        const dbi = e.target.result;
+
+        if (!dbi.objectStoreNames.contains(STORE_PRODUCTOS)) {
+          dbi.createObjectStore(STORE_PRODUCTOS, { keyPath:"id" });
+        }
+      };
+
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function guardarCatalogoIndexedDB(data){
+    const dbi = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbi.transaction(STORE_PRODUCTOS, "readwrite");
+      const store = tx.objectStore(STORE_PRODUCTOS);
+
+      store.clear();
+
+      data.forEach(p => {
+        store.put(p);
       });
 
-      localStorage.setItem("catalogo_cache", JSON.stringify(catalogo));
+      tx.oncomplete = () => {
+        dbi.close();
+        resolve();
+      };
+
+      tx.onerror = () => {
+        dbi.close();
+        reject(tx.error);
+      };
+    });
+  }
+
+  async function cargarCatalogoIndexedDB(){
+    const dbi = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbi.transaction(STORE_PRODUCTOS, "readonly");
+      const store = tx.objectStore(STORE_PRODUCTOS);
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        dbi.close();
+        resolve(req.result || []);
+      };
+
+      req.onerror = () => {
+        dbi.close();
+        reject(req.error);
+      };
+    });
+  }
+
+  function normalizar(str){
+    return String(str || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9 ]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function prepararProducto(d, id){
+    const data = d || {};
+
+    const codigo = String(data.codigoBarra || "").trim();
+    const concepto = String(data.concepto || "").trim();
+    const marca = String(data.marca || "").trim();
+    const departamento = String(data.departamento || "").trim();
+
+    const equivalentes = Array.isArray(data.codigosEquivalentes)
+      ? data.codigosEquivalentes.map(x => String(x || "").trim()).filter(Boolean)
+      : [];
+
+    const textoBusqueda = [
+      codigo,
+      concepto,
+      marca,
+      departamento,
+      ...equivalentes
+    ].join(" ");
+
+    return {
+      id,
+      ...data,
+      codigoBarra: codigo,
+      concepto,
+      marca,
+      departamento,
+      codigosEquivalentes: equivalentes,
+      activo: data.activo === true,
+      precioPublico: Number(data.precioPublico || 0),
+      _search: normalizar(textoBusqueda)
+    };
+  }
+
+  async function cargarCatalogo() {
+    try {
+      prodSelected.innerHTML = "⏳ Cargando catálogo local...";
+
+      const local = await cargarCatalogoIndexedDB();
+
+      if (local.length) {
+        catalogo = local;
+        prodSelected.innerHTML = `📦 Catálogo local: ${catalogo.length} productos`;
+      }
+
+      prodSelected.innerHTML = "⏳ Actualizando catálogo completo desde Firebase...";
+
+      const snap = await getDocs(collection(db, "productos"));
+
+      catalogo = snap.docs.map(d => {
+        return prepararProducto(d.data(), d.id);
+      });
+
+      await guardarCatalogoIndexedDB(catalogo);
+
+      prodSelected.innerHTML = `✅ Catálogo completo cargado: ${catalogo.length} productos`;
 
       if (catalogo.length === 0) {
         console.warn("Catálogo vacío.");
+        prodSelected.innerHTML = "⚠️ Catálogo vacío";
       }
-    } catch (e) {
-      console.error("Error cargando Firebase, usando caché:", e);
 
-      const cache = localStorage.getItem("catalogo_cache");
-      if (cache) {
-        catalogo = JSON.parse(cache);
-        alert("⚠️ Modo offline: usando catálogo guardado.");
+    } catch (e) {
+      console.error("Error cargando Firebase, usando IndexedDB:", e);
+
+      const local = await cargarCatalogoIndexedDB();
+
+      if (local.length) {
+        catalogo = local;
+        prodSelected.innerHTML = `⚠️ Modo offline: ${catalogo.length} productos locales`;
+        alert("⚠️ Modo offline: usando catálogo guardado en IndexedDB.");
       } else {
+        prodSelected.innerHTML = "❌ Sin catálogo local";
         alert("❌ Sin conexión y sin datos guardados.");
       }
     }
@@ -502,21 +638,31 @@
     }
 
     resSugerencias.innerHTML = sugerencias.map((p, i) => `
-      <div class="search-item" data-codigo="${escapeHtml(p.codigoBarra)}" data-index="${i}">
+      <div class="search-item" data-id="${escapeHtml(p.id)}" data-index="${i}">
         <b>${escapeHtml(p.codigoBarra)}</b> - ${escapeHtml(p.concepto)}
+        <br>
+        <small>
+          ${escapeHtml(p.marca || "")}
+          ${p.activo ? '<span class="badge-activo">ACTIVO</span>' : '<span class="badge-inactivo">INACTIVO</span>'}
+        </small>
       </div>
     `).join("");
 
     resSugerencias.style.display = "block";
   }
 
-  function seleccionarProducto(codigo) {
-    const prod = catalogo.find(x => String(x.codigoBarra) === String(codigo));
+  function seleccionarProducto(id) {
+    const prod = catalogo.find(x => String(x.id) === String(id));
     if (!prod) return;
 
     seleccionado = prod;
 
-    prodSelected.innerHTML = `✅ <strong>${escapeHtml(prod.concepto)}</strong> ($${Number(prod.precioPublico || 0).toFixed(2)})`;
+    prodSelected.innerHTML = `
+      ✅ <strong>${escapeHtml(prod.concepto)}</strong>
+      ($${Number(prod.precioPublico || 0).toFixed(2)})
+      ${prod.activo ? '<span class="badge-activo">ACTIVO</span>' : '<span class="badge-inactivo">INACTIVO</span>'}
+    `;
+
     inpBusqueda.value = "";
     cerrarSugerencias();
 
@@ -534,14 +680,16 @@
     let cant = parseFloat(String(inpCantidad.value).replace(",", "."));
     if (!Number.isFinite(cant) || cant <= 0) cant = 1;
 
-    const existente = carrito.find(i => i.codigo === seleccionado.codigoBarra);
+    const existente = carrito.find(i => i.id === seleccionado.id);
 
     if (existente) {
       existente.cantidad = Number(existente.cantidad) + cant;
     } else {
       carrito.unshift({
+        id: seleccionado.id,
         codigo: seleccionado.codigoBarra,
         nombre: seleccionado.concepto,
+        activo: seleccionado.activo === true,
         cantidad: cant,
         precio: Number(seleccionado.precioPublico || 0)
       });
@@ -579,7 +727,10 @@
           <div class="item-row">
             <div>
               <b>${escapeHtml(item.nombre)}</b><br>
-              <small>${escapeHtml(item.codigo)}</small>
+              <small>
+                ${escapeHtml(item.codigo)}
+                ${item.activo ? '<span class="badge-activo">ACTIVO</span>' : '<span class="badge-inactivo">INACTIVO</span>'}
+              </small>
             </div>
             <div style="text-align:center; font-weight:800; color:var(--azul-oscuro); font-size:15px;">
               ${formatearCantidad(item.cantidad)}
@@ -605,7 +756,7 @@
   };
 
   inpBusqueda.addEventListener("input", (e) => {
-    const txt = e.target.value.toLowerCase().trim();
+    const txt = normalizar(e.target.value);
     seleccionado = null;
     indexSeleccion = -1;
 
@@ -615,17 +766,37 @@
       return;
     }
 
-    const exacto = catalogo.find(p => String(p.codigoBarra).toLowerCase() === txt);
+    const exacto = catalogo.find(p =>
+      normalizar(p.codigoBarra) === txt ||
+      (Array.isArray(p.codigosEquivalentes) &&
+        p.codigosEquivalentes.some(c => normalizar(c) === txt))
+    );
+
     if (exacto) {
-      seleccionarProducto(exacto.codigoBarra);
+      seleccionarProducto(exacto.id);
       return;
     }
 
     const palabras = txt.split(/\s+/).filter(Boolean);
 
     const sugerencias = catalogo
-      .filter(p => palabras.every(w => p._search.includes(w)))
-      .slice(0, 8);
+      .map(p => {
+        let score = 0;
+
+        if (p._search.includes(txt)) score += 100;
+
+        palabras.forEach(w => {
+          if (p._search.includes(w)) score += 25;
+        });
+
+        if (normalizar(p.codigoBarra).startsWith(txt)) score += 80;
+        if (normalizar(p.concepto).includes(txt)) score += 50;
+
+        return { ...p, score };
+      })
+      .filter(p => p.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12);
 
     mostrarSugerencias(sugerencias);
   });
@@ -659,14 +830,14 @@
       }
 
       if (items.length && indexSeleccion >= 0 && items[indexSeleccion]) {
-        const codigo = items[indexSeleccion].dataset.codigo;
-        seleccionarProducto(codigo);
+        const id = items[indexSeleccion].dataset.id;
+        seleccionarProducto(id);
         return;
       }
 
       if (items.length === 1) {
-        const codigo = items[0].dataset.codigo;
-        seleccionarProducto(codigo);
+        const id = items[0].dataset.id;
+        seleccionarProducto(id);
       }
     }
   });
@@ -682,8 +853,8 @@
     const item = e.target.closest(".search-item");
     if (!item) return;
 
-    const codigo = item.dataset.codigo;
-    seleccionarProducto(codigo);
+    const id = item.dataset.id;
+    seleccionarProducto(id);
   });
 
   document.addEventListener("click", (e) => {
@@ -702,6 +873,7 @@
     }
 
     const totalFinal = carrito.reduce((a, b) => a + (Number(b.cantidad) * Number(b.precio)), 0);
+
     if (totalFinal <= 0) {
       alert("Total de la solicitud inválido.");
       return;
@@ -732,7 +904,9 @@
       actualizarUI();
       nuevoFolio();
       resetCaptura();
+
       alert("Enviado con éxito a Firebase.");
+
     } catch (e) {
       console.error(e);
       alert("Error de conexión al guardar en Firebase.");
@@ -751,13 +925,14 @@
 
     doc.autoTable({
       startY: 30,
-      head: [["Código", "Descripción", "Cant", "Precio", "Subtotal"]],
+      head: [["Código", "Descripción", "Cant", "Precio", "Subtotal", "Estado"]],
       body: items.map(i => [
         i.codigo,
         String(i.nombre).substring(0, 30),
         formatearCantidad(i.cantidad),
         `$${Number(i.precio).toFixed(2)}`,
-        `$${(Number(i.cantidad) * Number(i.precio)).toFixed(2)}`
+        `$${(Number(i.cantidad) * Number(i.precio)).toFixed(2)}`,
+        i.activo ? "ACTIVO" : "INACTIVO"
       ])
     });
 
@@ -778,9 +953,6 @@
 
   window.seleccionarProducto = seleccionarProducto;
 </script>
+
 </body>
-
-
 </html>
-
-

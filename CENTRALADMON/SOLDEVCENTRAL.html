@@ -87,13 +87,8 @@ button.peligro{background:#075985;color:white}
   <h2>Datos de la devolución</h2>
   <span class="badge">Destino: MATRIZ</span>
 
-  <label>Tienda origen</label>
-  <select id="tienda">
-    <option value="ALLENDE 1">ALLENDE 1</option>
-    <option value="ALLENDE 2">ALLENDE 2</option>
-    <option value="MONTEMORELOS">MONTEMORELOS</option>
-  </select>
-
+<input id="tienda" value="CENTRAL" readonly>
+  
   <label>Nombre del encargado que solicita</label>
   <input id="encargado" placeholder="Nombre del encargado">
 
@@ -159,7 +154,7 @@ button.peligro{background:#075985;color:white}
 
   <div class="alerta">
     Al finalizar se creará un solo documento en:
-    <strong>/TIENDAS/{tienda}/DEVOLUCIONES/{folio}</strong><br>
+    <strong>/TIENDAS/CENTRAL/DEVOLUCIONES/{folio}</strong>
     No se crearán notas, movimientos ni salidas de inventario.
   </div>
 
@@ -946,11 +941,12 @@ async function generarSolicitud(){
     document.getElementById("loader").style.display = "flex";
     document.getElementById("loaderTexto").textContent = "Generando devolución a matriz...";
 
-    await setDoc(
-      docRef(db, APP_CONFIG.COLECCION_TIENDAS, tienda, APP_CONFIG.SUBCOLECCION_DEVOLUCIONES, folio),
-      documentoDevolucion,
-      { merge:true }
-    );
+await setDoc(
+  docRef(db, "TIENDAS", "CENTRAL", "DEVOLUCIONES", folio),
+  documentoDevolucion,
+  { merge:true }
+);
+    
 
     generarPDF(documentoDevolucion);
 

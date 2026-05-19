@@ -398,6 +398,7 @@ const tbodyCarrito = document.getElementById('tbodyCarrito');
 const DB_NAME = 'PROVSOFT_INTERCAMBIOS';
 const DB_VERSION = 1;
 const STORE_PRODUCTOS = 'catalogo_allende1';
+const LS_BORRADOR = 'borrador_intercambio_a1';
 
 function estado(txt){
   document.getElementById('estadoCarga').textContent = txt;
@@ -680,6 +681,7 @@ window.agregarProducto = function(){
   document.getElementById('modal').style.display='none';
 
   buscarInput.value='';
+  sugerencias.innerHTML = '';
   sugerencias.style.display='none';
   productoActual = null;
 
@@ -733,7 +735,27 @@ window.eliminarItem = function(i){
 
 }
 
+function formularioTieneDatos(){
+
+  const solicitadoPor = document.getElementById('solicitadoPor').value.trim();
+
+  return carrito.length > 0 || solicitadoPor || firmaBase64;
+
+}
+
 window.guardarTemporal = function(mostrarAlerta = true){
+
+  if(!formularioTieneDatos()){
+
+    localStorage.removeItem(LS_BORRADOR);
+
+    if(mostrarAlerta){
+      alert('No hay información para guardar');
+    }
+
+    return;
+
+  }
 
   const data = {
     carrito,
@@ -743,7 +765,7 @@ window.guardarTemporal = function(mostrarAlerta = true){
   };
 
   localStorage.setItem(
-    'borrador_intercambio_a1',
+    LS_BORRADOR,
     JSON.stringify(data)
   );
 
@@ -756,7 +778,7 @@ window.guardarTemporal = function(mostrarAlerta = true){
 function recuperarTemporal(){
 
   const local = localStorage.getItem(
-    'borrador_intercambio_a1'
+    LS_BORRADOR
   );
 
   if(!local){
@@ -768,7 +790,24 @@ function recuperarTemporal(){
 
     const data = JSON.parse(local);
 
-    carrito = data.carrito || [];
+    const tieneDatos =
+      (Array.isArray(data.carrito) && data.carrito.length > 0) ||
+      (data.solicitadoPor && String(data.solicitadoPor).trim()) ||
+      data.firma;
+
+    if(!tieneDatos){
+      localStorage.removeItem(LS_BORRADOR);
+      renderCarrito();
+      return;
+    }
+
+    if(!confirm('Se encontró un borrador pendiente. ¿Deseas recuperarlo?')){
+      localStorage.removeItem(LS_BORRADOR);
+      renderCarrito();
+      return;
+    }
+
+    carrito = Array.isArray(data.carrito) ? data.carrito : [];
 
     document.getElementById('solicitadoPor').value =
       data.solicitadoPor || '';
@@ -777,9 +816,16 @@ function recuperarTemporal(){
 
     renderCarrito();
 
+    if(firmaBase64){
+      setTimeout(()=>{
+        cargarFirmaEnCanvas(firmaBase64);
+      },300);
+    }
+
   }catch(e){
 
     console.warn('Borrador dañado', e);
+    localStorage.removeItem(LS_BORRADOR);
     renderCarrito();
 
   }
@@ -788,6 +834,32 @@ function recuperarTemporal(){
 
 function folio(){
   return 'INT-A1-' + Date.now();
+}
+
+function limpiarFormularioDespuesDeGrabar(){
+
+  localStorage.removeItem(LS_BORRADOR);
+
+  carrito = [];
+  productoActual = null;
+  firmaBase64 = '';
+
+  document.getElementById('solicitadoPor').value = '';
+  document.getElementById('buscar').value = '';
+  document.getElementById('cantidad').value = 1;
+  document.getElementById('tituloProducto').textContent = '';
+
+  sugerencias.innerHTML = '';
+  sugerencias.style.display = 'none';
+
+  document.getElementById('modal').style.display = 'none';
+
+  const canvas = document.getElementById('firma');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  renderCarrito();
+
 }
 
 window.generarSolicitud = async function(){
@@ -820,34 +892,35 @@ window.generarSolicitud = async function(){
     items:carrito
   };
 
-  await setDoc(
-    doc(
-      db,
-      'TIENDAS',
-      'ALLENDE 1',
-      'INTERCAMBIOS',
-      f
-    ),
-    documento
-  );
+  try{
 
-  imprimir({
-    ...documento,
-    fecha_impresion:new Date().toLocaleString('es-MX')
-  });
+    await setDoc(
+      doc(
+        db,
+        'TIENDAS',
+        'ALLENDE 1',
+        'INTERCAMBIOS',
+        f
+      ),
+      documento
+    );
 
-  localStorage.removeItem(
-    'borrador_intercambio_a1'
-  );
+    imprimir({
+      ...documento,
+      fecha_impresion:new Date().toLocaleString('es-MX')
+    });
 
-  carrito = [];
-  firmaBase64 = '';
+    limpiarFormularioDespuesDeGrabar();
 
-  document.getElementById('solicitadoPor').value = '';
+    alert('Solicitud generada');
 
-  renderCarrito();
+  }catch(err){
 
-  alert('Solicitud generada');
+    console.error(err);
+    alert('Error al generar la solicitud. Se conserva el borrador local.');
+    guardarTemporal(false);
+
+  }
 
 }
 
@@ -949,6 +1022,23 @@ function imprimir(docu){
 
 }
 
+function cargarFirmaEnCanvas(dataUrl){
+
+  if(!dataUrl) return;
+
+  const canvas = document.getElementById('firma');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+
+  img.onload = ()=>{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  };
+
+  img.src = dataUrl;
+
+}
+
 function iniciarFirma(){
 
   const canvas = document.getElementById('firma');
@@ -1003,6 +1093,8 @@ function iniciarFirma(){
   }
 
   function end(){
+
+    if(!dibujando) return;
 
     dibujando = false;
 
@@ -1059,12 +1151,15 @@ async function init(){
 
     }
 
+    estado('Preparando firma...');
+    barra(85);
+
+    iniciarFirma();
+
     estado('Recuperando borrador...');
     barra(90);
 
     recuperarTemporal();
-
-    iniciarFirma();
 
     estado('Aplicación lista');
     barra(100);

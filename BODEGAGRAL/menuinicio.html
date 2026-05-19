@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROVSOFT | Bodega General</title>
+
+<link rel="icon" href="./logo.jfif">
+
+<style>
+:root{
+  --azul:#00416A;
+  --azul2:#0c6cbd;
+  --naranja:#f97316;
+  --verde:#16a34a;
+  --bg:#eef3f8;
+  --card:#ffffff;
+  --line:#dbe2ea;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --shadow:0 12px 30px rgba(0,0,0,.12);
+}
+
+*{
+  box-sizing:border-box;
+  font-family:Arial,sans-serif;
+}
+
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at top left,
+    rgba(249,115,22,.20),
+    transparent 30%),
+    linear-gradient(135deg,#ffffff,#dbeafe);
+  min-height:100vh;
+}
+
+.topbar{
+  background:linear-gradient(135deg,var(--azul),var(--azul2));
+  padding:16px 22px;
+  color:white;
+  border-bottom:5px solid var(--naranja);
+  box-shadow:0 8px 20px rgba(0,0,0,.18);
+}
+
+.topbar h1{
+  margin:0;
+  font-size:28px;
+}
+
+.topbar .sub{
+  margin-top:4px;
+  color:#dbeafe;
+  font-size:14px;
+}
+
+.wrap{
+  max-width:1300px;
+  margin:auto;
+  padding:24px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:18px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:22px;
+  padding:20px;
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  transition:.18s ease;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+}
+
+.card:hover{
+  transform:translateY(-4px);
+  border-color:var(--naranja);
+}
+
+.card::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(
+    135deg,
+    rgba(12,108,189,.04),
+    rgba(249,115,22,.04)
+  );
+}
+
+.icon{
+  font-size:42px;
+  margin-bottom:14px;
+}
+
+.card h2{
+  margin:0 0 8px;
+  color:var(--azul);
+  position:relative;
+  z-index:2;
+}
+
+.card p{
+  margin:0;
+  color:var(--muted);
+  line-height:1.5;
+  position:relative;
+  z-index:2;
+}
+
+.badge{
+  margin-top:16px;
+  display:inline-block;
+  padding:7px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  position:relative;
+  z-index:2;
+}
+
+.badge.ok{
+  background:#dcfce7;
+  color:#166534;
+}
+
+.badge.orange{
+  background:#ffedd5;
+  color:#9a3412;
+}
+
+.footer{
+  margin-top:30px;
+  text-align:center;
+  color:#6b7280;
+  font-size:13px;
+}
+
+@media(max-width:700px){
+
+  .wrap{
+    padding:14px;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .topbar h1{
+    font-size:22px;
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <h1>PROVSOFT</h1>
+  <div class="sub">
+    Centro de operaciones · Bodega General
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="grid">
+
+    <!-- MONITOR -->
+    <div class="card"
+      onclick="location.href='./monitor_transferencias.html'">
+
+      <div class="icon">📦</div>
+
+      <h2>
+        Monitor de Transferencias
+      </h2>
+
+      <p>
+        Visualiza pendientes y surtidas en tiempo real.
+        Tarjetas operativas, detalle e impresión.
+      </p>
+
+      <div class="badge ok">
+        Tiempo real
+      </div>
+
+    </div>
+
+    <!-- SURTIDO -->
+    <div class="card"
+      onclick="location.href='./indexasdasdsa32132.html'">
+
+      <div class="icon">🚚</div>
+
+      <h2>
+        Surtido de Transferencias
+      </h2>
+
+      <p>
+        Captura, surtido y control operativo
+        de solicitudes entre sucursales.
+      </p>
+
+      <div class="badge orange">
+        Operación
+      </div>
+
+    </div>
+
+    <!-- FUTURO -->
+    <div class="card">
+
+      <div class="icon">📊</div>
+
+      <h2>
+        Reportes
+      </h2>
+
+      <p>
+        Próximamente:
+        estadísticas, tiempos de surtido,
+        diferencias y productividad.
+      </p>
+
+      <div class="badge ok">
+        Próximamente
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="footer">
+    PROVSOFT · Bodega General · Sistema operativo de transferencias
+  </div>
+
+</div>
+
+</body>
+</html>

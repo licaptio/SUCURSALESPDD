@@ -78,6 +78,13 @@ body{
   gap:12px;
 }
 
+.seccion-titulo{
+  margin:18px 0 8px;
+  color:var(--azul);
+  font-size:18px;
+  font-weight:900;
+}
+
 .card-transfer{
   background:white;
   border:1px solid var(--borde);
@@ -154,15 +161,24 @@ body{
   box-shadow:0 8px 22px rgba(0,0,0,.12);
 }
 
-.btn-regresar{
+.btn-regresar,
+.btn-imprimir{
   border:0;
-  background:#344054;
   color:white;
   border-radius:12px;
   padding:12px 16px;
   font-weight:800;
   cursor:pointer;
   margin-bottom:14px;
+}
+
+.btn-regresar{
+  background:#344054;
+}
+
+.btn-imprimir{
+  background:#00416A;
+  margin-left:8px;
 }
 
 .detalle-head{
@@ -280,7 +296,7 @@ td{
     <p>Listado general de surtidos. Solo consulta, sin edición.</p>
   </section>
 
-  <div id="estado" class="estado">Cargando transferencias...</div>
+  <div id="estado" class="estado">Conectando visor en tiempo real...</div>
 
   <section id="vistaListado">
     <div id="lista" class="lista"></div>
@@ -295,12 +311,12 @@ import { db } from "./config.js";
 
 import {
   collection,
-  getDocs,
   query,
   orderBy,
-  limit
+  limit,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  
+
 const SUCURSAL = "ALLENDE 1";
 const COLECCION_SURTIDOS = "SURTIDOTRANS";
 const COLECCION_SOLICITUDES = "transferencias1";
@@ -311,6 +327,9 @@ const vistaDetalle = document.getElementById("vistaDetalle");
 const lista = document.getElementById("lista");
 
 let transferencias = [];
+let cacheSolicitudes = [];
+let cacheSurtidos = [];
+let transferenciaActual = null;
 
 function setEstado(txt, tipo = ""){
   estado.textContent = txt;
@@ -361,188 +380,198 @@ function fechaOrden(t){
   );
 }
 
-async function cargarTransferencias(){
-  setEstado("Cargando últimas 15 transferencias...", "");
+function obtenerDetalle(t){
+  if (Array.isArray(t.detalle)) return t.detalle;
+  if (Array.isArray(t.items)) return t.items;
+  if (Array.isArray(t.productos)) return t.productos;
+  return [];
+}
 
-  try{
-    const refSolicitudes = collection(db, "TIENDAS", SUCURSAL, COLECCION_SOLICITUDES);
-    const refSurtidos = collection(db, "TIENDAS", SUCURSAL, COLECCION_SURTIDOS);
+function obtenerSucursalTitulo(t){
+  return (
+    t.sucursal_destino ||
+    t.destino ||
+    t.almacen_destino ||
+    t.sucursal ||
+    SUCURSAL
+  );
+}
 
-    const qSolicitudes = query(
-      refSolicitudes,
-      orderBy("fecha", "desc"),
-      limit(15)
-    );
+function iniciarAutoRefresco(){
+  setEstado("Auto refresco activo. Escuchando Firebase...", "");
 
-    const qSurtidos = query(
-      refSurtidos,
-      orderBy("fecha_guardado_server", "desc"),
-      limit(30)
-    );
+  const refSolicitudes = collection(db, "TIENDAS", SUCURSAL, COLECCION_SOLICITUDES);
+  const refSurtidos = collection(db, "TIENDAS", SUCURSAL, COLECCION_SURTIDOS);
 
-    const [snapSolicitudes, snapSurtidos] = await Promise.all([
-      getDocs(qSolicitudes),
-      getDocs(qSurtidos)
-    ]);
+  const qSolicitudes = query(
+    refSolicitudes,
+    orderBy("fecha", "desc"),
+    limit(20)
+  );
 
-    const surtidos = [];
+  const qSurtidos = query(
+    refSurtidos,
+    orderBy("fecha_guardado_server", "desc"),
+    limit(40)
+  );
 
-    snapSurtidos.forEach(docSnap => {
-      surtidos.push({
+  onSnapshot(qSolicitudes, snap => {
+    cacheSolicitudes = [];
+
+    snap.forEach(docSnap => {
+      cacheSolicitudes.push({
+        tipo: "SOLICITUD",
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    reconstruirTransferencias();
+
+  }, err => {
+    console.error(err);
+    setEstado("Error escuchando solicitudes: " + err.message, "error");
+  });
+
+  onSnapshot(qSurtidos, snap => {
+    cacheSurtidos = [];
+
+    snap.forEach(docSnap => {
+      cacheSurtidos.push({
         tipo: "SURTIDO",
         id: docSnap.id,
         ...docSnap.data()
       });
     });
 
-    const mapaSurtidosPorSolicitud = new Map();
+    reconstruirTransferencias();
 
-    surtidos.forEach(s => {
-      const folioSolicitud = s.solicitud_id || s.folio_solicitud;
-      if (folioSolicitud) {
-        mapaSurtidosPorSolicitud.set(folioSolicitud, s);
-      }
-    });
-
-    transferencias = [];
-
-    snapSolicitudes.forEach(docSnap => {
-      const solicitud = {
-        tipo: "SOLICITUD",
-        id: docSnap.id,
-        ...docSnap.data()
-      };
-
-      const surtidoRelacionado = mapaSurtidosPorSolicitud.get(solicitud.folio);
-
-      if (surtidoRelacionado) {
-        transferencias.push({
-          ...surtidoRelacionado,
-          tipoVista: "SURTIDO",
-          folio_base: solicitud.folio
-        });
-      } else {
-        transferencias.push({
-          ...solicitud,
-          tipoVista: "PENDIENTE",
-          estatus: "PENDIENTE POR SURTIR",
-          detalle: solicitud.items || []
-        });
-      }
-    });
-
-    transferencias.sort((a,b) => {
-      const prioridadA = a.tipoVista === "PENDIENTE" ? 0 : 1;
-      const prioridadB = b.tipoVista === "PENDIENTE" ? 0 : 1;
-
-      if (prioridadA !== prioridadB) {
-        return prioridadA - prioridadB;
-      }
-
-      return fechaOrden(b) - fechaOrden(a);
-    });
-
-    transferencias = transferencias.slice(0, 15);
-
-    renderListado();
-
-    setEstado(`Últimas transferencias cargadas: ${transferencias.length}`, "ok");
-
-  }catch(err){
+  }, err => {
     console.error(err);
-    setEstado("Error al cargar registros: " + err.message, "error");
+    setEstado("Error escuchando surtidos: " + err.message, "error");
+  });
+}
+
+function reconstruirTransferencias(){
+  const mapaSurtidosPorSolicitud = new Map();
+
+  cacheSurtidos.forEach(s => {
+    const claves = [
+      s.solicitud_id,
+      s.folio_solicitud,
+      s.folio_base
+    ].filter(Boolean);
+
+    claves.forEach(clave => {
+      mapaSurtidosPorSolicitud.set(String(clave), s);
+    });
+  });
+
+  transferencias = [];
+
+  cacheSolicitudes.forEach(solicitud => {
+    const clavesSolicitud = [
+      solicitud.folio,
+      solicitud.id,
+      solicitud.solicitud_id,
+      solicitud.folio_solicitud
+    ].filter(Boolean);
+
+    let surtidoRelacionado = null;
+
+    for (const clave of clavesSolicitud) {
+      if (mapaSurtidosPorSolicitud.has(String(clave))) {
+        surtidoRelacionado = mapaSurtidosPorSolicitud.get(String(clave));
+        break;
+      }
+    }
+
+    if (surtidoRelacionado) {
+      transferencias.push({
+        ...surtidoRelacionado,
+        tipoVista: "SURTIDO",
+        folio_base: solicitud.folio || solicitud.id,
+        estatus: surtidoRelacionado.estatus || "SURTIDA"
+      });
+    } else {
+      transferencias.push({
+        ...solicitud,
+        tipoVista: "PENDIENTE",
+        estatus: "PENDIENTE POR SURTIR",
+        detalle: solicitud.items || solicitud.detalle || []
+      });
+    }
+  });
+
+  transferencias.sort((a,b) => {
+    const prioridadA = a.tipoVista === "PENDIENTE" ? 0 : 1;
+    const prioridadB = b.tipoVista === "PENDIENTE" ? 0 : 1;
+
+    if (prioridadA !== prioridadB) {
+      return prioridadA - prioridadB;
+    }
+
+    return fechaOrden(b) - fechaOrden(a);
+  });
+
+  transferencias = transferencias.slice(0, 20);
+
+  renderListado();
+
+  setEstado(`Auto refresco activo. Transferencias visibles: ${transferencias.length}`, "ok");
+
+  if (!vistaDetalle.classList.contains("oculto") && transferenciaActual) {
+    const actualizada = transferencias.find(t => {
+      return (
+        t.id === transferenciaActual.id ||
+        t.folio === transferenciaActual.folio ||
+        t.folio_solicitud === transferenciaActual.folio_solicitud ||
+        t.solicitud_id === transferenciaActual.solicitud_id
+      );
+    });
+
+    if (actualizada) {
+      const index = transferencias.indexOf(actualizada);
+      verDetalle(index, false);
+    }
   }
 }
-  
 
 function renderListado(){
   lista.innerHTML = "";
 
-  transferencias.forEach((t, index) => {
-    const detalle = Array.isArray(t.detalle)
-      ? t.detalle
-      : Array.isArray(t.items)
-        ? t.items
-        : [];
+  const pendientes = transferencias.filter(t => t.tipoVista === "PENDIENTE");
+  const surtidas = transferencias.filter(t => t.tipoVista !== "PENDIENTE");
 
-    const totalSolicitado = detalle.reduce((a,x) => {
-      return a + Number(x.cantidad_solicitada ?? x.cantidad ?? 0);
-    }, 0);
+  if (pendientes.length) {
+    const titulo = document.createElement("div");
+    titulo.className = "seccion-titulo";
+    titulo.textContent = "Pendientes por surtir";
+    lista.appendChild(titulo);
 
-    const totalSurtido = detalle.reduce((a,x) => {
-      if (t.tipoVista === "PENDIENTE") return a;
-      return a + Number(x.cantidad_surtida ?? 0);
-    }, 0);
+    pendientes.forEach(t => crearCard(t));
+  }
 
-    const totalDiferencia = detalle.reduce((a,x) => {
-      if (t.tipoVista === "PENDIENTE") return a + Number(x.cantidad ?? x.cantidad_solicitada ?? 0);
-      return a + Number(x.diferencia ?? 0);
-    }, 0);
+  if (surtidas.length) {
+    const titulo = document.createElement("div");
+    titulo.className = "seccion-titulo";
+    titulo.textContent = "Surtidas";
+    lista.appendChild(titulo);
 
-    const card = document.createElement("article");
-    card.className = "card-transfer";
+    surtidas.forEach(t => crearCard(t));
+  }
 
-    const claseBadge = t.tipoVista === "PENDIENTE" ? "badge pendiente" : "badge";
-
-    card.innerHTML = `
-      <div class="card-top">
-        <div>
-          <div class="folio">${t.folio_surtido || t.folio || t.id}</div>
-          <div>${fechaBonita(t.fecha_guardado_server) || fechaBonita(t.fecha_guardado) || fechaBonita(t.fecha)}</div>
-        </div>
-        <div class="${claseBadge}">${t.estatus || "SIN ESTATUS"}</div>
-      </div>
-
-      <div class="meta">
-        <div>
-          <span>Solicitud</span>
-          <strong>${t.folio_solicitud || t.solicitud_id || t.folio || ""}</strong>
-        </div>
-        <div>
-          <span>Origen</span>
-          <strong>${t.almacen_origen || t.origen || ""}</strong>
-        </div>
-        <div>
-          <span>Renglones</span>
-          <strong>${detalle.length}</strong>
-        </div>
-        <div>
-          <span>Diferencia</span>
-          <strong>${num(totalDiferencia)}</strong>
-        </div>
-        <div>
-          <span>Solicitado</span>
-          <strong>${num(totalSolicitado)}</strong>
-        </div>
-        <div>
-          <span>Surtido</span>
-          <strong>${num(totalSurtido)}</strong>
-        </div>
-        <div>
-          <span>Surtió</span>
-          <strong>${t.quien_surte || "Pendiente"}</strong>
-        </div>
-        <div>
-          <span>Lleva</span>
-          <strong>${t.quien_lleva || "Pendiente"}</strong>
-        </div>
+  if (!transferencias.length) {
+    lista.innerHTML = `
+      <div class="estado">
+        No hay transferencias para mostrar.
       </div>
     `;
-
-    card.onclick = () => verDetalle(index);
-    lista.appendChild(card);
-  });
+  }
 }
 
-
-function verDetalle(index){
-  const t = transferencias[index];
-
-  const detalle = Array.isArray(t.detalle)
-    ? t.detalle
-    : Array.isArray(t.items)
-      ? t.items
-      : [];
+function crearCard(t){
+  const detalle = obtenerDetalle(t);
 
   const totalSolicitado = detalle.reduce((a,x) => {
     return a + Number(x.cantidad_solicitada ?? x.cantidad ?? 0);
@@ -554,7 +583,89 @@ function verDetalle(index){
   }, 0);
 
   const totalDiferencia = detalle.reduce((a,x) => {
-    if (t.tipoVista === "PENDIENTE") return a + Number(x.cantidad ?? x.cantidad_solicitada ?? 0);
+    if (t.tipoVista === "PENDIENTE") {
+      return a + Number(x.cantidad ?? x.cantidad_solicitada ?? 0);
+    }
+    return a + Number(x.diferencia ?? 0);
+  }, 0);
+
+  const index = transferencias.indexOf(t);
+
+  const card = document.createElement("article");
+  card.className = "card-transfer";
+
+  const claseBadge = t.tipoVista === "PENDIENTE" ? "badge pendiente" : "badge";
+
+  card.innerHTML = `
+    <div class="card-top">
+      <div>
+        <div class="folio">${obtenerSucursalTitulo(t)}</div>
+        <div>${fechaBonita(t.fecha_guardado_server) || fechaBonita(t.fecha_guardado) || fechaBonita(t.fecha)}</div>
+      </div>
+      <div class="${claseBadge}">${t.estatus || "SIN ESTATUS"}</div>
+    </div>
+
+    <div class="meta">
+      <div>
+        <span>Solicitud</span>
+        <strong>${t.folio_solicitud || t.solicitud_id || t.folio || ""}</strong>
+      </div>
+      <div>
+        <span>Origen</span>
+        <strong>${t.almacen_origen || t.origen || ""}</strong>
+      </div>
+      <div>
+        <span>Renglones</span>
+        <strong>${detalle.length}</strong>
+      </div>
+      <div>
+        <span>Diferencia</span>
+        <strong>${num(totalDiferencia)}</strong>
+      </div>
+      <div>
+        <span>Solicitado</span>
+        <strong>${num(totalSolicitado)}</strong>
+      </div>
+      <div>
+        <span>Surtido</span>
+        <strong>${num(totalSurtido)}</strong>
+      </div>
+      <div>
+        <span>Surtió</span>
+        <strong>${t.quien_surte || "Pendiente"}</strong>
+      </div>
+      <div>
+        <span>Lleva</span>
+        <strong>${t.quien_lleva || "Pendiente"}</strong>
+      </div>
+    </div>
+  `;
+
+  card.onclick = () => verDetalle(index);
+  lista.appendChild(card);
+}
+
+function verDetalle(index, moverScroll = true){
+  const t = transferencias[index];
+  if (!t) return;
+
+  transferenciaActual = t;
+
+  const detalle = obtenerDetalle(t);
+
+  const totalSolicitado = detalle.reduce((a,x) => {
+    return a + Number(x.cantidad_solicitada ?? x.cantidad ?? 0);
+  }, 0);
+
+  const totalSurtido = detalle.reduce((a,x) => {
+    if (t.tipoVista === "PENDIENTE") return a;
+    return a + Number(x.cantidad_surtida ?? 0);
+  }, 0);
+
+  const totalDiferencia = detalle.reduce((a,x) => {
+    if (t.tipoVista === "PENDIENTE") {
+      return a + Number(x.cantidad ?? x.cantidad_solicitada ?? 0);
+    }
     return a + Number(x.diferencia ?? 0);
   }, 0);
 
@@ -569,16 +680,17 @@ function verDetalle(index){
 
   vistaListado.classList.add("oculto");
   vistaDetalle.classList.remove("oculto");
-  setEstado("Visualizando transferencia seleccionada.", "ok");
+  setEstado("Visualizando transferencia seleccionada. Se actualizará sola si cambia.", "ok");
 
   const claseBadge = t.tipoVista === "PENDIENTE" ? "badge pendiente" : "badge";
 
   vistaDetalle.innerHTML = `
     <button class="btn-regresar" id="btnRegresar">← Regresar al listado</button>
+    <button class="btn-imprimir" id="btnImprimir">Imprimir</button>
 
     <div class="detalle-head">
       <div>
-        <h2>${t.folio_surtido || t.folio || t.id}</h2>
+        <h2>${obtenerSucursalTitulo(t)}</h2>
         <p>${fechaBonita(t.fecha_guardado_server) || fechaBonita(t.fecha_guardado) || fechaBonita(t.fecha)}</p>
       </div>
       <div class="${claseBadge}">${t.estatus || "SIN ESTATUS"}</div>
@@ -652,7 +764,7 @@ function verDetalle(index){
               <tr class="${diferencia !== 0 ? "fila-alerta" : ""}">
                 <td>${x.renglon || i + 1}</td>
                 <td><strong>${x.codigo || ""}</strong></td>
-                <td>${x.nombre || ""}</td>
+                <td>${x.nombre || x.producto || x.concepto || ""}</td>
                 <td>${num(solicitado)}</td>
                 <td>${num(surtido)}</td>
                 <td>${num(diferencia)}</td>
@@ -667,18 +779,26 @@ function verDetalle(index){
   `;
 
   document.getElementById("btnRegresar").onclick = regresarListado;
-  window.scrollTo({ top:0, behavior:"smooth" });
-}
+  document.getElementById("btnImprimir").onclick = imprimirTransferencia;
 
+  if (moverScroll) {
+    window.scrollTo({ top:0, behavior:"smooth" });
+  }
+}
 
 function regresarListado(){
+  transferenciaActual = null;
   vistaDetalle.classList.add("oculto");
   vistaListado.classList.remove("oculto");
-  setEstado(`Transferencias cargadas: ${transferencias.length}`, "ok");
+  setEstado(`Auto refresco activo. Transferencias visibles: ${transferencias.length}`, "ok");
   window.scrollTo({ top:0, behavior:"smooth" });
 }
 
-cargarTransferencias();
+function imprimirTransferencia(){
+  window.print();
+}
+
+iniciarAutoRefresco();
 </script>
 
 </body>

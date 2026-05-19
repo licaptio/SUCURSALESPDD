@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor Transferencias | PROVSOFT</title>
+
+<style>
+:root{
+  --azul:#00416A;
+  --azul2:#0c6cbd;
+  --naranja:#f97316;
+  --verde:#16a34a;
+  --rojo:#dc2626;
+  --bg:#eef3f8;
+  --card:#fff;
+  --line:#dbe2ea;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --shadow:0 10px 25px rgba(0,0,0,.12);
+  --radius:18px;
+}
+
+*{box-sizing:border-box;font-family:Arial,sans-serif;}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:linear-gradient(135deg,var(--azul),var(--azul2));
+  color:white;
+  padding:14px 18px;
+  border-bottom:4px solid var(--naranja);
+}
+
+.topbar h1{
+  margin:0;
+  font-size:22px;
+}
+
+.topbar .sub{
+  font-size:13px;
+  opacity:.9;
+  margin-top:4px;
+}
+
+.wrap{
+  padding:16px;
+  max-width:1300px;
+  margin:auto;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-bottom:16px;
+}
+
+.stat{
+  background:white;
+  border-radius:16px;
+  padding:14px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--line);
+}
+
+.stat label{
+  display:block;
+  font-size:11px;
+  color:var(--muted);
+  font-weight:bold;
+  text-transform:uppercase;
+}
+
+.stat strong{
+  display:block;
+  margin-top:6px;
+  font-size:26px;
+  color:var(--azul);
+}
+
+.section{
+  margin-bottom:22px;
+}
+
+.section-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin:10px 0;
+}
+
+.section-title h2{
+  margin:0;
+  color:var(--azul);
+  font-size:20px;
+}
+
+.badge{
+  display:inline-block;
+  padding:6px 11px;
+  border-radius:999px;
+  font-weight:900;
+  font-size:12px;
+}
+
+.badge.pending{background:#ffedd5;color:#9a3412;}
+.badge.done{background:#dcfce7;color:#166534;}
+.badge.gray{background:#e5e7eb;color:#374151;}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  gap:12px;
+}
+
+.card{
+  background:white;
+  border-radius:18px;
+  padding:14px;
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  cursor:pointer;
+  transition:.15s ease;
+}
+
+.card:hover{
+  transform:translateY(-2px);
+  border-color:var(--naranja);
+}
+
+.card-head{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:flex-start;
+}
+
+.folio{
+  font-size:17px;
+  font-weight:900;
+  color:var(--azul);
+}
+
+.meta{
+  margin-top:8px;
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.45;
+}
+
+.resume{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:12px;
+}
+
+.resume div{
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:9px;
+}
+
+.resume label{
+  display:block;
+  font-size:10px;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:bold;
+}
+
+.resume strong{
+  display:block;
+  margin-top:4px;
+  font-size:17px;
+}
+
+.empty{
+  background:white;
+  padding:18px;
+  border-radius:16px;
+  color:var(--muted);
+  border:1px dashed var(--line);
+}
+
+.view{
+  display:none;
+}
+
+.view.active{
+  display:block;
+}
+
+.detail-card{
+  background:white;
+  border-radius:20px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--line);
+  padding:16px;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+
+button{
+  border:none;
+  border-radius:12px;
+  padding:11px 14px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.btn-primary{background:var(--azul);color:white;}
+.btn-orange{background:var(--naranja);color:white;}
+.btn-secondary{background:#e5e7eb;color:#111827;}
+
+.info-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.info-box{
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+}
+
+.info-box label{
+  display:block;
+  font-size:10px;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:bold;
+}
+
+.info-box strong{
+  display:block;
+  margin-top:5px;
+  color:var(--azul);
+}
+
+.table-wrap{
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:14px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:800px;
+}
+
+th,td{
+  padding:9px;
+  border-bottom:1px solid #e5e7eb;
+  font-size:13px;
+  text-align:left;
+}
+
+th{
+  background:var(--azul);
+  color:white;
+}
+
+@media(max-width:800px){
+  .stats,.info-grid{
+    grid-template-columns:1fr;
+  }
+
+  .cards{
+    grid-template-columns:1fr;
+  }
+}
+
+@media print{
+  body{
+    background:white;
+  }
+
+  .topbar,
+  .actions,
+  #viewListado,
+  .no-print{
+    display:none!important;
+  }
+
+  #viewDetalle{
+    display:block!important;
+  }
+
+  .detail-card{
+    box-shadow:none;
+    border:none;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <h1>Monitor de Transferencias Bodega</h1>
+  <div class="sub">Pendientes y surtidas en tiempo real · PROVSOFT</div>
+</div>
+
+<div class="wrap">
+
+  <section id="viewListado" class="view active">
+
+    <div class="stats">
+      <div class="stat">
+        <label>Pendientes</label>
+        <strong id="statPendientes">0</strong>
+      </div>
+      <div class="stat">
+        <label>Surtidas</label>
+        <strong id="statSurtidas">0</strong>
+      </div>
+      <div class="stat">
+        <label>Total visible</label>
+        <strong id="statTotal">0</strong>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <h2>No surtidas / pendientes</h2>
+        <span class="badge pending" id="badgePendientes">0 pendientes</span>
+      </div>
+      <div id="cardsPendientes" class="cards"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <h2>Surtidas</h2>
+        <span class="badge done" id="badgeSurtidas">0 surtidas</span>
+      </div>
+      <div id="cardsSurtidas" class="cards"></div>
+    </div>
+
+  </section>
+
+  <section id="viewDetalle" class="view">
+    <div class="detail-card">
+
+      <div class="actions no-print">
+        <button class="btn-secondary" id="btnVolver">← Volver al listado</button>
+        <button class="btn-orange" id="btnImprimir">Imprimir / Reimprimir</button>
+      </div>
+
+      <h2 id="detalleTitulo" style="margin-top:0;color:var(--azul);">
+        Transferencia
+      </h2>
+
+      <div class="info-grid">
+        <div class="info-box">
+          <label>Folio</label>
+          <strong id="detFolio">-</strong>
+        </div>
+        <div class="info-box">
+          <label>Estatus</label>
+          <strong id="detEstatus">-</strong>
+        </div>
+        <div class="info-box">
+          <label>Sucursal</label>
+          <strong id="detSucursal">-</strong>
+        </div>
+        <div class="info-box">
+          <label>Fecha</label>
+          <strong id="detFecha">-</strong>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Solicitado</th>
+              <th>Surtido</th>
+              <th>Diferencia</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyDetalle"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<script type="module">
+import { firebaseConfig } from './config.js';
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+  query,
+  limit
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const RUTAS_TRANSFERENCIAS = [
+  {
+    clave: 'ALLENDE 1',
+    path: ['TIENDAS', 'ALLENDE 1', 'transferencias1']
+  },
+  {
+    clave: 'CENTRAL',
+    path: ['TIENDAS', 'CENTRAL', 'SOLTRAN']
+  }
+];
+
+const MAX_VISIBLES = 20;
+
+let transferencias = [];
+let detalleActual = null;
+let unsubscribers = [];
+
+const $ = id => document.getElementById(id);
+
+function fechaMs(value){
+  if (!value) return 0;
+
+  if (value?.toDate) {
+    return value.toDate().getTime();
+  }
+
+  const t = new Date(value).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
+function fechaMx(value){
+  const ms = fechaMs(value);
+  if (!ms) return '-';
+
+  return new Date(ms).toLocaleString('es-MX');
+}
+
+function texto(value){
+  return String(value ?? '').trim();
+}
+
+function escapeHtml(value){
+  return texto(value)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+
+function obtenerFecha(data){
+  return (
+    data.fecha_surtido ||
+    data.fecha_guardado ||
+    data.fechaSolicitud ||
+    data.fecha ||
+    data.creado_en ||
+    data.createdAt ||
+    ''
+  );
+}
+
+function obtenerItems(data){
+  if (Array.isArray(data.detalle)) return data.detalle;
+  if (Array.isArray(data.carrito)) return data.carrito;
+  if (Array.isArray(data.items)) return data.items;
+  return [];
+}
+
+function normalizarDoc(docSnap, origen){
+  const data = docSnap.data() || {};
+  const items = obtenerItems(data);
+
+  const estatus = texto(data.estatus || data.estado || 'PENDIENTE').toUpperCase();
+  const fecha = obtenerFecha(data);
+
+  const totalPiezas = items.reduce((acc, item) => {
+    return acc + Number(
+      item.cantidad_surtida ??
+      item.cantidad_solicitada ??
+      item.cantidad ??
+      0
+    );
+  }, 0);
+
+  return {
+    id: docSnap.id,
+    origen: origen.clave,
+    path: origen.path,
+    folio:
+      data.folio_surtido ||
+      data.folio ||
+      data.folio_solicitud ||
+      docSnap.id,
+    estatus,
+    sucursal:
+      data.sucursal_destino ||
+      data.sucursal ||
+      data.destino ||
+      origen.clave,
+    fecha,
+    fechaMs: fechaMs(fecha),
+    totalPartidas: items.length,
+    totalPiezas,
+    items,
+    raw: data
+  };
+}
+
+function esSurtida(t){
+  return texto(t.estatus).toUpperCase() === 'SURTIDO';
+}
+
+function ordenarMasReciente(lista){
+  return [...lista].sort((a,b) => b.fechaMs - a.fechaMs);
+}
+
+function prepararListas(){
+  const pendientes = ordenarMasReciente(
+    transferencias.filter(t => !esSurtida(t))
+  ).slice(0, MAX_VISIBLES);
+
+  const surtidas = ordenarMasReciente(
+    transferencias.filter(t => esSurtida(t))
+  ).slice(0, MAX_VISIBLES);
+
+  return { pendientes, surtidas };
+}
+
+function badgeEstatus(t){
+  return esSurtida(t)
+    ? '<span class="badge done">SURTIDA</span>'
+    : '<span class="badge pending">PENDIENTE</span>';
+}
+
+function renderCard(t){
+  return `
+    <div class="card" data-key="${escapeHtml(t.origen)}|${escapeHtml(t.id)}">
+      <div class="card-head">
+        <div class="folio">${escapeHtml(t.folio)}</div>
+        ${badgeEstatus(t)}
+      </div>
+
+      <div class="meta">
+        <strong>Ruta:</strong> ${escapeHtml(t.origen)}<br>
+        <strong>Sucursal:</strong> ${escapeHtml(t.sucursal)}<br>
+        <strong>Fecha:</strong> ${escapeHtml(fechaMx(t.fecha))}
+      </div>
+
+      <div class="resume">
+        <div>
+          <label>Partidas</label>
+          <strong>${Number(t.totalPartidas || 0)}</strong>
+        </div>
+        <div>
+          <label>Piezas</label>
+          <strong>${Number(t.totalPiezas || 0)}</strong>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderListado(){
+  const { pendientes, surtidas } = prepararListas();
+
+  $('statPendientes').textContent = pendientes.length;
+  $('statSurtidas').textContent = surtidas.length;
+  $('statTotal').textContent = pendientes.length + surtidas.length;
+
+  $('badgePendientes').textContent = `${pendientes.length} pendientes`;
+  $('badgeSurtidas').textContent = `${surtidas.length} surtidas`;
+
+  $('cardsPendientes').innerHTML = pendientes.length
+    ? pendientes.map(renderCard).join('')
+    : '<div class="empty">No hay transferencias pendientes.</div>';
+
+  $('cardsSurtidas').innerHTML = surtidas.length
+    ? surtidas.map(renderCard).join('')
+    : '<div class="empty">No hay transferencias surtidas.</div>';
+
+  document.querySelectorAll('.card[data-key]').forEach(card => {
+    card.onclick = () => {
+      const key = card.dataset.key;
+      const [origen, id] = key.split('|');
+
+      const t = transferencias.find(x => x.origen === origen && x.id === id);
+
+      if (t) abrirDetalle(t);
+    };
+  });
+}
+
+function abrirDetalle(t){
+  detalleActual = t;
+
+  $('detalleTitulo').textContent = `Transferencia ${t.folio}`;
+  $('detFolio').textContent = t.folio;
+  $('detEstatus').textContent = t.estatus || 'PENDIENTE';
+  $('detSucursal').textContent = t.sucursal || '-';
+  $('detFecha').textContent = fechaMx(t.fecha);
+
+  renderDetalle(t);
+
+  $('viewListado').classList.remove('active');
+  $('viewDetalle').classList.add('active');
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderDetalle(t){
+  const items = t.items || [];
+
+  if (!items.length) {
+    $('tbodyDetalle').innerHTML = `
+      <tr>
+        <td colspan="6">Esta transferencia no tiene partidas.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  $('tbodyDetalle').innerHTML = items.map((item, idx) => {
+    const solicitado = Number(
+      item.cantidad_solicitada ??
+      item.cantidad ??
+      0
+    );
+
+    const surtido = Number(
+      item.cantidad_surtida ??
+      item.surtido ??
+      0
+    );
+
+    const diferencia = surtido - solicitado;
+
+    return `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${escapeHtml(item.codigo || item.codigoBarra || '')}</td>
+        <td><strong>${escapeHtml(item.nombre || item.concepto || '')}</strong></td>
+        <td>${solicitado}</td>
+        <td>${surtido}</td>
+        <td>${diferencia}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function volverListado(){
+  $('viewDetalle').classList.remove('active');
+  $('viewListado').classList.add('active');
+  detalleActual = null;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function iniciarTiempoReal(){
+  limpiarListeners();
+
+  RUTAS_TRANSFERENCIAS.forEach(origen => {
+    const ref = collection(db, ...origen.path);
+
+    const q = query(ref, limit(100));
+
+    const unsub = onSnapshot(q, snap => {
+      transferencias = transferencias.filter(t => t.origen !== origen.clave);
+
+      snap.forEach(docSnap => {
+        transferencias.push(normalizarDoc(docSnap, origen));
+      });
+
+      renderListado();
+
+      if (detalleActual) {
+        const actualizado = transferencias.find(t =>
+          t.origen === detalleActual.origen &&
+          t.id === detalleActual.id
+        );
+
+        if (actualizado) {
+          abrirDetalle(actualizado);
+        }
+      }
+    }, error => {
+      console.error('Error escuchando ruta:', origen.clave, error);
+    });
+
+    unsubscribers.push(unsub);
+  });
+}
+
+function limpiarListeners(){
+  unsubscribers.forEach(unsub => {
+    try { unsub(); } catch(e){}
+  });
+
+  unsubscribers = [];
+}
+
+$('btnVolver').onclick = volverListado;
+
+$('btnImprimir').onclick = () => {
+  window.print();
+};
+
+window.addEventListener('beforeunload', limpiarListeners);
+
+iniciarTiempoReal();
+</script>
+
+</body>
+</html>

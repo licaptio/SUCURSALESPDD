@@ -297,9 +297,10 @@ import {
   collection,
   getDocs,
   query,
-  orderBy
+  orderBy,
+  limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+  
 const SUCURSAL = "ALLENDE 1";
 const COLECCION_SURTIDOS = "SURTIDOTRANS";
 const COLECCION_SOLICITUDES = "transferencias1";
@@ -343,15 +344,41 @@ function fechaBonita(t){
   return "";
 }
 
+function fechaMs(t){
+  if (!t) return 0;
+  if (t?.toDate) return t.toDate().getTime();
+  const d = new Date(t);
+  return isNaN(d) ? 0 : d.getTime();
+}
+
+function fechaOrden(t){
+  return fechaMs(
+    t.fecha_guardado_server ||
+    t.fecha_guardado ||
+    t.fecha ||
+    t.creado_en ||
+    0
+  );
+}
+
 async function cargarTransferencias(){
-  setEstado("Cargando solicitudes y surtidos...", "");
+  setEstado("Cargando últimas 15 transferencias...", "");
 
   try{
-const refSolicitudes = collection(db, "TIENDAS", SUCURSAL, COLECCION_SOLICITUDES);
-const refSurtidos = collection(db, "TIENDAS", SUCURSAL, COLECCION_SURTIDOS);
+    const refSolicitudes = collection(db, "TIENDAS", SUCURSAL, COLECCION_SOLICITUDES);
+    const refSurtidos = collection(db, "TIENDAS", SUCURSAL, COLECCION_SURTIDOS);
 
-    const qSolicitudes = query(refSolicitudes, orderBy("fecha", "desc"));
-    const qSurtidos = query(refSurtidos, orderBy("fecha_guardado_server", "desc"));
+    const qSolicitudes = query(
+      refSolicitudes,
+      orderBy("fecha", "desc"),
+      limit(15)
+    );
+
+    const qSurtidos = query(
+      refSurtidos,
+      orderBy("fecha_guardado_server", "desc"),
+      limit(30)
+    );
 
     const [snapSolicitudes, snapSurtidos] = await Promise.all([
       getDocs(qSolicitudes),
@@ -405,21 +432,28 @@ const refSurtidos = collection(db, "TIENDAS", SUCURSAL, COLECCION_SURTIDOS);
     });
 
     transferencias.sort((a,b) => {
-      const fa = new Date(a.fecha_guardado || a.fecha || 0).getTime();
-      const fb = new Date(b.fecha_guardado || b.fecha || 0).getTime();
-      return fb - fa;
+      const prioridadA = a.tipoVista === "PENDIENTE" ? 0 : 1;
+      const prioridadB = b.tipoVista === "PENDIENTE" ? 0 : 1;
+
+      if (prioridadA !== prioridadB) {
+        return prioridadA - prioridadB;
+      }
+
+      return fechaOrden(b) - fechaOrden(a);
     });
+
+    transferencias = transferencias.slice(0, 15);
 
     renderListado();
 
-    setEstado(`Registros cargados: ${transferencias.length}`, "ok");
+    setEstado(`Últimas transferencias cargadas: ${transferencias.length}`, "ok");
 
   }catch(err){
     console.error(err);
     setEstado("Error al cargar registros: " + err.message, "error");
   }
 }
-
+  
 
 function renderListado(){
   lista.innerHTML = "";

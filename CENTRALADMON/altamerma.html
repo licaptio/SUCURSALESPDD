@@ -86,11 +86,7 @@ button.peligro{background:#b42318;color:white}
   <h2>Datos del solicitante / CENTRAL</h2>
 
   <label>Tienda que reporta la merma</label>
-  <select id="tienda">
-    <option value="ALLENDE 1">ALLENDE 1</option>
-    <option value="ALLENDE 2">ALLENDE 2</option>
-    <option value="MONTEMORELOS">MONTEMORELOS</option>
-  </select>
+  <input id="tienda" value="CENTRAL" readonly>
 
   <label>Nombre del encargado que solicita</label>
   <input id="encargado" placeholder="Nombre del encargado">
@@ -225,8 +221,8 @@ let pasoActual = 1;
 let firmaTieneContenido = false;
 let reiniciandoFormulario = false;
 
-const LS_BORRADOR = "provsoft_merma_borrador";
-const DB_NAME = "provsoft_catalogo_mermas";
+const LS_BORRADOR = "provsoft_merma_central_borrador";
+const DB_NAME = "provsoft_catalogo_mermas_central";
 const STORE_PRODUCTOS = "productos";
 
 window.addEventListener("load", iniciarApp);
@@ -235,6 +231,9 @@ async function iniciarApp(){
   actualizarConexion();
   window.addEventListener("online", actualizarConexion);
   window.addEventListener("offline", actualizarConexion);
+
+  const tiendaInput = document.getElementById("tienda");
+  if(tiendaInput) tiendaInput.value = APP_CONFIG.TIENDA_CENTRAL;
 
   document.getElementById("folio").value = generarFolio();
 
@@ -265,8 +264,7 @@ function actualizarConexion(){
 }
 
 function generarFolio(){
-  const tienda = document.getElementById("tienda")?.value || "TIENDA";
-  const limpio = tienda.replace(/\s+/g,"").substring(0,8).toUpperCase();
+  const limpio = APP_CONFIG.TIENDA_CENTRAL;
   const f = new Date();
   const y = f.getFullYear();
   const m = String(f.getMonth()+1).padStart(2,"0");
@@ -276,16 +274,6 @@ function generarFolio(){
   const rnd = Math.floor(Math.random()*9000+1000);
   return `MER-${limpio}-${y}${m}${d}-${h}${min}-${rnd}`;
 }
-
-document.addEventListener("change", e=>{
-  if(e.target.id === "tienda"){
-    const folioActual = document.getElementById("folio").value;
-    if(!folioActual || folioActual.includes("TIENDA")){
-      document.getElementById("folio").value = generarFolio();
-    }
-    guardarBorradorSilencioso();
-  }
-});
 
 function irPaso(n){
   if(!validarPaso(pasoActual,n)) return;
@@ -604,7 +592,7 @@ function tablaProductosHTML(){
 function pintarRevision(){
   const t = calcularTotales();
   document.getElementById("resumenRevision").innerHTML = `
-    <p><strong>Tienda reporta:</strong> ${document.getElementById("tienda").value}</p>
+    <p><strong>Tienda reporta:</strong> ${APP_CONFIG.TIENDA_CENTRAL}</p>
     <p><strong>Encargado:</strong> ${document.getElementById("encargado").value}</p>
     <p><strong>Folio:</strong> ${document.getElementById("folio").value}</p>
     ${tablaProductosHTML()}
@@ -785,7 +773,7 @@ function recuperarBorrador(){
     return;
   }
 
-  document.getElementById("tienda").value = b.tienda || "ALLENDE 1";
+  document.getElementById("tienda").value = APP_CONFIG.TIENDA_CENTRAL;
   document.getElementById("encargado").value = b.encargado || "";
   document.getElementById("folio").value = b.folio || generarFolio();
   document.getElementById("notas").value = b.notas || "";
@@ -839,7 +827,7 @@ function reiniciarFormularioDespuesDeGrabar(){
 
 function construirDocumentoMerma(){
   const t = calcularTotales();
-  const tienda = document.getElementById("tienda").value;
+  const tienda = APP_CONFIG.TIENDA_CENTRAL;
   const encargado = document.getElementById("encargado").value.trim();
   const folio = document.getElementById("folio").value;
   const notas = document.getElementById("notas").value.trim();
@@ -940,7 +928,7 @@ async function generarSolicitud(){
     return;
   }
 
-  const tienda = document.getElementById("tienda").value;
+  const tienda = APP_CONFIG.TIENDA_CENTRAL;
   const folio = document.getElementById("folio").value;
   const documentoMerma = construirDocumentoMerma();
 

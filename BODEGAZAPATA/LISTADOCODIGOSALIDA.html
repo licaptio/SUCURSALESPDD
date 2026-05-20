@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta SKU Salidas Zapata - PROVSOFT</title>
+  <link rel="icon" href="data:,">
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+
+  <style>
+    :root {
+      --rojo: #991b1b;
+      --rojo2: #7f1d1d;
+      --borde: #fecaca;
+      --bg: #f3f6fb;
+      --texto: #1f2937;
+      --azul: #1d4ed8;
+      --verde: #166534;
+      --gris: #e5e7eb;
+      --gris2: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--texto);
+    }
+
+    .app-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: linear-gradient(135deg, #ffffff 0%, #fff5f5 45%, #f8fafc 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .app-loader.hide {
+      display: none;
+    }
+
+    .loader-box {
+      width: min(520px, 96vw);
+      background: #fff;
+      border: 1px solid var(--borde);
+      border-radius: 16px;
+      box-shadow: 0 14px 38px rgba(127, 29, 29, .14);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .loader-logo {
+      height: 58px;
+      max-width: 150px;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+
+    .loader-title {
+      margin: 0;
+      color: var(--rojo2);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .loader-subtitle {
+      margin: 6px 0 14px;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .progress-shell {
+      width: 100%;
+      height: 11px;
+      background: #fee2e2;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #fecaca;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #b91c1c, #ef4444);
+      border-radius: 999px;
+      transition: width .25s ease;
+    }
+
+    .loader-msg {
+      margin: 10px 0 0;
+      color: #4b5563;
+      font-size: 11px;
+    }
+
+    .topbar {
+      background: #fff;
+      padding: 10px 14px;
+      border-bottom: 3px solid var(--rojo);
+      box-shadow: 0 3px 12px rgba(0,0,0,.07);
+    }
+
+    .topbar-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--rojo);
+      text-transform: uppercase;
+    }
+
+    .brand-subtitle {
+      margin: 3px 0 0;
+      color: #1f2937;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .brand-note {
+      margin: 2px 0 0;
+      color: #6b7280;
+      font-size: 10px;
+    }
+
+    .logo-empresa {
+      height: 42px;
+      max-width: 100px;
+      object-fit: contain;
+    }
+
+    .panel {
+      padding: 12px 14px;
+      background: #fff7f7;
+      border-bottom: 1px solid var(--borde);
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 160px 160px minmax(260px, 1fr) 120px 140px 140px;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+    }
+
+    .field label {
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--rojo2);
+      text-transform: uppercase;
+    }
+
+    .field input {
+      height: 34px;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 7px 9px;
+      font-size: 12px;
+      background: #fff;
+      outline: none;
+    }
+
+    .field input:focus {
+      border-color: var(--rojo);
+      box-shadow: 0 0 0 2px rgba(153, 27, 27, .10);
+    }
+
+    .btn {
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+      color: #fff;
+      background: var(--rojo);
+    }
+
+    .btn:hover {
+      background: var(--rojo2);
+    }
+
+    .btn.secondary {
+      background: #0f766e;
+    }
+
+    .btn.secondary:hover {
+      background: #115e59;
+    }
+
+    .btn.dark {
+      background: #1f2937;
+    }
+
+    .btn.dark:hover {
+      background: #111827;
+    }
+
+    .suggestions {
+      position: absolute;
+      top: 58px;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      max-height: 280px;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid #fca5a5;
+      border-radius: 10px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.12);
+      display: none;
+    }
+
+    .suggestions.show {
+      display: block;
+    }
+
+    .suggestion-item {
+      padding: 8px 10px;
+      border-bottom: 1px solid #fee2e2;
+      cursor: pointer;
+    }
+
+    .suggestion-item:hover {
+      background: #fff5f5;
+    }
+
+    .suggestion-code {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--rojo);
+    }
+
+    .suggestion-desc {
+      font-size: 11px;
+      color: #374151;
+      margin-top: 2px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 8px;
+      padding: 10px 14px;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .summary-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: #f8fafc;
+    }
+
+    .summary-label {
+      font-size: 10px;
+      font-weight: 900;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+
+    .summary-value {
+      margin-top: 4px;
+      font-size: 17px;
+      font-weight: 900;
+      color: #111827;
+    }
+
+    .table-wrap {
+      padding: 12px 14px;
+      overflow: auto;
+      height: calc(100vh - 180px);
+      background: #fff;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 950px;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      border: 1px solid #dbe4f0;
+      padding: 7px 8px;
+      white-space: nowrap;
+      vertical-align: middle;
+      text-align: right;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: #fee2e2;
+      color: #7f1d1d;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    th.left,
+    td.left {
+      text-align: left;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    tbody tr:hover {
+      background: #fff7ed;
+    }
+
+    .qty {
+      font-weight: 900;
+      color: var(--azul);
+    }
+
+    .empty {
+      padding: 30px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 13px;
+      font-weight: 800;
+      background: #fff;
+    }
+
+    .print-header {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .topbar-flex {
+        align-items: flex-start;
+      }
+
+      .brand-title {
+        font-size: 14px;
+      }
+
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .table-wrap {
+        height: calc(100vh - 330px);
+      }
+
+      table {
+        font-size: 11px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .topbar,
+      .panel,
+      .app-loader,
+      .suggestions {
+        display: none !important;
+      }
+
+      .print-header {
+        display: block;
+        padding: 0 0 10px;
+        margin-bottom: 8px;
+        border-bottom: 2px solid #111;
+      }
+
+      .print-title {
+        font-size: 16px;
+        font-weight: 900;
+        margin: 0;
+        text-transform: uppercase;
+      }
+
+      .print-subtitle {
+        font-size: 11px;
+        font-weight: 700;
+        margin: 4px 0 0;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        padding: 0 0 8px;
+        border-bottom: 1px solid #999;
+      }
+
+      .summary-card {
+        border: 1px solid #999;
+        background: #fff;
+        padding: 6px;
+      }
+
+      .summary-label {
+        font-size: 9px;
+        color: #111;
+      }
+
+      .summary-value {
+        font-size: 13px;
+        color: #111;
+      }
+
+      .table-wrap {
+        height: auto;
+        overflow: visible;
+        padding: 0;
+      }
+
+      table {
+        width: 100%;
+        min-width: 0;
+        font-size: 9px;
+      }
+
+      th,
+      td {
+        border: 1px solid #777;
+        padding: 4px;
+      }
+
+      th {
+        position: static;
+        background: #eee !important;
+        color: #111;
+      }
+
+      tbody tr:nth-child(even) {
+        background: #fff;
+      }
+
+      @page {
+        size: letter landscape;
+        margin: 10mm;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loader" class="app-loader">
+    <div class="loader-box">
+      <img src="logo.jfif" class="loader-logo" alt="Logo empresa" />
+      <h2 class="loader-title">PROVEEDORA DE DULCES Y DESECHABLES</h2>
+      <div class="loader-subtitle">ALMACÉN ZAPATA · CONSULTA SKU EN SALIDAS</div>
+      <div class="progress-shell">
+        <div id="loaderBar" class="progress-bar"></div>
+      </div>
+      <p id="loaderMsg" class="loader-msg">Preparando consulta...</p>
+    </div>
+  </div>
+
+  <div class="topbar">
+    <div class="topbar-flex">
+      <div>
+        <h1 class="brand-title">PROVEEDORA DE DULCES Y DESECHABLES · ALMACÉN ZAPATA</h1>
+        <p class="brand-subtitle">CONSULTA DE SALIDAS POR SKU</p>
+        <p class="brand-note">Datos desde 01 de enero de 2026 · /almacenes/almacen_zapata/salidas1.0/</p>
+      </div>
+      <img src="logo.jfif" class="logo-empresa" alt="Logo empresa" />
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="filters">
+      <div class="field">
+        <label>Fecha inicial</label>
+        <input type="date" id="fechaInicial" min="2026-01-01" value="2026-01-01">
+      </div>
+
+      <div class="field">
+        <label>Fecha final</label>
+        <input type="date" id="fechaFinal" min="2026-01-01">
+      </div>
+
+      <div class="field">
+        <label>Código o concepto</label>
+        <input type="text" id="busqueda" placeholder="Ej. 3217, AGUA, REYMA, VASO..." autocomplete="off">
+        <div id="sugerencias" class="suggestions"></div>
+      </div>
+
+      <button id="btnBuscar" class="btn">Buscar</button>
+      <button id="btnImprimir" class="btn dark">Imprimir</button>
+      <button id="btnExportar" class="btn secondary">Exportar Excel</button>
+    </div>
+  </div>
+
+  <div id="printHeader" class="print-header">
+    <p class="print-title">Consulta de salidas por SKU · Almacén Zapata</p>
+    <p id="printSubtitle" class="print-subtitle"></p>
+  </div>
+
+  <div class="summary">
+    <div class="summary-card">
+      <div class="summary-label">Artículo seleccionado</div>
+      <div id="resArticulo" class="summary-value">-</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Movimientos</div>
+      <div id="resMovimientos" class="summary-value">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Cantidad total</div>
+      <div id="resCantidad" class="summary-value">0.00</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Rango</div>
+      <div id="resRango" class="summary-value">-</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tablaResultados">
+      <thead>
+        <tr>
+          <th class="left">Fecha</th>
+          <th class="left">Hora</th>
+          <th class="left">Folio</th>
+          <th class="left">Código</th>
+          <th class="left">Concepto</th>
+          <th>Cantidad salida</th>
+          <th class="left">Destino</th>
+          <th class="left">Entrega</th>
+          <th class="left">Recibe</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyResultados">
+        <tr>
+          <td colspan="9" class="empty">Cargando salidas...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSy...",
+      authDomain: "inventariopv-643f1.firebaseapp.com",
+      projectId: "inventariopv-643f1",
+      storageBucket: "inventariopv-643f1.firebasestorage.app",
+      messagingSenderId: "96242533231",
+      appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const db = firebase.firestore();
+
+    const FECHA_MINIMA = "2026-01-01";
+
+    let registrosSalidas = [];
+    let articulosIndex = [];
+    let articuloSeleccionado = null;
+    let resultadosActuales = [];
+
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(msg, progress = null) {
+      const loaderMsg = $("loaderMsg");
+      if (loaderMsg) loaderMsg.textContent = msg;
+
+      if (progress !== null) {
+        const loaderBar = $("loaderBar");
+        if (loaderBar) loaderBar.style.width = Math.max(0, Math.min(100, progress)) + "%";
+      }
+
+      console.log(msg);
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function fmtNum(n) {
+      return Number(n || 0).toLocaleString("es-MX", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function normalizarFecha(valor) {
+      if (!valor) return "";
+
+      if (typeof valor === "string") {
+        const v = valor.trim();
+
+        const m1 = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m1) {
+          const [, dd, mm, yyyy] = m1;
+          return `${yyyy}-${mm}-${dd}`;
+        }
+
+        const m2 = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m2) {
+          return `${m2[1]}-${m2[2]}-${m2[3]}`;
+        }
+
+        return v;
+      }
+
+      if (valor && typeof valor.toDate === "function") {
+        return valor.toDate().toISOString().slice(0, 10);
+      }
+
+      if (valor && typeof valor.seconds === "number") {
+        return new Date(valor.seconds * 1000).toISOString().slice(0, 10);
+      }
+
+      return String(valor).trim();
+    }
+
+    function obtenerHora(valor) {
+      try {
+        if (!valor) return "";
+
+        if (valor && typeof valor.toDate === "function") {
+          return valor.toDate().toLocaleTimeString("es-MX", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+          });
+        }
+
+        if (valor && typeof valor.seconds === "number") {
+          return new Date(valor.seconds * 1000).toLocaleTimeString("es-MX", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+          });
+        }
+
+        if (typeof valor === "string") {
+          const d = new Date(valor);
+          if (!Number.isNaN(d.getTime())) {
+            return d.toLocaleTimeString("es-MX", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit"
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("No se pudo obtener hora:", err);
+      }
+
+      return "";
+    }
+
+    function normalizarCodigo(valor) {
+      const s = String(valor ?? "").trim();
+      if (!s) return "";
+
+      const soloDigitos = s.replace(/\D/g, "");
+      if (!soloDigitos) return s.toLowerCase();
+
+      return soloDigitos.replace(/^0+/, "") || "0";
+    }
+
+    function normalizarTexto(valor) {
+      return String(valor ?? "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function tokens(valor) {
+      return normalizarTexto(valor)
+        .split(/\s+/)
+        .map(x => x.trim())
+        .filter(Boolean);
+    }
+
+    function hoyISO() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function validarRango() {
+      let fechaInicial = $("fechaInicial").value || FECHA_MINIMA;
+      let fechaFinal = $("fechaFinal").value || hoyISO();
+
+      if (fechaInicial < FECHA_MINIMA) fechaInicial = FECHA_MINIMA;
+      if (fechaFinal < FECHA_MINIMA) fechaFinal = FECHA_MINIMA;
+
+      if (fechaFinal < fechaInicial) {
+        const temp = fechaInicial;
+        fechaInicial = fechaFinal;
+        fechaFinal = temp;
+      }
+
+      $("fechaInicial").value = fechaInicial;
+      $("fechaFinal").value = fechaFinal;
+
+      return { fechaInicial, fechaFinal };
+    }
+
+    async function cargarSalidasBase() {
+      setStatus("Consultando salidas desde 2026-01-01...", 20);
+
+      const SALIDAS_REF = db
+        .collection("almacenes")
+        .doc("almacen_zapata")
+        .collection("salidas1.0");
+
+      const snap = await SALIDAS_REF
+        .where("fecha", ">=", FECHA_MINIMA)
+        .orderBy("fecha", "asc")
+        .get();
+
+      const registros = [];
+
+      snap.forEach(doc => {
+        const data = doc.data() || {};
+
+        const fecha = normalizarFecha(data.fecha || data.timestamp || "");
+        const hora = obtenerHora(data.timestamp || data.fecha || "");
+
+        if (!fecha || fecha < FECHA_MINIMA) return;
+
+        const articulos = Array.isArray(data.articulos)
+          ? data.articulos
+          : [];
+
+        articulos.forEach((item, index) => {
+          const codigo = String(item.codigo || item.Codigo || "").trim();
+
+          const concepto = String(
+            item.nombre ||
+            item.descripcion ||
+            item.Descripcion ||
+            ""
+          ).trim();
+
+          const cantidad = Number(
+            item.cantidad ??
+            item.Cantidad ??
+            0
+          );
+
+          if (!codigo || !concepto || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+          registros.push({
+            id: `${doc.id}_${codigo}_${index}`,
+            docId: doc.id,
+            fecha,
+            hora,
+            folio: String(data.folio || doc.id || "").trim(),
+            codigo,
+            codigoKey: normalizarCodigo(codigo),
+            concepto,
+            conceptoKey: normalizarTexto(concepto),
+            cantidad,
+            destino: String(data.destino || "").trim(),
+            entrega: String(data.entrega || "").trim(),
+            recibe: String(data.recibe || "").trim()
+          });
+        });
+      });
+
+      registros.sort((a, b) => {
+        if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+        if (a.hora !== b.hora) return a.hora.localeCompare(b.hora);
+        return a.codigo.localeCompare(b.codigo, "es");
+      });
+
+      registrosSalidas = registros;
+      construirIndiceArticulos();
+
+      setStatus(`Salidas cargadas: ${snap.size} documentos | ${registros.length} partidas`, 100);
+
+      setTimeout(() => {
+        $("loader").classList.add("hide");
+      }, 350);
+    }
+
+    function construirIndiceArticulos() {
+      const mapa = new Map();
+
+      for (const r of registrosSalidas) {
+        if (!mapa.has(r.codigoKey)) {
+          mapa.set(r.codigoKey, {
+            codigo: r.codigo,
+            codigoKey: r.codigoKey,
+            concepto: r.concepto,
+            conceptoKey: r.conceptoKey,
+            totalMovimientos: 0,
+            totalCantidad: 0
+          });
+        }
+
+        const item = mapa.get(r.codigoKey);
+        item.totalMovimientos += 1;
+        item.totalCantidad += Number(r.cantidad || 0);
+      }
+
+      articulosIndex = Array.from(mapa.values()).sort((a, b) => {
+        return a.concepto.localeCompare(b.concepto, "es", { sensitivity: "base" });
+      });
+    }
+
+    function buscarSugerencias(texto) {
+      const q = String(texto || "").trim();
+      if (!q) return [];
+
+      const qCode = normalizarCodigo(q);
+      const qText = normalizarTexto(q);
+      const qTokens = tokens(qText);
+
+      return articulosIndex
+        .map(item => {
+          let score = 0;
+
+          if (item.codigoKey === qCode) score += 100;
+          if (item.codigoKey.includes(qCode) && qCode) score += 50;
+          if (normalizarTexto(item.codigo).includes(qText)) score += 35;
+          if (item.conceptoKey.includes(qText)) score += 30;
+
+          for (const tk of qTokens) {
+            if (item.conceptoKey.includes(tk)) score += 12;
+            if (normalizarTexto(item.codigo).includes(tk)) score += 12;
+          }
+
+          return { ...item, score };
+        })
+        .filter(x => x.score > 0)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return a.concepto.localeCompare(b.concepto, "es", { sensitivity: "base" });
+        })
+        .slice(0, 30);
+    }
+
+    function pintarSugerencias(items) {
+      const box = $("sugerencias");
+
+      if (!items.length) {
+        box.innerHTML = "";
+        box.classList.remove("show");
+        return;
+      }
+
+      box.innerHTML = items.map(item => `
+        <div class="suggestion-item" data-codigo-key="${escapeHtml(item.codigoKey)}">
+          <div class="suggestion-code">${escapeHtml(item.codigo)}</div>
+          <div class="suggestion-desc">${escapeHtml(item.concepto)} · Movs: ${item.totalMovimientos} · Cant: ${fmtNum(item.totalCantidad)}</div>
+        </div>
+      `).join("");
+
+      box.classList.add("show");
+
+      box.querySelectorAll(".suggestion-item").forEach(el => {
+        el.addEventListener("click", () => {
+          const codigoKey = el.getAttribute("data-codigo-key");
+          const item = articulosIndex.find(x => x.codigoKey === codigoKey);
+          if (!item) return;
+
+          articuloSeleccionado = item;
+          $("busqueda").value = `${item.codigo} - ${item.concepto}`;
+          box.classList.remove("show");
+          ejecutarBusqueda();
+        });
+      });
+    }
+
+    function obtenerArticuloDesdeBusqueda() {
+      if (articuloSeleccionado) return articuloSeleccionado;
+
+      const texto = $("busqueda").value || "";
+      const sugerencias = buscarSugerencias(texto);
+
+      if (sugerencias.length === 1) return sugerencias[0];
+
+      const exactoCodigo = articulosIndex.find(x => x.codigoKey === normalizarCodigo(texto));
+      if (exactoCodigo) return exactoCodigo;
+
+      return sugerencias[0] || null;
+    }
+
+    function ejecutarBusqueda() {
+      const { fechaInicial, fechaFinal } = validarRango();
+      const articulo = obtenerArticuloDesdeBusqueda();
+
+      if (!articulo) {
+        resultadosActuales = [];
+        pintarResultados([]);
+        pintarResumen(null, [], fechaInicial, fechaFinal);
+        return;
+      }
+
+      articuloSeleccionado = articulo;
+
+      const resultados = registrosSalidas
+        .filter(r => r.codigoKey === articulo.codigoKey)
+        .filter(r => r.fecha >= fechaInicial && r.fecha <= fechaFinal)
+        .sort((a, b) => {
+          if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+          if (a.hora !== b.hora) return a.hora.localeCompare(b.hora);
+          return a.folio.localeCompare(b.folio, "es");
+        });
+
+      resultadosActuales = resultados;
+      pintarResultados(resultados);
+      pintarResumen(articulo, resultados, fechaInicial, fechaFinal);
+    }
+
+    function pintarResultados(rows) {
+      const tbody = $("tbodyResultados");
+
+      if (!rows.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="empty">Sin salidas para el artículo y rango seleccionado.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td class="left">${escapeHtml(r.fecha)}</td>
+          <td class="left">${escapeHtml(r.hora || "")}</td>
+          <td class="left">${escapeHtml(r.folio || "")}</td>
+          <td class="left">${escapeHtml(r.codigo)}</td>
+          <td class="left">${escapeHtml(r.concepto)}</td>
+          <td class="qty">${fmtNum(r.cantidad)}</td>
+          <td class="left">${escapeHtml(r.destino || "")}</td>
+          <td class="left">${escapeHtml(r.entrega || "")}</td>
+          <td class="left">${escapeHtml(r.recibe || "")}</td>
+        </tr>
+      `).join("");
+    }
+
+    function pintarResumen(articulo, rows, fechaInicial, fechaFinal) {
+      const totalCantidad = rows.reduce((acc, r) => acc + Number(r.cantidad || 0), 0);
+
+      $("resArticulo").textContent = articulo
+        ? `${articulo.codigo} · ${articulo.concepto}`
+        : "-";
+
+      $("resMovimientos").textContent = rows.length.toLocaleString("es-MX");
+      $("resCantidad").textContent = fmtNum(totalCantidad);
+      $("resRango").textContent = `${fechaInicial} a ${fechaFinal}`;
+
+      $("printSubtitle").textContent = articulo
+        ? `Artículo: ${articulo.codigo} · ${articulo.concepto} | Rango: ${fechaInicial} a ${fechaFinal} | Movimientos: ${rows.length} | Total: ${fmtNum(totalCantidad)}`
+        : `Rango: ${fechaInicial} a ${fechaFinal}`;
+    }
+
+    function exportarExcel() {
+      if (!resultadosActuales.length) {
+        alert("No hay resultados para exportar.");
+        return;
+      }
+
+      if (typeof XLSX === "undefined") {
+        alert("No se pudo cargar la librería de Excel.");
+        return;
+      }
+
+      const header = [
+        "fecha",
+        "hora",
+        "folio",
+        "codigo",
+        "concepto",
+        "cantidad_salida",
+        "destino",
+        "entrega",
+        "recibe"
+      ];
+
+      const data = [
+        header,
+        ...resultadosActuales.map(r => [
+          r.fecha,
+          r.hora || "",
+          r.folio || "",
+          r.codigo,
+          r.concepto,
+          Number(r.cantidad || 0),
+          r.destino || "",
+          r.entrega || "",
+          r.recibe || ""
+        ])
+      ];
+
+      const total = resultadosActuales.reduce((acc, r) => acc + Number(r.cantidad || 0), 0);
+      data.push(["TOTAL", "", "", "", "", total, "", "", ""]);
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+
+      ws["!cols"] = [
+        { wch: 14 },
+        { wch: 12 },
+        { wch: 18 },
+        { wch: 18 },
+        { wch: 44 },
+        { wch: 16 },
+        { wch: 28 },
+        { wch: 28 },
+        { wch: 28 }
+      ];
+
+      const range = XLSX.utils.decode_range(ws["!ref"]);
+
+      for (let R = range.s.r; R <= range.e.r; R++) {
+        for (let C = range.s.c; C <= range.e.c; C++) {
+          const addr = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[addr]) continue;
+
+          const isHeader = R === 0;
+          const isTotal = R === data.length - 1;
+
+          ws[addr].s = {
+            font: { bold: isHeader || isTotal, color: { rgb: "0F172A" } },
+            fill: {
+              patternType: "solid",
+              fgColor: { rgb: isHeader ? "FEE2E2" : isTotal ? "F8FAFC" : "FFFFFF" }
+            },
+            border: {
+              top: { style: "thin", color: { rgb: "CBD5E1" } },
+              bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+              left: { style: "thin", color: { rgb: "CBD5E1" } },
+              right: { style: "thin", color: { rgb: "CBD5E1" } }
+            },
+            alignment: {
+              vertical: "center",
+              horizontal: C === 5 ? "right" : "left"
+            }
+          };
+
+          if (C === 5 && R > 0) {
+            ws[addr].z = "#,##0.00";
+          }
+        }
+      }
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Consulta_SKU");
+
+      const codigo = articuloSeleccionado ? articuloSeleccionado.codigo : "sku";
+      const { fechaInicial, fechaFinal } = validarRango();
+
+      XLSX.writeFile(
+        wb,
+        `salidas_zapata_${codigo}_${fechaInicial}_a_${fechaFinal}.xlsx`
+      );
+    }
+
+    function imprimirResultados() {
+      if (!resultadosActuales.length) {
+        alert("No hay resultados para imprimir.");
+        return;
+      }
+
+      window.print();
+    }
+
+    function limpiarSeleccionSiCambiaTexto() {
+      articuloSeleccionado = null;
+    }
+
+    document.addEventListener("click", (e) => {
+      const box = $("sugerencias");
+      const input = $("busqueda");
+      if (!box.contains(e.target) && e.target !== input) {
+        box.classList.remove("show");
+      }
+    });
+
+    $("busqueda").addEventListener("input", () => {
+      limpiarSeleccionSiCambiaTexto();
+      const items = buscarSugerencias($("busqueda").value);
+      pintarSugerencias(items);
+    });
+
+    $("busqueda").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        $("sugerencias").classList.remove("show");
+        ejecutarBusqueda();
+      }
+    });
+
+    $("btnBuscar").addEventListener("click", ejecutarBusqueda);
+    $("btnExportar").addEventListener("click", exportarExcel);
+    $("btnImprimir").addEventListener("click", imprimirResultados);
+
+    $("fechaInicial").addEventListener("change", () => {
+      if (articuloSeleccionado) ejecutarBusqueda();
+    });
+
+    $("fechaFinal").addEventListener("change", () => {
+      if (articuloSeleccionado) ejecutarBusqueda();
+    });
+
+    window.addEventListener("load", async () => {
+      $("fechaInicial").value = FECHA_MINIMA;
+      $("fechaFinal").value = hoyISO();
+
+      try {
+        await cargarSalidasBase();
+        pintarResultados([]);
+        pintarResumen(null, [], FECHA_MINIMA, hoyISO());
+      } catch (err) {
+        console.error(err);
+        setStatus("Error al cargar salidas: " + err.message, 100);
+      }
+    });
+  </script>
+</body>
+</html>

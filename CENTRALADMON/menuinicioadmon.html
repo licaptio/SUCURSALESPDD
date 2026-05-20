@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Menú Central | PROVSOFT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  box-sizing:border-box;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+  margin:0;
+  background:#f3f5f8;
+  color:#1f2937;
+}
+
+header{
+  background:linear-gradient(135deg,#00416A,#0c6cbd);
+  color:white;
+  padding:22px;
+  text-align:center;
+}
+
+header h1{
+  margin:0;
+  font-size:26px;
+}
+
+header p{
+  margin:6px 0 0;
+  opacity:.9;
+}
+
+main{
+  max-width:1100px;
+  margin:auto;
+  padding:18px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+}
+
+.card{
+  background:white;
+  border:1px solid #d8dee8;
+  border-radius:16px;
+  padding:18px;
+  text-decoration:none;
+  color:#1f2937;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+  transition:.15s;
+}
+
+.card:hover{
+  transform:scale(1.02);
+  border-color:#0c6cbd;
+}
+
+.card h2{
+  margin:0 0 8px;
+  font-size:18px;
+  color:#00416A;
+}
+
+.card p{
+  margin:0;
+  font-size:14px;
+  color:#667085;
+}
+
+.badge{
+  display:inline-block;
+  margin-top:12px;
+  background:#00416A;
+  color:white;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:bold;
+}
+
+footer{
+  text-align:center;
+  color:#667085;
+  font-size:12px;
+  padding:20px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>PROVSOFT CENTRAL</h1>
+  <p>Menú de acceso rápido</p>
+</header>
+
+<main>
+  <div class="grid">
+
+    <a class="card" href="CARGARPTVTScentral.html">
+      <h2>Cargar PTVTS</h2>
+      <p>Carga de información para Central.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="CATALOGOCENTRA.html">
+      <h2>Catálogo Central</h2>
+      <p>Consulta o administración de catálogo.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="CONTESTAINV.html">
+      <h2>Contestar Inventario</h2>
+      <p>Respuesta o revisión de inventario.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="CORRECCIONES-CENTRAL.html">
+      <h2>Correcciones</h2>
+      <p>Correcciones operativas de Central.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="INVLISTACENTRAL.html">
+      <h2>Lista Inventario</h2>
+      <p>Listado de inventario Central.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="SOLICITUDDECONTEOCENTRAL.html">
+      <h2>Solicitud de Conteo</h2>
+      <p>Crear solicitudes de conteo.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="altamerma.html">
+      <h2>Alta Merma</h2>
+      <p>Registro de mermas.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="devoluciomerca.html">
+      <h2>Devolución Mercancía</h2>
+      <p>Registro de devoluciones.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="listatransfer.html">
+      <h2>Transferencias</h2>
+      <p>Listado y visor de transferencias.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="menuadmon.html">
+      <h2>Menú Administración</h2>
+      <p>Accesos administrativos.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+    <a class="card" href="solicitudmerca.html">
+      <h2>Solicitud Mercancía</h2>
+      <p>Crear solicitud de mercancía.</p>
+      <span class="badge">Abrir</span>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  PROVSOFT CENTRAL · Sistema interno
+</footer>
+
+</body>
+</html>

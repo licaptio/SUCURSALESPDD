@@ -463,7 +463,7 @@ function buscarProductos(texto){
     div.className = "resultado";
     div.innerHTML = `
       <strong>${p.descripcion}</strong><br>
-      <small>Código: ${p.codigo} | Costo: $${p.costo.toFixed(2)} | Precio: $${p.precio.toFixed(2)}</small>
+      <small>Código: ${p.codigo} | Precio público: $${p.precio.toFixed(2)}</small>
     `;
     div.onclick = ()=>abrirModalProducto(p);
     cont.appendChild(div);
@@ -508,8 +508,10 @@ function agregarProducto(){
     cantidad,
     costoUnitario: productoSeleccionado.costo,
     precioVenta: productoSeleccionado.precio,
+    valorUnitario: productoSeleccionado.precio,
     subtotalCosto: cantidad * productoSeleccionado.costo,
     subtotalVenta: cantidad * productoSeleccionado.precio,
+    subtotalPublico: cantidad * productoSeleccionado.precio,
     motivo,
     comentario
   };
@@ -543,7 +545,7 @@ function pintarCarrito(){
       <small>Cantidad: ${item.cantidad} ${item.unidad}</small>
       <small>Motivo: ${item.motivo}</small>
       <small>Comentario: ${item.comentario || "Sin comentario"}</small>
-      <small>Costo estimado: $${item.subtotalCosto.toFixed(2)}</small>
+      <small>Precio público: $${item.subtotalVenta.toFixed(2)}</small>
       <div class="acciones">
         <button onclick="eliminarItem(${index})">Eliminar</button>
       </div>
@@ -577,7 +579,7 @@ function tablaProductosHTML(){
           <th>Producto</th>
           <th>Cant.</th>
           <th>Motivo</th>
-          <th>Costo</th>
+          <th>Precio público</th>
         </tr>
       </thead>
       <tbody>
@@ -590,7 +592,7 @@ function tablaProductosHTML(){
         <td>${i.descripcion}</td>
         <td>${i.cantidad}</td>
         <td>${i.motivo}</td>
-        <td>$${i.subtotalCosto.toFixed(2)}</td>
+        <td>$${i.subtotalVenta.toFixed(2)}</td>
       </tr>
     `;
   });
@@ -607,7 +609,7 @@ function pintarRevision(){
     <p><strong>Folio:</strong> ${document.getElementById("folio").value}</p>
     ${tablaProductosHTML()}
     <p><strong>Total piezas:</strong> ${t.piezas}</p>
-    <p><strong>Total costo estimado:</strong> $${t.costo.toFixed(2)}</p>
+    <p><strong>Total precio público:</strong> $${t.venta.toFixed(2)}</p>
   `;
 }
 
@@ -618,7 +620,7 @@ function pintarFinal(){
     <p><strong>Folio:</strong> ${document.getElementById("folio").value}</p>
     <p><strong>Total artículos:</strong> ${carrito.length}</p>
     <p><strong>Total piezas:</strong> ${t.piezas}</p>
-    <p><strong>Total costo estimado:</strong> $${t.costo.toFixed(2)}</p>
+    <p><strong>Total precio público:</strong> $${t.venta.toFixed(2)}</p>
   `;
 }
 
@@ -871,9 +873,12 @@ function construirDocumentoMerma(){
       unidad:i.unidad,
       cantidad:i.cantidad,
       costoUnitario:i.costoUnitario,
+      costoUnitario:i.costoUnitario,
       precioVenta:i.precioVenta,
+      valorUnitario:i.precioVenta,
       subtotalCosto:i.subtotalCosto,
       subtotalVenta:i.subtotalVenta,
+      subtotalPublico:i.subtotalVenta,
       motivo:i.motivo,
       comentario:i.comentario || ""
     })),
@@ -882,7 +887,8 @@ function construirDocumentoMerma(){
       renglones:carrito.length,
       piezas:t.piezas,
       costoEstimado:t.costo,
-      ventaEstimado:t.venta
+      ventaEstimado:t.venta,
+      precioPublicoEstimado:t.venta
     },
 
     notasAdicionales:notas,
@@ -1011,7 +1017,7 @@ function generarPDF(documentoMerma){
   pdf.text("Descripción",42,y);
   pdf.text("Cant.",130,y);
   pdf.text("Motivo",145,y);
-  pdf.text("Costo",178,y);
+  pdf.text("P. Público",178,y);
 
   y += 4;
   pdf.line(15,y,200,y);
@@ -1029,7 +1035,7 @@ function generarPDF(documentoMerma){
     pdf.text(String(p.descripcion).substring(0,45),42,y);
     pdf.text(String(p.cantidad),130,y);
     pdf.text(String(p.motivo).substring(0,18),145,y);
-    pdf.text(`$${Number(p.subtotalCosto || 0).toFixed(2)}`,178,y);
+    pdf.text(`$${Number(p.subtotalVenta || p.subtotalPublico || 0).toFixed(2)}`,178,y);
 
     y += 6;
 
@@ -1047,7 +1053,7 @@ function generarPDF(documentoMerma){
   pdf.text(`Total piezas: ${documentoMerma.totales.piezas}`,15,y);
 
   y += 6;
-  pdf.text(`Costo estimado total: $${Number(documentoMerma.totales.costoEstimado || 0).toFixed(2)}`,15,y);
+  pdf.text(`Precio público total: $${Number(documentoMerma.totales.ventaEstimado || documentoMerma.totales.precioPublicoEstimado || 0).toFixed(2)}`,15,y);
 
   y += 10;
 

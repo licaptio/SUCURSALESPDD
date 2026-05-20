@@ -439,7 +439,7 @@ html,body{
     </div>
   </div>
 
-  <div class="sucursal-header">CENTRAL</div>
+  <div class="sucursal-header">ALLENDE 2</div>
 
   <div class="folio-header">
     <small>FOLIO SOLICITUD</small>
@@ -523,8 +523,8 @@ let catalogo = [];
 let seleccionado = null;
 let indexSeleccion = -1;
 
-const SUCURSAL = "SUCURSAL CENTRAL";
-const RUTA_TRANSFERENCIAS = "transferencias1";
+const SUCURSAL = "ALLENDE 2";
+const RUTA_TRANSFERENCIAS = "SOLTRAN";
 
 const DB_NAME = "PROVSOFT_PDD_MOVIL";
 const DB_VERSION = 2;
@@ -1182,7 +1182,7 @@ btnFinalizarBarra.onclick = async () => {
     btn.disabled = true;
 
 await setDoc(
-  doc(db, "TIENDAS", "CENTRAL", "SOLTRAN", fol),      {
+  doc(db, "TIENDAS", "ALLENDE 2", "SOLTRAN", fol),      {
         folio: fol,
         items: carrito,
         capturista: usuario,

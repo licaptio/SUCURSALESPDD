@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Visor de Transferencias Montemorelos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --azul:#00416A;
+  --azul2:#0c6cbd;
+  --verde:#118c4f;
+  --rojo:#c62828;
+  --gris:#667085;
+  --bg:#f3f5f8;
+  --card:#ffffff;
+  --borde:#d8dee8;
+  --texto:#1f2937;
+}
+
+*{
+  box-sizing:border-box;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+  margin:0;
+  background:#f3f5f8;
+  color:var(--texto);
+}
+
+.app{
+  max-width:1200px;
+  margin:auto;
+  padding:16px;
+}
+
+.header{
+  background:linear-gradient(135deg, #00416A, #0c6cbd);
+  color:white;
+  padding:18px;
+  border-radius:18px;
+  box-shadow:0 8px 22px rgba(0,0,0,.18);
+  margin-bottom:16px;
+}
+
+.header h1{
+  margin:0;
+  font-size:24px;
+}
+
+.header p{
+  margin:6px 0 0;
+  opacity:.9;
+}
+
+.estado{
+  background:white;
+  border:1px solid var(--borde);
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px;
+  font-weight:700;
+  color:var(--gris);
+}
+
+.estado.ok{ color:var(--verde); }
+.estado.error{ color:var(--rojo); }
+
+.lista{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.seccion-titulo{
+  margin:18px 0 8px;
+  color:var(--azul);
+  font-size:18px;
+  font-weight:900;
+}
+
+.card-transfer{
+  background:white;
+  border:1px solid var(--borde);
+  border-radius:16px;
+  padding:14px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+  cursor:pointer;
+  transition:.15s;
+}
+
+.card-transfer:hover{
+  transform:scale(1.01);
+  border-color:var(--azul2);
+}
+
+.card-top{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.folio{
+  font-size:18px;
+  font-weight:900;
+  color:var(--azul);
+}
+
+.badge{
+  padding:7px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  color:white;
+  background:var(--verde);
+  white-space:nowrap;
+}
+
+.badge.pendiente{
+  background:#f59e0b;
+}
+
+.meta{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-top:12px;
+}
+
+.meta div{
+  background:#f8fafc;
+  border-radius:10px;
+  padding:9px;
+}
+
+.meta span{
+  display:block;
+  font-size:11px;
+  color:var(--gris);
+  font-weight:700;
+  text-transform:uppercase;
+}
+
+.meta strong{
+  display:block;
+  margin-top:4px;
+  font-size:14px;
+}
+
+.detalle{
+  background:white;
+  border-radius:18px;
+  padding:16px;
+  box-shadow:0 8px 22px rgba(0,0,0,.12);
+}
+
+.btn-regresar,
+.btn-imprimir{
+  border:0;
+  color:white;
+  border-radius:12px;
+  padding:12px 16px;
+  font-weight:800;
+  cursor:pointer;
+  margin-bottom:14px;
+}
+
+.btn-regresar{ background:#344054; }
+.btn-imprimir{
+  background:#00416A;
+  margin-left:8px;
+}
+
+.detalle-head{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  border-bottom:2px solid #edf0f5;
+  padding-bottom:12px;
+}
+
+.detalle-head h2{
+  margin:0;
+  color:var(--azul);
+}
+
+.resumen{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+  margin:16px 0;
+}
+
+.resumen div{
+  background:#f8fafc;
+  border:1px solid #e5e9f0;
+  border-radius:14px;
+  padding:12px;
+}
+
+.resumen span{
+  display:block;
+  color:var(--gris);
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+}
+
+.resumen strong{
+  display:block;
+  margin-top:5px;
+  font-size:20px;
+}
+
+.tabla-wrap{
+  overflow:auto;
+  border:1px solid #e5e9f0;
+  border-radius:14px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:850px;
+}
+
+th{
+  background:var(--azul);
+  color:white;
+  padding:11px;
+  text-align:left;
+  font-size:13px;
+}
+
+td{
+  padding:10px 11px;
+  border-bottom:1px solid #edf0f5;
+  font-size:14px;
+}
+
+.fila-alerta td{
+  background:#fff4f2;
+  color:#9f1f18;
+  font-weight:700;
+}
+
+.oculto{
+  display:none;
+}
+
+@media(max-width:800px){
+  .meta,
+  .resumen{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .header h1{
+    font-size:20px;
+  }
+}
+
+@media(max-width:520px){
+  .app{
+    padding:10px;
+  }
+
+  .meta,
+  .resumen{
+    grid-template-columns:1fr;
+  }
+
+  .card-top{
+    flex-direction:column;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<main class="app">
+
+  <section class="header">
+    <h1>Visor de Transferencias MONTEMORELOS </h1>
+    <p>Solicitudes y surtidos de MONTEMORELOS. Solo consulta, sin edición.</p>
+  </section>
+
+  <div id="estado" class="estado">Conectando visor en tiempo real...</div>
+
+  <section id="vistaListado">
+    <div id="lista" class="lista"></div>
+  </section>
+
+  <section id="vistaDetalle" class="detalle oculto"></section>
+
+</main>
+
+<script type="module">
+import { db } from "./config.js";
+
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const SUCURSAL = "MONTEMORELOS";
+const COLECCION_SOLICITUDES = "SOLTRAN";
+const COLECCION_SURTIDOS = "SURTIDOTRANS";
+
+const estado = document.getElementById("estado");
+const vistaListado = document.getElementById("vistaListado");
+const vistaDetalle = document.getElementById("vistaDetalle");
+const lista = document.getElementById("lista");
+
+let transferencias = [];
+let cacheSolicitudes = [];
+let cacheSurtidos = [];
+let transferenciaActual = null;
+
+function setEstado(txt, tipo = ""){
+  estado.textContent = txt;
+  estado.className = "estado " + tipo;
+}
+
+function money(n){
+  return Number(n || 0).toLocaleString("es-MX", {
+    style:"currency",
+    currency:"MXN"
+  });
+}
+
+function num(n){
+  return Number(n || 0).toLocaleString("es-MX");
+}
+
+function fechaBonita(t){
+  if (!t) return "";
+
+  if (typeof t === "string") {
+    const d = new Date(t);
+    if (!isNaN(d)) return d.toLocaleString("es-MX");
+    return t;
+  }
+
+  if (t?.toDate) {
+    return t.toDate().toLocaleString("es-MX");
+  }
+
+  return "";
+}
+
+function fechaMs(t){
+  if (!t) return 0;
+  if (t?.toDate) return t.toDate().getTime();
+  const d = new Date(t);
+  return isNaN(d) ? 0 : d.getTime();
+}
+
+function fechaOrden(t){
+  return fechaMs(
+    t.fecha_guardado_server ||
+    t.fecha_guardado ||
+    t.fecha ||
+    t.creado_en ||
+    t.timestamp ||
+    0
+  );
+}
+
+function obtenerDetalle(t){
+  if (Array.isArray(t.detalle)) return t.detalle;
+  if (Array.isArray(t.items)) return t.items;
+  if (Array.isArray(t.productos)) return t.productos;
+  if (Array.isArray(t.articulos)) return t.articulos;
+  return [];
+}
+
+function obtenerSucursalTitulo(t){
+  return (
+    t.sucursal_destino ||
+    t.destino ||
+    t.almacen_destino ||
+    t.sucursal ||
+    SUCURSAL
+  );
+}
+
+function obtenerFolio(t){
+  return (
+    t.folio_solicitud ||
+    t.solicitud_id ||
+    t.folio_base ||
+    t.folio ||
+    t.id ||
+    ""
+  );
+}
+
+function iniciarAutoRefresco(){
+  setEstado("Auto refresco activo. Escuchando MONTEMORELOS / SOLTRAN y SURTIDOTRANS...", "");
+
+  const refSolicitudes = collection(db, "TIENDAS", SUCURSAL, COLECCION_SOLICITUDES);
+  const refSurtidos = collection(db, "TIENDAS", SUCURSAL, COLECCION_SURTIDOS);
+
+  const qSolicitudes = query(
+    refSolicitudes,
+    orderBy("fecha", "desc"),
+    limit(20)
+  );
+
+  const qSurtidos = query(
+    refSurtidos,
+    orderBy("fecha_guardado_server", "desc"),
+    limit(60)
+  );
+
+  onSnapshot(qSolicitudes, snap => {
+    cacheSolicitudes = [];
+
+    snap.forEach(docSnap => {
+      cacheSolicitudes.push({
+        tipo: "SOLICITUD",
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    reconstruirTransferencias();
+
+  }, err => {
+    console.error(err);
+    setEstado("Error escuchando solicitudes SOLTRAN: " + err.message, "error");
+  });
+
+  onSnapshot(qSurtidos, snap => {
+    cacheSurtidos = [];
+
+    snap.forEach(docSnap => {
+      cacheSurtidos.push({
+        tipo: "SURTIDO",
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    reconstruirTransferencias();
+
+  }, err => {
+    console.error(err);
+    setEstado("Error escuchando surtidos SURTIDOTRANS: " + err.message, "error");
+  });
+}
+
+function reconstruirTransferencias(){
+  const mapaSurtidosPorSolicitud = new Map();
+
+  cacheSurtidos.forEach(s => {
+    const claves = [
+      s.solicitud_id,
+      s.folio_solicitud,
+      s.folio_base,
+      s.folio,
+      s.id_solicitud
+    ].filter(Boolean);
+
+    claves.forEach(clave => {
+      mapaSurtidosPorSolicitud.set(String(clave), s);
+    });
+  });
+
+  transferencias = [];
+
+  cacheSolicitudes.forEach(solicitud => {
+    const clavesSolicitud = [
+      solicitud.folio,
+      solicitud.id,
+      solicitud.solicitud_id,
+      solicitud.folio_solicitud,
+      solicitud.folio_base
+    ].filter(Boolean);
+
+    let surtidoRelacionado = null;
+
+    for (const clave of clavesSolicitud) {
+      if (mapaSurtidosPorSolicitud.has(String(clave))) {
+        surtidoRelacionado = mapaSurtidosPorSolicitud.get(String(clave));
+        break;
+      }
+    }
+
+    if (surtidoRelacionado) {
+      transferencias.push({
+        ...solicitud,
+        ...surtidoRelacionado,
+        tipoVista: "SURTIDO",
+        folio_base: solicitud.folio || solicitud.id,
+        solicitud_original: solicitud,
+        surtido_original: surtidoRelacionado,
+        estatus: surtidoRelacionado.estatus || surtidoRelacionado.estado || "SURTIDA"
+      });
+    } else {
+      transferencias.push({
+        ...solicitud,
+        tipoVista: "PENDIENTE",
+        estatus: solicitud.estatus || solicitud.estado || "PENDIENTE POR SURTIR",
+        detalle: solicitud.items || solicitud.detalle || solicitud.productos || solicitud.articulos || []
+      });
+    }
+  });
+
+  transferencias.sort((a,b) => {
+    const prioridadA = a.tipoVista === "PENDIENTE" ? 0 : 1;
+    const prioridadB = b.tipoVista === "PENDIENTE" ? 0 : 1;
+
+    if (prioridadA !== prioridadB) {
+      return prioridadA - prioridadB;
+    }
+
+    return fechaOrden(b) - fechaOrden(a);
+  });
+
+  transferencias = transferencias.slice(0, 20);
+
+  renderListado();
+
+  setEstado(`Auto refresco activo. Transferencias visibles: ${transferencias.length}`, "ok");
+
+  if (!vistaDetalle.classList.contains("oculto") && transferenciaActual) {
+    const actualizada = transferencias.find(t => {
+      return (
+        t.id === transferenciaActual.id ||
+        t.folio === transferenciaActual.folio ||
+        t.folio_solicitud === transferenciaActual.folio_solicitud ||
+        t.solicitud_id === transferenciaActual.solicitud_id ||
+        t.folio_base === transferenciaActual.folio_base
+      );
+    });
+
+    if (actualizada) {
+      const index = transferencias.indexOf(actualizada);
+      verDetalle(index, false);
+    }
+  }
+}
+
+function renderListado(){
+  lista.innerHTML = "";
+
+  const pendientes = transferencias.filter(t => t.tipoVista === "PENDIENTE");
+  const surtidas = transferencias.filter(t => t.tipoVista !== "PENDIENTE");
+
+  if (pendientes.length) {
+    const titulo = document.createElement("div");
+    titulo.className = "seccion-titulo";
+    titulo.textContent = "Pendientes por surtir";
+    lista.appendChild(titulo);
+
+    pendientes.forEach(t => crearCard(t));
+  }
+
+  if (surtidas.length) {
+    const titulo = document.createElement("div");
+    titulo.className = "seccion-titulo";
+    titulo.textContent = "Surtidas";
+    lista.appendChild(titulo);
+
+    surtidas.forEach(t => crearCard(t));
+  }
+
+  if (!transferencias.length) {
+    lista.innerHTML = `
+      <div class="estado">
+        No hay transferencias para mostrar.
+      </div>
+    `;
+  }
+}
+
+function crearCard(t){
+  const detalle = obtenerDetalle(t);
+
+  const totalSolicitado = detalle.reduce((a,x) => {
+    return a + Number(x.cantidad_solicitada ?? x.cantidad ?? 0);
+  }, 0);
+
+  const totalSurtido = detalle.reduce((a,x) => {
+    if (t.tipoVista === "PENDIENTE") return a;
+    return a + Number(x.cantidad_surtida ?? x.surtido ?? x.cantidad ?? 0);
+  }, 0);
+
+  const totalDiferencia = detalle.reduce((a,x) => {
+    if (t.tipoVista === "PENDIENTE") {
+      return a + Number(x.cantidad ?? x.cantidad_solicitada ?? 0);
+    }
+    return a + Number(x.diferencia ?? 0);
+  }, 0);
+
+  const index = transferencias.indexOf(t);
+
+  const card = document.createElement("article");
+  card.className = "card-transfer";
+
+  const claseBadge = t.tipoVista === "PENDIENTE" ? "badge pendiente" : "badge";
+
+  card.innerHTML = `
+    <div class="card-top">
+      <div>
+        <div class="folio">${obtenerSucursalTitulo(t)}</div>
+        <div>${fechaBonita(t.fecha_guardado_server) || fechaBonita(t.fecha_guardado) || fechaBonita(t.fecha) || fechaBonita(t.creado_en)}</div>
+      </div>
+      <div class="${claseBadge}">${t.estatus || "SIN ESTATUS"}</div>
+    </div>
+
+    <div class="meta">
+      <div>
+        <span>Solicitud</span>
+        <strong>${obtenerFolio(t)}</strong>
+      </div>
+      <div>
+        <span>Origen</span>
+        <strong>${t.almacen_origen || t.origen || "CENTRAL"}</strong>
+      </div>
+      <div>
+        <span>Renglones</span>
+        <strong>${detalle.length}</strong>
+      </div>
+      <div>
+        <span>Diferencia</span>
+        <strong>${num(totalDiferencia)}</strong>
+      </div>
+      <div>
+        <span>Solicitado</span>
+        <strong>${num(totalSolicitado)}</strong>
+      </div>
+      <div>
+        <span>Surtido</span>
+        <strong>${num(totalSurtido)}</strong>
+      </div>
+      <div>
+        <span>Surtió</span>
+        <strong>${t.quien_surte || "Pendiente"}</strong>
+      </div>
+      <div>
+        <span>Lleva</span>
+        <strong>${t.quien_lleva || "Pendiente"}</strong>
+      </div>
+    </div>
+  `;
+
+  card.onclick = () => verDetalle(index);
+  lista.appendChild(card);
+}
+
+function verDetalle(index, moverScroll = true){
+  const t = transferencias[index];
+  if (!t) return;
+
+  transferenciaActual = t;
+
+  const detalle = obtenerDetalle(t);
+
+  const totalSolicitado = detalle.reduce((a,x) => {
+    return a + Number(x.cantidad_solicitada ?? x.cantidad ?? 0);
+  }, 0);
+
+  const totalSurtido = detalle.reduce((a,x) => {
+    if (t.tipoVista === "PENDIENTE") return a;
+    return a + Number(x.cantidad_surtida ?? x.surtido ?? x.cantidad ?? 0);
+  }, 0);
+
+  const totalDiferencia = detalle.reduce((a,x) => {
+    if (t.tipoVista === "PENDIENTE") {
+      return a + Number(x.cantidad ?? x.cantidad_solicitada ?? 0);
+    }
+    return a + Number(x.diferencia ?? 0);
+  }, 0);
+
+  const totalImporte = detalle.reduce((a,x) => {
+    const cantidad = t.tipoVista === "PENDIENTE"
+      ? Number(x.cantidad ?? x.cantidad_solicitada ?? 0)
+      : Number(x.cantidad_surtida ?? x.surtido ?? x.cantidad ?? 0);
+
+    const precio = Number(x.precioPublico ?? x.precio ?? 0);
+    return a + cantidad * precio;
+  }, 0);
+
+  vistaListado.classList.add("oculto");
+  vistaDetalle.classList.remove("oculto");
+  setEstado("Visualizando transferencia seleccionada. Se actualizará sola si cambia.", "ok");
+
+  const claseBadge = t.tipoVista === "PENDIENTE" ? "badge pendiente" : "badge";
+
+  vistaDetalle.innerHTML = `
+    <button class="btn-regresar" id="btnRegresar">← Regresar al listado</button>
+    <button class="btn-imprimir" id="btnImprimir">Imprimir</button>
+
+    <div class="detalle-head">
+      <div>
+        <h2>${obtenerSucursalTitulo(t)}</h2>
+        <p>${fechaBonita(t.fecha_guardado_server) || fechaBonita(t.fecha_guardado) || fechaBonita(t.fecha) || fechaBonita(t.creado_en)}</p>
+      </div>
+      <div class="${claseBadge}">${t.estatus || "SIN ESTATUS"}</div>
+    </div>
+
+    <div class="meta">
+      <div>
+        <span>Solicitud</span>
+        <strong>${obtenerFolio(t)}</strong>
+      </div>
+      <div>
+        <span>Origen</span>
+        <strong>${t.almacen_origen || t.origen || "CENTRAL"}</strong>
+      </div>
+      <div>
+        <span>Destino</span>
+        <strong>${t.sucursal_destino || t.destino || "CENTRAL"}</strong>
+      </div>
+      <div>
+        <span>Capturó</span>
+        <strong>${t.quien_captura || t.operador_captura || t.capturista || ""}</strong>
+      </div>
+      <div>
+        <span>Surtió</span>
+        <strong>${t.quien_surte || "Pendiente"}</strong>
+      </div>
+      <div>
+        <span>Lleva</span>
+        <strong>${t.quien_lleva || "Pendiente"}</strong>
+      </div>
+    </div>
+
+    <div class="resumen">
+      <div><span>Renglones</span><strong>${detalle.length}</strong></div>
+      <div><span>Solicitado</span><strong>${num(totalSolicitado)}</strong></div>
+      <div><span>Surtido</span><strong>${num(totalSurtido)}</strong></div>
+      <div><span>Diferencia</span><strong>${num(totalDiferencia)}</strong></div>
+      <div><span>Importe</span><strong>${money(totalImporte)}</strong></div>
+    </div>
+
+    <div class="tabla-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Solicitado</th>
+            <th>Surtido</th>
+            <th>Diferencia</th>
+            <th>Precio</th>
+            <th>Importe</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${detalle.map((x, i) => {
+            const solicitado = Number(x.cantidad_solicitada ?? x.cantidad ?? 0);
+
+            const surtido = t.tipoVista === "PENDIENTE"
+              ? 0
+              : Number(x.cantidad_surtida ?? x.surtido ?? x.cantidad ?? 0);
+
+            const diferencia = t.tipoVista === "PENDIENTE"
+              ? solicitado
+              : Number(x.diferencia ?? 0);
+
+            const precio = Number(x.precioPublico ?? x.precio ?? 0);
+            const importe = (t.tipoVista === "PENDIENTE" ? solicitado : surtido) * precio;
+
+            return `
+              <tr class="${diferencia !== 0 ? "fila-alerta" : ""}">
+                <td>${x.renglon || i + 1}</td>
+                <td><strong>${x.codigo || x.codigoBarra || ""}</strong></td>
+                <td>${x.nombre || x.producto || x.concepto || ""}</td>
+                <td>${num(solicitado)}</td>
+                <td>${num(surtido)}</td>
+                <td>${num(diferencia)}</td>
+                <td>${money(precio)}</td>
+                <td>${money(importe)}</td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  document.getElementById("btnRegresar").onclick = regresarListado;
+  document.getElementById("btnImprimir").onclick = imprimirTransferencia;
+
+  if (moverScroll) {
+    window.scrollTo({ top:0, behavior:"smooth" });
+  }
+}
+
+function regresarListado(){
+  transferenciaActual = null;
+  vistaDetalle.classList.add("oculto");
+  vistaListado.classList.remove("oculto");
+  setEstado(`Auto refresco activo. Transferencias visibles: ${transferencias.length}`, "ok");
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+
+function imprimirTransferencia(){
+  window.print();
+}
+
+iniciarAutoRefresco();
+</script>
+
+</body>
+</html>

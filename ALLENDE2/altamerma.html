@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>PROVSOFT | Solicitud de Merma CENTRAL</title>
+<title>PROVSOFT | Solicitud de Merma ALLENDE 2</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -59,15 +59,15 @@ button.peligro{background:#b42318;color:white}
 <div id="loader" class="loader">
   <div class="loader-card">
     <h1>PROVSOFT</h1>
-    <h2>Solicitud de Merma CENTRAL</h2>
+    <h2>Solicitud de Merma ALLENDE 2</h2>
     <p id="loaderTexto">Cargando catálogo e información...</p>
   </div>
 </div>
 
 <header class="topbar">
   <div>
-    <h1>Solicitud de Merma CENTRAL</h1>
-    <p>Comprobante de merma central con devolución a MATRIZ</p>
+    <h1>Solicitud de Merma ALLENDE 2</h1>
+    <p>Comprobante de merma ALLENDE 2</p>
   </div>
   <div class="estado" id="estadoConexion">Verificando...</div>
 </header>
@@ -83,10 +83,10 @@ button.peligro{background:#b42318;color:white}
 </section>
 
 <section class="panel paso activo" id="paso1">
-  <h2>Datos del solicitante / CENTRAL</h2>
+  <h2>Datos del solicitante / ALLENDE 2</h2>
 
   <label>Tienda que reporta la merma</label>
-  <input id="tienda" value="CENTRAL" readonly>
+  <input id="tienda" value="ALLENDE 2" readonly>
 
   <label>Nombre del encargado que solicita</label>
   <input id="encargado" placeholder="Nombre del encargado">
@@ -153,7 +153,7 @@ button.peligro{background:#b42318;color:white}
 
   <div class="alerta">
     Al finalizar se creará un solo documento CENTRAL en:
-    <strong>/TIENDAS/CENTRAL/MERMAS/{folio}</strong><br>
+    <strong>/TIENDAS/ALLENDE 2/MERMA/{folio}</strong><br>
     Destino operativo: MATRIZ. No se crearán notas, movimientos ni salidas de inventario.
   </div>
 
@@ -209,9 +209,9 @@ import {
 const APP_CONFIG = {
   COLECCION_PRODUCTOS: "productos",
   COLECCION_TIENDAS: "TIENDAS",
-  TIENDA_CENTRAL: "CENTRAL",
-  DESTINO_OPERATIVO: "MATRIZ",
-  SUBCOLECCION_MERMAS: "MERMAS"
+  TIENDA_CENTRAL: "ALLENDE 2",
+  DESTINO_OPERATIVO: "ALLENDE 2",
+  SUBCOLECCION_MERMAS: "MERMA"
 };
 
 let catalogo = [];
@@ -221,8 +221,8 @@ let pasoActual = 1;
 let firmaTieneContenido = false;
 let reiniciandoFormulario = false;
 
-const LS_BORRADOR = "provsoft_merma_central_borrador";
-const DB_NAME = "provsoft_catalogo_mermas_central";
+const LS_BORRADOR = "provsoft_merma_allende_2_borrador";
+const DB_NAME = "provsoft_catalogo_mermas_allende_2";
 const STORE_PRODUCTOS = "productos";
 
 window.addEventListener("load", iniciarApp);
@@ -604,8 +604,8 @@ function pintarRevision(){
 function pintarFinal(){
   const t = calcularTotales();
   document.getElementById("resumenFinal").innerHTML = `
-    <p><strong>Documento CENTRAL listo para generar.</strong></p>
-    <p><strong>Ruta:</strong> /TIENDAS/CENTRAL/MERMAS/${document.getElementById("folio").value}</p>
+    <p><strong>Documento ALLENDE 2 listo para generar.</strong></p>
+    <p><strong>Ruta:</strong> /TIENDAS/ALLENDE 2/MERMA/${document.getElementById("folio").value}</p>
     <p><strong>Destino operativo:</strong> MATRIZ</p>
     <p><strong>Folio:</strong> ${document.getElementById("folio").value}</p>
     <p><strong>Total artículos:</strong> ${carrito.length}</p>
@@ -836,14 +836,14 @@ function construirDocumentoMerma(){
     folio,
     tienda,
     tiendaReporta:tienda,
-    centralColeccion:APP_CONFIG.TIENDA_CENTRAL,
+    tiendaColeccion:APP_CONFIG.TIENDA_CENTRAL,
     destinoOperativo:APP_CONFIG.DESTINO_OPERATIVO,
     estado:"SOLICITADA",
     etapa:"PENDIENTE_AUDITORIA",
 
     tipoDocumento:"SOLICITUD_MERMA",
     tipoMovimientoPendiente:"SALIDA_MERMA",
-    origen:"APP_MERMAS_CENTRAL",
+    origen:"APP_MERMAS_ALLENDE_2",
     destino:"MATRIZ",
 
     solicitante:{
@@ -952,7 +952,7 @@ async function generarSolicitud(){
 
     reiniciarFormularioDespuesDeGrabar();
 
-    alert("Solicitud de merma CENTRAL generada correctamente.");
+    alert("Solicitud de merma ALLENDE 2 generada correctamente.");
   }catch(err){
     console.error(err);
     alert("Error al generar la solicitud. El borrador queda guardado localmente.");
@@ -970,12 +970,12 @@ function generarPDF(documentoMerma){
 
   pdf.setFont("helvetica","bold");
   pdf.setFontSize(15);
-  pdf.text("COMPROBANTE DE SOLICITUD DE MERMA CENTRAL",105,y,{align:"center"});
+  pdf.text("COMPROBANTE DE SOLICITUD DE MERMA ALLENDE 2",105,y,{align:"center"});
 
   y += 8;
   pdf.setFontSize(10);
   pdf.setFont("helvetica","normal");
-  pdf.text("Documento de levantamiento de merma CENTRAL - destino MATRIZ",105,y,{align:"center"});
+  pdf.text("Documento de levantamiento de merma ALLENDE 2",105,y,{align:"center"});
 
   y += 12;
 

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>PROVSOFT | Alta de Devolución a Matriz</title>
+<title>PROVSOFT | Alta de Devolución ALLENDE 2</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -60,15 +60,15 @@ button.peligro{background:#075985;color:white}
 <div id="loader" class="loader">
   <div class="loader-card">
     <h1>PROVSOFT</h1>
-    <h2>Alta de Devolución a Matriz</h2>
+    <h2>Alta de Devolución ALLENDE 2</h2>
     <p id="loaderTexto">Cargando catálogo e información...</p>
   </div>
 </div>
 
 <header class="topbar">
   <div>
-    <h1>Alta de Devolución de Mercancía a Matriz</h1>
-    <p>Producto bueno, no caducado, enviado de tienda a matriz</p>
+    <h1>Alta de Devolución de Mercancía ALLENDE 2</h1>
+    <p>Producto bueno, no caducado, enviado de ALLENDE 2 a matriz</p>
   </div>
   <div class="estado" id="estadoConexion">Verificando...</div>
 </header>
@@ -87,7 +87,7 @@ button.peligro{background:#075985;color:white}
   <h2>Datos de la devolución</h2>
   <span class="badge">Destino: MATRIZ</span>
 
-<input id="tienda" value="CENTRAL" readonly>
+<input id="tienda" value="ALLENDE 2" readonly>
   
   <label>Nombre del encargado que solicita</label>
   <input id="encargado" placeholder="Nombre del encargado">
@@ -154,7 +154,7 @@ button.peligro{background:#075985;color:white}
 
   <div class="alerta">
     Al finalizar se creará un solo documento en:
-    <strong>/TIENDAS/CENTRAL/DEVOLUCIONES/{folio}</strong>
+    <strong>/TIENDAS/ALLENDE 2/DEVOLUCION/{folio}</strong>
     No se crearán notas, movimientos ni salidas de inventario.
   </div>
 
@@ -211,7 +211,7 @@ import {
 const APP_CONFIG = {
   COLECCION_PRODUCTOS: "productos",
   COLECCION_TIENDAS: "TIENDAS",
-  SUBCOLECCION_DEVOLUCIONES: "DEVOLUCIONES"
+  SUBCOLECCION_DEVOLUCIONES: "DEVOLUCION"
 };
 
 let catalogo = [];
@@ -221,7 +221,7 @@ let pasoActual = 1;
 let firmaTieneContenido = false;
 let reiniciandoFormulario = false;
 
-const LS_BORRADOR = "provsoft_devolucion_matriz_borrador";
+const LS_BORRADOR = "provsoft_devolucion_allende2_borrador";
 const DB_NAME = "provsoft_catalogo_devoluciones";
 const STORE_PRODUCTOS = "productos";
 
@@ -779,7 +779,7 @@ function recuperarBorrador(){
     return;
   }
 
-  document.getElementById("tienda").value = b.tienda || "ALLENDE 1";
+  document.getElementById("tienda").value = b.tienda || "ALLENDE 2";
   document.getElementById("encargado").value = b.encargado || "";
   document.getElementById("folio").value = b.folio || generarFolio();
   document.getElementById("notas").value = b.notas || "";
@@ -942,7 +942,7 @@ async function generarSolicitud(){
     document.getElementById("loaderTexto").textContent = "Generando devolución a matriz...";
 
 await setDoc(
-  docRef(db, "TIENDAS", "CENTRAL", "DEVOLUCIONES", folio),
+  docRef(db, "TIENDAS", "ALLENDE 2", "DEVOLUCION", folio),
   documentoDevolucion,
   { merge:true }
 );
@@ -952,7 +952,7 @@ await setDoc(
 
     reiniciarFormularioDespuesDeGrabar();
 
-    alert("Devolución a matriz generada correctamente.");
+    alert("Devolución ALLENDE 2 generada correctamente.");
   }catch(err){
     console.error(err);
     alert("Error al generar la devolución. El borrador queda guardado localmente.");

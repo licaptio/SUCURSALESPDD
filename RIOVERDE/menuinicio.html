@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROVSOFT | RIO VERDE</title>
+
+<style>
+:root{
+  --azul:#00416A;
+  --azul2:#0c6cbd;
+  --verde:#16a34a;
+  --rojo:#dc2626;
+  --bg:#eef3f8;
+  --card:#ffffff;
+  --texto:#1f2937;
+  --border:#d7dee7;
+}
+
+*{
+  box-sizing:border-box;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--texto);
+}
+
+.header{
+  background:linear-gradient(135deg,var(--azul),var(--azul2));
+  color:white;
+  padding:28px 20px;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);
+}
+
+.header h1{
+  margin:0;
+  font-size:34px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+
+.header p{
+  margin:8px 0 0;
+  opacity:.9;
+  font-size:15px;
+}
+
+.wrap{
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:18px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:20px;
+  border:1px solid var(--border);
+  padding:22px;
+  box-shadow:0 5px 18px rgba(0,0,0,.06);
+  transition:.18s;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+
+.card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 10px 24px rgba(0,0,0,.12);
+}
+
+.icon{
+  font-size:42px;
+  margin-bottom:10px;
+}
+
+.card h2{
+  margin:0;
+  font-size:22px;
+  color:var(--azul);
+}
+
+.card p{
+  margin:12px 0 18px;
+  line-height:1.5;
+  color:#475467;
+  font-size:14px;
+}
+
+.badge{
+  display:inline-block;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  margin-bottom:16px;
+}
+
+.badge.azul{
+  background:#dbeafe;
+  color:#1d4ed8;
+}
+
+.badge.verde{
+  background:#dcfce7;
+  color:#15803d;
+}
+
+.badge.rojo{
+  background:#fee2e2;
+  color:#b91c1c;
+}
+
+.btn{
+  display:block;
+  width:100%;
+  text-align:center;
+  text-decoration:none;
+  border:none;
+  padding:14px;
+  border-radius:14px;
+  color:white;
+  font-weight:800;
+  font-size:15px;
+  cursor:pointer;
+  transition:.15s;
+}
+
+.btn:hover{
+  opacity:.92;
+}
+
+.btn.azul{
+  background:var(--azul);
+}
+
+.btn.verde{
+  background:var(--verde);
+}
+
+.btn.rojo{
+  background:var(--rojo);
+}
+
+.footer{
+  text-align:center;
+  color:#667085;
+  padding:25px;
+  font-size:13px;
+}
+
+@media(max-width:700px){
+
+  .header h1{
+    font-size:26px;
+  }
+
+  .wrap{
+    padding:14px;
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <h1>PROVSOFT | SUCURSAL RIO VERDE</h1>
+  <p>Centro de operaciones y movimientos de sucursal</p>
+</header>
+
+<main class="wrap">
+
+  <div class="grid">
+
+    <!-- SOLICITUD -->
+    <div class="card">
+
+      <div>
+        <div class="icon">📦</div>
+
+        <span class="badge azul">
+          TRANSFERENCIAS
+        </span>
+
+        <h2>Solicitud de Transferencia</h2>
+
+        <p>
+          Crear solicitudes de mercancía para surtido y envío.
+        </p>
+      </div>
+
+      <a class="btn azul"
+         href="solicitudmerca_rioverde.html">
+         ABRIR
+      </a>
+
+    </div>
+
+    <!-- VISOR -->
+    <div class="card">
+
+      <div>
+        <div class="icon">📋</div>
+
+        <span class="badge verde">
+          VISOR
+        </span>
+
+        <h2>Listado de Transferencias</h2>
+
+        <p>
+          Consultar solicitudes, surtidos y reimpresión de documentos.
+        </p>
+      </div>
+
+      <a class="btn verde"
+         href="listatransfer_rioverde.html">
+         ABRIR
+      </a>
+
+    </div>
+
+    <!-- MERMA -->
+    <div class="card">
+
+      <div>
+        <div class="icon">⚠️</div>
+
+        <span class="badge rojo">
+          MERMAS
+        </span>
+
+        <h2>Solicitud de Merma</h2>
+
+        <p>
+          Levantamiento de productos dañados, caducos o diferencias.
+        </p>
+      </div>
+
+      <a class="btn rojo"
+         href="altamerma_rioverde.html">
+         ABRIR
+      </a>
+
+    </div>
+
+    <!-- DEVOLUCION -->
+    <div class="card">
+
+      <div>
+        <div class="icon">↩️</div>
+
+        <span class="badge verde">
+          DEVOLUCIONES
+        </span>
+
+        <h2>Alta de Devolución</h2>
+
+        <p>
+          Registrar devolución de mercancía hacia matriz.
+        </p>
+      </div>
+
+      <a class="btn verde"
+         href="devoluciomerca_rioverde.html">
+         ABRIR
+      </a>
+
+    </div>
+
+  </div>
+
+</main>
+
+<footer class="footer">
+  PROVSOFT • SUCURSAL RIO VERDE
+</footer>
+
+</body>
+</html>

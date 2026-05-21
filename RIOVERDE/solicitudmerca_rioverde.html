@@ -407,6 +407,197 @@ html,body{
   font-size:14px;
   cursor:pointer;
 }
+
+/* ===== MODALES GUIADOS ===== */
+.captura-simple{
+  padding:10px;
+}
+
+.scan-trigger{
+  width:100%;
+  border:none;
+  background:#fff;
+  border-radius:18px;
+  border:1px solid var(--border);
+  padding:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  text-align:left;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+
+.scan-trigger span{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#eff6ff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  flex-shrink:0;
+}
+
+.scan-trigger strong{
+  display:block;
+  color:var(--azul-oscuro);
+  font-size:16px;
+  font-weight:900;
+}
+
+.scan-trigger small{
+  display:block;
+  color:#64748b;
+  margin-top:2px;
+  font-size:12px;
+  font-weight:600;
+}
+
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:rgba(15,23,42,.62);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  padding:12px;
+}
+
+.modal-overlay.show{
+  display:flex;
+}
+
+.modal-card{
+  width:100%;
+  max-width:520px;
+  background:#fff;
+  border-radius:24px;
+  padding:16px;
+  box-shadow:0 25px 80px rgba(0,0,0,.35);
+  animation:modalUp .18s ease-out;
+}
+
+@keyframes modalUp{
+  from{transform:translateY(20px); opacity:.5}
+  to{transform:translateY(0); opacity:1}
+}
+
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.modal-head h3{
+  margin:0;
+  color:var(--azul-oscuro);
+  font-size:20px;
+  font-weight:900;
+}
+
+.modal-head small{
+  color:#64748b;
+  font-size:12px;
+  font-weight:700;
+}
+
+.modal-close{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  border:none;
+  background:#f1f5f9;
+  color:#334155;
+  font-weight:900;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.modal-search-wrap{
+  position:relative;
+}
+
+.modal-search-wrap input{
+  width:100%;
+  border:2px solid var(--azul-oscuro);
+  border-radius:16px;
+  padding:15px;
+  font-size:18px;
+  font-weight:700;
+}
+
+.modal-results{
+  position:relative;
+  display:block;
+  top:auto;
+  left:auto;
+  right:auto;
+  max-height:55vh;
+  margin-top:10px;
+  border-radius:16px;
+  box-shadow:none;
+}
+
+.modal-help{
+  color:#64748b;
+  font-size:12px;
+  font-weight:700;
+  margin-top:12px;
+  text-align:center;
+}
+
+.prod-modal{
+  min-height:70px;
+  font-size:14px;
+  align-items:flex-start;
+  flex-direction:column;
+  gap:4px;
+}
+
+.cantidad-label{
+  display:block;
+  font-size:12px;
+  font-weight:900;
+  color:#475569;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+
+.cantidad-modal-input{
+  width:100%;
+  border:2px solid var(--azul-oscuro);
+  border-radius:18px;
+  padding:18px;
+  font-size:30px;
+  font-weight:900;
+  text-align:center;
+  color:var(--azul-oscuro);
+}
+
+.btn-modal-agregar{
+  width:100%;
+  margin-top:14px;
+  border:none;
+  border-radius:22px;
+  padding:16px;
+  background:var(--verde);
+  color:white;
+  font-size:16px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+@media (min-width:700px){
+  .modal-overlay{
+    align-items:center;
+  }
+}
+
 </style>
 </head>
 
@@ -471,32 +662,66 @@ html,body{
 
   <div class="main-work-area">
 
-    <div class="captura-card">
-      <div class="search-row">
-        <div class="search-container" style="position:relative;">
-          <input id="inpBusqueda" placeholder="Buscar código o nombre..." autocomplete="off">
-          <div id="resSugerencias" class="search-results"></div>
+    <div class="captura-card captura-simple">
+      <button id="btnAbrirBusqueda" class="scan-trigger">
+        <span>🔎</span>
+        <div>
+          <strong>Escanear o buscar producto</strong>
+          <small>Código, nombre, marca o equivalente</small>
         </div>
-
-        <div class="cantidad-box">
-          <input id="inpCantidad" type="number" value="1" min="0.001" step="0.001" inputmode="decimal">
-        </div>
-      </div>
-
-      <div id="prodSelected" class="prod-selected-box">
-        🛒 Toque para buscar producto...
-      </div>
-
-      <div class="acciones-row">
-        <button id="btnAgregar" class="btn-principal">➕ AGREGAR</button>
-        <button id="btnLimpiar" class="btn-secundario">🗑 LIMPIAR</button>
-      </div>
+      </button>
     </div>
 
     <div class="lista-container">
       <div id="listaItems" class="table-container"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL BUSQUEDA PRODUCTO -->
+<div id="modalBusqueda" class="modal-overlay" aria-hidden="true">
+  <div class="modal-card modal-busqueda-card">
+    <div class="modal-head">
+      <div>
+        <h3>Buscar producto</h3>
+        <small>Escanea código o escribe nombre</small>
+      </div>
+      <button id="btnCerrarBusqueda" class="modal-close">✕</button>
+    </div>
+
+    <div class="search-container modal-search-wrap">
+      <input id="inpBusqueda" placeholder="Escanear código o buscar nombre..." autocomplete="off">
+      <div id="resSugerencias" class="search-results modal-results"></div>
+    </div>
+
+    <div class="modal-help">
+      Si el código coincide exacto, se abrirá cantidad directo.
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CANTIDAD -->
+<div id="modalCantidad" class="modal-overlay" aria-hidden="true">
+  <div class="modal-card modal-cantidad-card">
+    <div class="modal-head">
+      <div>
+        <h3>Cantidad</h3>
+        <small>Confirma piezas a solicitar</small>
+      </div>
+      <button id="btnCerrarCantidad" class="modal-close">✕</button>
+    </div>
+
+    <div id="prodSelected" class="prod-selected-box prod-modal">
+      Producto seleccionado
+    </div>
+
+    <label class="cantidad-label">Cantidad</label>
+    <input id="inpCantidad" class="cantidad-modal-input" type="number" value="1" min="0.001" step="0.001" inputmode="decimal">
+
+    <button id="btnConfirmarCantidad" class="btn-modal-agregar">
+      ➕ AGREGAR AL CARRITO
+    </button>
   </div>
 </div>
 
@@ -541,9 +766,44 @@ const inpBusqueda = document.getElementById("inpBusqueda");
 const inpCantidad = document.getElementById("inpCantidad");
 const prodSelected = document.getElementById("prodSelected");
 const listaItems = document.getElementById("listaItems");
-const btnAgregar = document.getElementById("btnAgregar");
-const btnLimpiar = document.getElementById("btnLimpiar");
 const btnFinalizarBarra = document.getElementById("btnFinalizarBarra");
+const btnAbrirBusqueda = document.getElementById("btnAbrirBusqueda");
+const modalBusqueda = document.getElementById("modalBusqueda");
+const modalCantidad = document.getElementById("modalCantidad");
+const btnCerrarBusqueda = document.getElementById("btnCerrarBusqueda");
+const btnCerrarCantidad = document.getElementById("btnCerrarCantidad");
+const btnConfirmarCantidad = document.getElementById("btnConfirmarCantidad");
+
+
+function abrirModalBusqueda(){
+  modalBusqueda.classList.add("show");
+  modalBusqueda.setAttribute("aria-hidden","false");
+  setTimeout(() => {
+    inpBusqueda.focus();
+    inpBusqueda.select();
+  }, 80);
+}
+
+function cerrarModalBusqueda(){
+  modalBusqueda.classList.remove("show");
+  modalBusqueda.setAttribute("aria-hidden","true");
+  inpBusqueda.value = "";
+  cerrarSugerencias();
+}
+
+function abrirModalCantidad(){
+  modalCantidad.classList.add("show");
+  modalCantidad.setAttribute("aria-hidden","false");
+  setTimeout(() => {
+    inpCantidad.focus();
+    inpCantidad.select();
+  }, 80);
+}
+
+function cerrarModalCantidad(){
+  modalCantidad.classList.remove("show");
+  modalCantidad.setAttribute("aria-hidden","true");
+}
 
 function setLoading(txt, pct){
   document.getElementById("loadingText").innerText = txt;
@@ -941,16 +1201,17 @@ function seleccionarProducto(id){
   seleccionado = prod;
 
   prodSelected.innerHTML = `
-    ✅ <strong>${escapeHtml(prod.concepto)}</strong>
-    ($${Number(prod.precioPublico || 0).toFixed(2)})
-    ${prod.activo ? '<span class="badge-activo">ACTIVO</span>' : '<span class="badge-inactivo">INACTIVO</span>'}
+    <div>
+      ✅ <strong>${escapeHtml(prod.concepto)}</strong>
+      ${prod.activo ? '<span class="badge-activo">ACTIVO</span>' : '<span class="badge-inactivo">INACTIVO</span>'}
+    </div>
+    <small>
+      Código: ${escapeHtml(prod.codigoBarra)} | Marca: ${escapeHtml(prod.marca || "")} | Precio ref: $${Number(prod.precioPublico || 0).toFixed(2)}
+    </small>
   `;
 
-  inpBusqueda.value = "";
-  cerrarSugerencias();
-
-  inpCantidad.focus();
-  inpCantidad.select();
+  cerrarModalBusqueda();
+  abrirModalCantidad();
 }
 
 async function agregarProducto(){
@@ -985,17 +1246,18 @@ async function agregarProducto(){
 
   actualizarUI();
   await guardarBorrador();
+  cerrarModalCantidad();
   resetCaptura();
 }
 
 function resetCaptura(){
   seleccionado = null;
   indexSeleccion = -1;
-  prodSelected.innerHTML = "🛒 Toque para buscar producto...";
+  prodSelected.innerHTML = "Producto seleccionado";
   inpCantidad.value = 1;
   inpBusqueda.value = "";
   cerrarSugerencias();
-  inpBusqueda.focus();
+  btnAbrirBusqueda.focus();
 }
 
 function actualizarUI(){
@@ -1170,8 +1432,33 @@ document.addEventListener("click", e => {
   }
 });
 
-btnAgregar.onclick = agregarProducto;
-btnLimpiar.onclick = resetCaptura;
+btnAbrirBusqueda.onclick = abrirModalBusqueda;
+btnCerrarBusqueda.onclick = cerrarModalBusqueda;
+btnCerrarCantidad.onclick = () => {
+  cerrarModalCantidad();
+  resetCaptura();
+};
+btnConfirmarCantidad.onclick = agregarProducto;
+
+modalBusqueda.addEventListener("click", e => {
+  if(e.target === modalBusqueda){
+    cerrarModalBusqueda();
+  }
+});
+
+modalCantidad.addEventListener("click", e => {
+  if(e.target === modalCantidad){
+    cerrarModalCantidad();
+    resetCaptura();
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape"){
+    cerrarModalBusqueda();
+    cerrarModalCantidad();
+  }
+});
 
 btnFinalizarBarra.onclick = async () => {
   if(carrito.length === 0){
@@ -1282,7 +1569,7 @@ async function iniciar(){
 
   setTimeout(() => {
     ocultarLoading();
-    inpBusqueda.focus();
+    btnAbrirBusqueda.focus();
   }, 500);
 }
 

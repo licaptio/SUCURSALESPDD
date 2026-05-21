@@ -880,9 +880,25 @@ function formatearCantidad(cant){
 }
 
 function nuevoFolio(){
+
   const d = new Date();
 
-  const fol = `SOL-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`;
+  // FECHA
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+
+  // HORA
+  const h = String(d.getHours()).padStart(2,"0");
+
+  // MINUTOS
+  const min = String(d.getMinutes()).padStart(2,"0");
+
+  // ZONA
+  const zona = "ZONA2";
+
+  // FOLIO FINAL
+  const fol = `MON-${y}${m}${day}-${h}${min}-${zona}`;
 
   document.getElementById("folioText").innerText = fol;
 }

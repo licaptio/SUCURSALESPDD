@@ -1,15 +1,19 @@
-const CACHE_NAME = "provsoft-allende-v3";
+const CACHE_NAME = "provsoft-osito-v1";
 
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
   "./pwa-register.js",
-  "./CATALOGO.html",
-  "./SOLTRANAPP.html",
-  "./responderasolicitudalle1.html",
+  "./logo.jfif",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./altamerma_osito.html",
+  "./config.js",
+  "./devoluciomerca_osito.html",
+  "./listatransfer_osito.html",
+  "./menuoso.html",
+  "./solicitudmerca_osito.html"
 ];
 
 self.addEventListener("install", event => {
@@ -35,35 +39,13 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
-  const url = new URL(event.request.url);
-
-  // Para HTML: siempre intenta red primero
-  if (event.request.mode === "navigate" || url.pathname.endsWith(".html") || url.pathname === "/") {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  // Para demás archivos: caché primero, pero actualiza en segundo plano
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const fetchPromise = fetch(event.request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => cached);
-
-      return cached || fetchPromise;
-    })
+    fetch(event.request)
+      .then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
-

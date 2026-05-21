@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSITO | Inicio</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:Arial,sans-serif;
+}
+
+body{
+  background:#f4f6f9;
+  color:#1f2937;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+header{
+  background:linear-gradient(135deg,#5b21b6,#312e81);
+  color:white;
+  padding:32px 20px;
+  text-align:center;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);
+}
+
+header h1{
+  font-size:38px;
+  margin-bottom:8px;
+  letter-spacing:1px;
+}
+
+header p{
+  opacity:.92;
+  font-size:15px;
+}
+
+.main{
+  flex:1;
+  max-width:1250px;
+  width:100%;
+  margin:auto;
+  padding:30px 20px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:24px;
+}
+
+.card{
+  background:white;
+  border-radius:24px;
+  padding:26px;
+  text-decoration:none;
+  color:inherit;
+  border:1px solid #dbe3ea;
+  transition:.18s;
+  box-shadow:0 6px 18px rgba(0,0,0,.07);
+}
+
+.card:hover{
+  transform:translateY(-5px);
+  border-color:#5b21b6;
+  box-shadow:0 12px 28px rgba(0,0,0,.14);
+}
+
+.icono{
+  font-size:48px;
+  margin-bottom:18px;
+}
+
+.card h2{
+  font-size:23px;
+  margin-bottom:10px;
+  color:#312e81;
+}
+
+.card p{
+  font-size:14px;
+  line-height:1.5;
+  color:#475467;
+}
+
+.badge{
+  display:inline-block;
+  margin-top:16px;
+  background:#ede9fe;
+  color:#4c1d95;
+  padding:7px 14px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.5px;
+}
+
+.footer{
+  text-align:center;
+  padding:18px;
+  font-size:13px;
+  color:#667085;
+}
+
+.top-info{
+  margin-bottom:22px;
+  background:white;
+  border-radius:20px;
+  padding:16px 20px;
+  border:1px solid #dbe3ea;
+  box-shadow:0 4px 10px rgba(0,0,0,.04);
+}
+
+.top-info strong{
+  color:#312e81;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>OSITO</h1>
+  <p>Centro operativo · Transferencias · Mermas · Devoluciones</p>
+</header>
+
+<main class="main">
+
+  <div class="top-info">
+    <strong>Ruta operativa activa:</strong>
+    /TIENDAS/OSITO
+  </div>
+
+  <div class="grid">
+
+    <a class="card" href="solicitudmerca_osito.html">
+      <div class="icono">📦</div>
+      <h2>Solicitud Transferencia</h2>
+      <p>
+        Crear solicitudes de mercancía hacia almacén o sucursales.
+        Guardado automático y operación móvil.
+      </p>
+      <span class="badge">SOLTRAN</span>
+    </a>
+
+    <a class="card" href="listatransfer_osito.html">
+      <div class="icono">📋</div>
+      <h2>Visor Transferencias</h2>
+      <p>
+        Consulta de solicitudes pendientes,
+        surtidas y monitoreo en tiempo real.
+      </p>
+      <span class="badge">MONITOR</span>
+    </a>
+
+    <a class="card" href="altamerma_osito.html">
+      <div class="icono">⚠️</div>
+      <h2>Solicitud Merma</h2>
+      <p>
+        Captura de productos dañados,
+        caducados o diferencias de inventario.
+      </p>
+      <span class="badge">MERMA</span>
+    </a>
+
+    <a class="card" href="devoluciomerca_osito.html">
+      <div class="icono">↩️</div>
+      <h2>Devolución Mercancía</h2>
+      <p>
+        Retorno de mercancía a matriz,
+        producto parado o reubicaciones.
+      </p>
+      <span class="badge">DEVOLUCIÓN</span>
+    </a>
+
+  </div>
+
+</main>
+
+<div class="footer">
+  PROVSOFT · OSITO · Sistema Operativo Interno
+</div>
+
+</body>
+</html>

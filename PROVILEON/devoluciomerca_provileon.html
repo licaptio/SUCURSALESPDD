@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PROVSOFT | Alta de Devolución PROVILEON</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#eef3f1;color:#1f2933}
+.loader{position:fixed;inset:0;background:linear-gradient(135deg,#075985,#0f766e);color:white;display:flex;justify-content:center;align-items:center;z-index:50}
+.loader-card{background:rgba(0,0,0,.25);padding:35px;border-radius:18px;text-align:center;width:90%;max-width:430px}
+.loader-card h1{font-size:36px;margin:0}
+.loader-card h2{margin-top:10px;font-weight:normal}
+.topbar{background:linear-gradient(90deg,#075985,#0f766e);color:white;padding:18px 25px;display:flex;justify-content:space-between;align-items:center}
+.topbar h1{margin:0}.topbar p{margin:4px 0 0}
+.estado{background:rgba(255,255,255,.15);padding:10px 15px;border-radius:10px}
+.app{max-width:1150px;margin:auto;padding:20px}
+.wizard{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px}
+.step{background:#dbeafe;padding:12px;text-align:center;border-radius:10px;font-weight:bold}
+.step.active{background:#0f766e;color:white}
+.panel{background:white;padding:22px;border-radius:16px;box-shadow:0 8px 20px rgba(0,0,0,.09)}
+.paso{display:none}.paso.activo{display:block}
+label{display:block;margin-top:16px;font-weight:bold}
+input,select,textarea{width:100%;padding:13px;margin-top:6px;border:1px solid #ccd6dd;border-radius:10px;font-size:16px}
+textarea{min-height:90px;resize:vertical}
+.acciones{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:22px}
+button{border:0;background:#dbeafe;padding:13px 18px;border-radius:10px;cursor:pointer;font-weight:bold}
+button.principal{background:#0f766e;color:white}
+button.peligro{background:#075985;color:white}
+.buscador{display:grid;grid-template-columns:1fr auto;gap:10px}
+.resultados,.carrito{margin-top:15px;display:grid;gap:10px}
+.resultado{background:#f8fafc;border:1px solid #d9e2ec;padding:13px;border-radius:12px;cursor:pointer}
+.resultado:hover{background:#ecfdf5}
+.item-carrito{background:#f8fafc;border-left:5px solid #0f766e;padding:12px;border-radius:10px}
+.item-carrito h4{margin:0 0 6px}.item-carrito small{display:block;color:#52606d}
+.alerta{background:#ecfdf5;border:1px solid #34d399;padding:15px;border-radius:12px;margin-top:15px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:30}
+.modal.oculto{display:none}
+.modal-card{background:white;border-radius:18px;padding:24px;width:92%;max-width:520px}
+#firmaCanvas{width:100%;background:white;border:2px dashed #0f766e;border-radius:14px;touch-action:none}
+.tabla-resumen{width:100%;border-collapse:collapse;margin-top:15px}
+.tabla-resumen th,.tabla-resumen td{border:1px solid #d9e2ec;padding:9px;text-align:left}
+.tabla-resumen th{background:#f1f5f9}
+.badge{display:inline-block;background:#ccfbf1;color:#115e59;padding:6px 10px;border-radius:999px;font-weight:bold;margin-top:8px}
+@media(max-width:700px){
+  .topbar{flex-direction:column;align-items:flex-start;gap:10px}
+  .wizard{grid-template-columns:1fr}
+  .buscador{grid-template-columns:1fr}
+  .acciones{justify-content:stretch}
+  button{width:100%}
+}
+</style>
+</head>
+
+<body>
+
+<div id="loader" class="loader">
+  <div class="loader-card">
+    <h1>PROVSOFT</h1>
+    <h2>Alta de Devolución PROVILEON</h2>
+    <p id="loaderTexto">Cargando catálogo e información...</p>
+  </div>
+</div>
+
+<header class="topbar">
+  <div>
+    <h1>Alta de Devolución de Mercancía PROVILEON</h1>
+    <p>Producto bueno, no caducado, enviado de PROVILEON a matriz</p>
+  </div>
+  <div class="estado" id="estadoConexion">Verificando...</div>
+</header>
+
+<main class="app">
+
+<section class="wizard">
+  <div class="step active" data-step="1">1. Datos</div>
+  <div class="step" data-step="2">2. Productos</div>
+  <div class="step" data-step="3">3. Revisión</div>
+  <div class="step" data-step="4">4. Firma</div>
+  <div class="step" data-step="5">5. Finalizar</div>
+</section>
+
+<section class="panel paso activo" id="paso1">
+  <h2>Datos de la devolución</h2>
+  <span class="badge">Destino: MATRIZ</span>
+
+<input id="tienda" value="SUCURSAL PROVILEON" readonly>
+  
+  <label>Nombre del encargado que solicita</label>
+  <input id="encargado" placeholder="Nombre del encargado">
+
+  <label>Folio generado</label>
+  <input id="folio" readonly>
+
+  <div class="acciones">
+    <button onclick="guardarBorrador()">Guardar para continuar después</button>
+    <button class="principal" onclick="irPaso(2)">Siguiente</button>
+  </div>
+</section>
+
+<section class="panel paso" id="paso2">
+  <h2>Seleccionar mercancía a devolver</h2>
+
+  <div class="buscador">
+    <input id="buscarProducto" placeholder="Buscar por código, concepto, departamento o marca..." autocomplete="off">
+    <button onclick="descargarCatalogo(true)">Actualizar catálogo</button>
+  </div>
+
+  <div id="resultados" class="resultados"></div>
+
+  <h3>Mercancía agregada</h3>
+  <div id="carrito" class="carrito"></div>
+
+  <div class="acciones">
+    <button onclick="irPaso(1)">Atrás</button>
+    <button onclick="guardarBorrador()">Guardar para continuar después</button>
+    <button class="principal" onclick="irPaso(3)">Siguiente</button>
+  </div>
+</section>
+
+<section class="panel paso" id="paso3">
+  <h2>Revisión de devolución</h2>
+  <div id="resumenRevision"></div>
+
+  <label>Notas adicionales</label>
+  <textarea id="notas" placeholder="Ejemplo: mercancía parada, exceso de inventario, reubicación solicitada..."></textarea>
+
+  <div class="acciones">
+    <button onclick="irPaso(2)">Atrás</button>
+    <button onclick="guardarBorrador()">Guardar para continuar después</button>
+    <button class="principal" onclick="irPaso(4)">Siguiente</button>
+  </div>
+</section>
+
+<section class="panel paso" id="paso4">
+  <h2>Firma del solicitante</h2>
+  <p>Firma del encargado que solicita la devolución a matriz.</p>
+
+  <canvas id="firmaCanvas" width="700" height="260"></canvas>
+
+  <div class="acciones">
+    <button onclick="limpiarFirma()">Limpiar firma</button>
+    <button onclick="irPaso(3)">Atrás</button>
+    <button class="principal" onclick="irPaso(5)">Siguiente</button>
+  </div>
+</section>
+
+<section class="panel paso" id="paso5">
+  <h2>Finalizar devolución</h2>
+  <div id="resumenFinal"></div>
+
+  <div class="alerta">
+    Al finalizar se creará un solo documento en:
+    <strong>/TIENDAS/PROVILEON/DEVOLUCION/{folio}</strong>
+    No se crearán notas, movimientos ni salidas de inventario.
+  </div>
+
+  <div class="acciones">
+    <button onclick="irPaso(4)">Atrás</button>
+    <button onclick="guardarBorrador()">Guardar para continuar después</button>
+    <button class="principal peligro" onclick="generarSolicitud()">Generar devolución a matriz</button>
+  </div>
+</section>
+
+</main>
+
+<div id="modalProducto" class="modal oculto">
+  <div class="modal-card">
+    <h2 id="modalTitulo">Producto</h2>
+    <p id="modalCodigo"></p>
+
+    <label>Cantidad a devolver</label>
+    <input type="number" id="modalCantidad" min="0.01" step="0.01">
+
+    <label>Motivo de devolución</label>
+    <select id="modalMotivo">
+      <option value="PRODUCTO_PARADO">Producto parado</option>
+      <option value="BAJA_ROTACION">Baja rotación</option>
+      <option value="EXCESO_INVENTARIO">Exceso de inventario</option>
+      <option value="CAMBIO_PRESENTACION">Cambio de presentación</option>
+      <option value="ERROR_SURTIDO">Error de surtido</option>
+      <option value="REUBICACION">Reubicación a otra tienda</option>
+      <option value="OTRO">Otro</option>
+    </select>
+
+    <label>Comentario</label>
+    <textarea id="modalComentario" placeholder="Comentario del producto..."></textarea>
+
+    <div class="acciones">
+      <button onclick="cerrarModal()">Cancelar</button>
+      <button class="principal" onclick="agregarProducto()">Agregar devolución</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { db } from "./config.js";
+import {
+  collection,
+  doc as docRef,
+  getDocs,
+  query,
+  where,
+  setDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const APP_CONFIG = {
+  COLECCION_PRODUCTOS: "productos",
+  COLECCION_TIENDAS: "TIENDAS",
+  SUBCOLECCION_DEVOLUCIONES: "DEVOLUCION"
+};
+
+let catalogo = [];
+let carrito = [];
+let productoSeleccionado = null;
+let pasoActual = 1;
+let firmaTieneContenido = false;
+let reiniciandoFormulario = false;
+
+const LS_BORRADOR = "provsoft_devolucion_provileon_borrador";
+const DB_NAME = "provsoft_catalogo_devoluciones";
+const STORE_PRODUCTOS = "productos";
+
+window.addEventListener("load", iniciarApp);
+
+async function iniciarApp(){
+  actualizarConexion();
+  window.addEventListener("online", actualizarConexion);
+  window.addEventListener("offline", actualizarConexion);
+
+  document.getElementById("folio").value = generarFolio();
+
+  configurarBusqueda();
+  configurarFirma();
+
+  await cargarCatalogoLocal();
+
+  if(catalogo.length === 0 && navigator.onLine){
+    await descargarCatalogo(false);
+  }
+
+  recuperarBorrador();
+  setInterval(guardarBorradorSilencioso, 5000);
+
+  document.getElementById("loader").style.display = "none";
+}
+
+function actualizarConexion(){
+  const el = document.getElementById("estadoConexion");
+  if(navigator.onLine){
+    el.textContent = "En línea";
+    el.style.background = "rgba(0,160,80,.35)";
+  }else{
+    el.textContent = "Sin internet";
+    el.style.background = "rgba(180,35,24,.45)";
+  }
+}
+
+function generarFolio(){
+  const tienda = document.getElementById("tienda")?.value || "TIENDA";
+  const limpio = tienda.replace(/\s+/g,"").substring(0,8).toUpperCase();
+  const f = new Date();
+  const y = f.getFullYear();
+  const m = String(f.getMonth()+1).padStart(2,"0");
+  const d = String(f.getDate()).padStart(2,"0");
+  const h = String(f.getHours()).padStart(2,"0");
+  const min = String(f.getMinutes()).padStart(2,"0");
+  const rnd = Math.floor(Math.random()*9000+1000);
+  return `DEV-${limpio}-${y}${m}${d}-${h}${min}-${rnd}`;
+}
+
+document.addEventListener("change", e=>{
+  if(e.target.id === "tienda"){
+    const folioActual = document.getElementById("folio").value;
+    if(!folioActual || folioActual.includes("TIENDA")){
+      document.getElementById("folio").value = generarFolio();
+    }
+    guardarBorradorSilencioso();
+  }
+});
+
+function irPaso(n){
+  if(!validarPaso(pasoActual,n)) return;
+
+  pasoActual = n;
+
+  document.querySelectorAll(".paso").forEach(p=>p.classList.remove("activo"));
+  document.getElementById(`paso${n}`).classList.add("activo");
+
+  document.querySelectorAll(".step").forEach(s=>s.classList.remove("active"));
+  document.querySelector(`.step[data-step="${n}"]`).classList.add("active");
+
+  if(n === 3) pintarRevision();
+  if(n === 5) pintarFinal();
+
+  guardarBorradorSilencioso();
+}
+
+function validarPaso(actual,siguiente){
+  if(siguiente < actual) return true;
+
+  if(actual === 1){
+    const encargado = document.getElementById("encargado").value.trim();
+    if(!encargado){
+      alert("Captura el nombre del encargado.");
+      return false;
+    }
+  }
+
+  if(actual === 2){
+    if(carrito.length === 0){
+      alert("Agrega al menos un producto a devolver.");
+      return false;
+    }
+  }
+
+  if(actual === 4){
+    if(!firmaTieneContenido){
+      alert("Falta la firma del encargado.");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function abrirDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME,1);
+
+    req.onupgradeneeded = e=>{
+      const dbLocal = e.target.result;
+      if(!dbLocal.objectStoreNames.contains(STORE_PRODUCTOS)){
+        dbLocal.createObjectStore(STORE_PRODUCTOS,{keyPath:"id"});
+      }
+    };
+
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+
+async function guardarCatalogoLocal(productos){
+  const dbLocal = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+    const tx = dbLocal.transaction(STORE_PRODUCTOS,"readwrite");
+    const store = tx.objectStore(STORE_PRODUCTOS);
+
+    store.clear();
+    productos.forEach(p=>store.put(p));
+
+    tx.oncomplete = ()=>resolve();
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+
+async function cargarCatalogoLocal(){
+  const dbLocal = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+    const tx = dbLocal.transaction(STORE_PRODUCTOS,"readonly");
+    const store = tx.objectStore(STORE_PRODUCTOS);
+    const req = store.getAll();
+
+    req.onsuccess = ()=>{
+      catalogo = req.result || [];
+      resolve(catalogo);
+    };
+
+    req.onerror = ()=>reject(req.error);
+  });
+}
+
+async function descargarCatalogo(manual=false){
+  if(!navigator.onLine){
+    alert("No hay internet para descargar catálogo.");
+    return;
+  }
+
+  try{
+    document.getElementById("loader").style.display = "flex";
+    document.getElementById("loaderTexto").textContent = "Descargando catálogo activo...";
+
+    const q = query(
+      collection(db, APP_CONFIG.COLECCION_PRODUCTOS),
+      where("activo","==",true)
+    );
+
+    const snap = await getDocs(q);
+
+    catalogo = snap.docs.map(documento=>{
+      const d = documento.data();
+
+      return {
+        id: documento.id,
+        codigo: String(d.codigoBarra || documento.id),
+        descripcion: String(d.concepto || ""),
+        unidad: d.unidadMedidaSat || "PZA",
+        costo: Number(d.costoSinImpuesto || 0),
+        precio: Number(d.precioPublico || 0),
+        departamento: String(d.departamento || ""),
+        marca: String(d.marca || ""),
+        activo: d.activo === true
+      };
+    });
+
+    await guardarCatalogoLocal(catalogo);
+
+    if(manual) alert(`Catálogo actualizado: ${catalogo.length} productos.`);
+  }catch(err){
+    console.error(err);
+    alert("Error al descargar catálogo. Revisa colección productos y campo activo.");
+  }finally{
+    document.getElementById("loader").style.display = "none";
+  }
+}
+
+function configurarBusqueda(){
+  const input = document.getElementById("buscarProducto");
+  input.addEventListener("input",()=>{
+    buscarProductos(input.value.trim());
+  });
+}
+
+function normalizar(txt){
+  return String(txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g," ")
+    .trim();
+}
+
+function buscarProductos(texto){
+  const cont = document.getElementById("resultados");
+  cont.innerHTML = "";
+
+  if(!texto || texto.length < 2) return;
+
+  const palabras = normalizar(texto).split(" ").filter(Boolean);
+
+  const encontrados = catalogo
+    .filter(p=>{
+      const base = normalizar(`${p.codigo} ${p.descripcion} ${p.departamento} ${p.marca}`);
+      return palabras.every(w=>base.includes(w));
+    })
+    .slice(0,25);
+
+  if(encontrados.length === 0){
+    cont.innerHTML = `<div class="resultado">Sin resultados.</div>`;
+    return;
+  }
+
+  encontrados.forEach(p=>{
+    const div = document.createElement("div");
+    div.className = "resultado";
+    div.innerHTML = `
+      <strong>${p.descripcion}</strong><br>
+      <small>Código: ${p.codigo} | Depto: ${p.departamento} | Precio público: $${p.precio.toFixed(2)}</small>
+    `;
+    div.onclick = ()=>abrirModalProducto(p);
+    cont.appendChild(div);
+  });
+}
+
+function abrirModalProducto(producto){
+  productoSeleccionado = producto;
+
+  document.getElementById("modalTitulo").textContent = producto.descripcion;
+  document.getElementById("modalCodigo").textContent = `Código: ${producto.codigo}`;
+  document.getElementById("modalCantidad").value = "";
+  document.getElementById("modalMotivo").value = "PRODUCTO_PARADO";
+  document.getElementById("modalComentario").value = "";
+
+  document.getElementById("modalProducto").classList.remove("oculto");
+}
+
+function cerrarModal(){
+  productoSeleccionado = null;
+  document.getElementById("modalProducto").classList.add("oculto");
+}
+
+function agregarProducto(){
+  if(!productoSeleccionado) return;
+
+  const cantidad = Number(document.getElementById("modalCantidad").value || 0);
+  const motivo = document.getElementById("modalMotivo").value;
+  const comentario = document.getElementById("modalComentario").value.trim();
+
+  if(cantidad <= 0){
+    alert("Captura una cantidad válida.");
+    return;
+  }
+
+  const item = {
+    itemId: `${productoSeleccionado.id}_${Date.now()}`,
+    productoId: productoSeleccionado.id,
+    codigo: productoSeleccionado.codigo,
+    descripcion: productoSeleccionado.descripcion,
+    unidad: productoSeleccionado.unidad,
+    cantidad,
+    costoUnitario: productoSeleccionado.costo,
+    precioVenta: productoSeleccionado.precio,
+    subtotalCosto: cantidad * productoSeleccionado.costo,
+    subtotalVenta: cantidad * productoSeleccionado.precio,
+    departamento: productoSeleccionado.departamento,
+    marca: productoSeleccionado.marca,
+    motivo,
+    comentario
+  };
+
+  carrito.push(item);
+
+  pintarCarrito();
+  cerrarModal();
+
+  document.getElementById("buscarProducto").value = "";
+  document.getElementById("resultados").innerHTML = "";
+
+  guardarBorradorSilencioso();
+}
+
+function pintarCarrito(){
+  const cont = document.getElementById("carrito");
+  cont.innerHTML = "";
+
+  if(carrito.length === 0){
+    cont.innerHTML = `<p>No hay productos agregados.</p>`;
+    return;
+  }
+
+  carrito.forEach((item,index)=>{
+    const div = document.createElement("div");
+    div.className = "item-carrito";
+    div.innerHTML = `
+      <h4>${item.descripcion}</h4>
+      <small>Código: ${item.codigo}</small>
+      <small>Cantidad: ${item.cantidad} ${item.unidad}</small>
+      <small>Motivo: ${item.motivo}</small>
+      <small>Comentario: ${item.comentario || "Sin comentario"}</small>
+      <small>Precio público: $${item.subtotalVenta.toFixed(2)}</small>
+      <div class="acciones">
+        <button onclick="eliminarItem(${index})">Eliminar</button>
+      </div>
+    `;
+    cont.appendChild(div);
+  });
+}
+
+function eliminarItem(index){
+  if(!confirm("¿Eliminar este producto de la devolución?")) return;
+  carrito.splice(index,1);
+  pintarCarrito();
+  guardarBorradorSilencioso();
+}
+
+function calcularTotales(){
+  return carrito.reduce((acc,item)=>{
+    acc.piezas += Number(item.cantidad || 0);
+    acc.costo += Number(item.subtotalCosto || 0);
+    acc.venta += Number(item.subtotalVenta || 0);
+    return acc;
+  },{piezas:0,costo:0,venta:0});
+}
+
+function tablaProductosHTML(){
+  let html = `
+    <table class="tabla-resumen">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th>Cant.</th>
+          <th>Motivo</th>
+          <th>Precio público</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  carrito.forEach(i=>{
+    html += `
+      <tr>
+        <td>${i.codigo}</td>
+        <td>${i.descripcion}</td>
+        <td>${i.cantidad}</td>
+        <td>${i.motivo}</td>
+        <td>$${i.subtotalVenta.toFixed(2)}</td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+  return html;
+}
+
+function pintarRevision(){
+  const t = calcularTotales();
+  document.getElementById("resumenRevision").innerHTML = `
+    <p><strong>Tienda origen:</strong> ${document.getElementById("tienda").value}</p>
+    <p><strong>Destino:</strong> MATRIZ</p>
+    <p><strong>Encargado:</strong> ${document.getElementById("encargado").value}</p>
+    <p><strong>Folio:</strong> ${document.getElementById("folio").value}</p>
+    ${tablaProductosHTML()}
+    <p><strong>Total piezas:</strong> ${t.piezas}</p>
+    <p><strong>Total precio público:</strong> $${t.venta.toFixed(2)}</p>
+  `;
+}
+
+function pintarFinal(){
+  const t = calcularTotales();
+  document.getElementById("resumenFinal").innerHTML = `
+    <p><strong>Devolución lista para generar.</strong></p>
+    <p><strong>Folio:</strong> ${document.getElementById("folio").value}</p>
+    <p><strong>Total artículos:</strong> ${carrito.length}</p>
+    <p><strong>Total piezas:</strong> ${t.piezas}</p>
+    <p><strong>Total precio público:</strong> $${t.venta.toFixed(2)}</p>
+  `;
+}
+
+function configurarFirma(){
+  const canvas = document.getElementById("firmaCanvas");
+  const ctx = canvas.getContext("2d");
+  let dibujando = false;
+
+  function pos(e){
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return {
+      x:(touch.clientX - rect.left) * (canvas.width / rect.width),
+      y:(touch.clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
+  function iniciar(e){
+    e.preventDefault();
+    dibujando = true;
+    const p = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x,p.y);
+  }
+
+  function mover(e){
+    if(!dibujando) return;
+    e.preventDefault();
+
+    const p = pos(e);
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111";
+    ctx.lineTo(p.x,p.y);
+    ctx.stroke();
+
+    firmaTieneContenido = true;
+    guardarBorradorSilencioso();
+  }
+
+  function terminar(){dibujando = false}
+
+  canvas.addEventListener("mousedown",iniciar);
+  canvas.addEventListener("mousemove",mover);
+  canvas.addEventListener("mouseup",terminar);
+  canvas.addEventListener("mouseleave",terminar);
+  canvas.addEventListener("touchstart",iniciar);
+  canvas.addEventListener("touchmove",mover);
+  canvas.addEventListener("touchend",terminar);
+}
+
+function limpiarFirma(){
+  const canvas = document.getElementById("firmaCanvas");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  firmaTieneContenido = false;
+  guardarBorradorSilencioso();
+}
+
+function obtenerFirmaBase64(){
+  const canvas = document.getElementById("firmaCanvas");
+  return firmaTieneContenido ? canvas.toDataURL("image/png") : null;
+}
+
+function cargarFirmaBase64(dataUrl){
+  if(!dataUrl) return;
+
+  const canvas = document.getElementById("firmaCanvas");
+  const ctx = canvas.getContext("2d");
+  const img = new Image();
+
+  img.onload = ()=>{
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    firmaTieneContenido = true;
+  };
+
+  img.src = dataUrl;
+}
+
+function formularioTieneDatos(){
+  const encargado = document.getElementById("encargado").value.trim();
+  const notas = document.getElementById("notas").value.trim();
+  return encargado || notas || carrito.length > 0 || firmaTieneContenido || pasoActual > 1;
+}
+
+function obtenerDatosFormulario(){
+  return {
+    tienda:document.getElementById("tienda").value,
+    encargado:document.getElementById("encargado").value.trim(),
+    folio:document.getElementById("folio").value,
+    notas:document.getElementById("notas").value.trim(),
+    carrito,
+    firma:obtenerFirmaBase64(),
+    pasoActual,
+    actualizadoLocal:new Date().toISOString()
+  };
+}
+
+function guardarBorrador(){
+  if(!formularioTieneDatos()){
+    alert("No hay información para guardar.");
+    return;
+  }
+
+  localStorage.setItem(LS_BORRADOR,JSON.stringify(obtenerDatosFormulario()));
+  alert("Borrador guardado.");
+}
+
+function guardarBorradorSilencioso(){
+  if(reiniciandoFormulario) return;
+
+  try{
+    if(!formularioTieneDatos()){
+      localStorage.removeItem(LS_BORRADOR);
+      return;
+    }
+
+    localStorage.setItem(LS_BORRADOR,JSON.stringify(obtenerDatosFormulario()));
+  }catch(err){
+    console.warn("No se pudo autosalvar.",err);
+  }
+}
+
+function recuperarBorrador(){
+  const raw = localStorage.getItem(LS_BORRADOR);
+
+  if(!raw){
+    pintarCarrito();
+    return;
+  }
+
+  let b = null;
+
+  try{
+    b = JSON.parse(raw);
+  }catch(err){
+    localStorage.removeItem(LS_BORRADOR);
+    pintarCarrito();
+    return;
+  }
+
+  const tieneDatos =
+    (b.encargado && String(b.encargado).trim()) ||
+    (b.notas && String(b.notas).trim()) ||
+    (Array.isArray(b.carrito) && b.carrito.length > 0) ||
+    b.firma;
+
+  if(!tieneDatos){
+    localStorage.removeItem(LS_BORRADOR);
+    pintarCarrito();
+    return;
+  }
+
+  if(!confirm("Se encontró un borrador pendiente de devolución. ¿Deseas recuperarlo?")){
+    localStorage.removeItem(LS_BORRADOR);
+    pintarCarrito();
+    return;
+  }
+
+  document.getElementById("tienda").value = b.tienda || "PROVILEON";
+  document.getElementById("encargado").value = b.encargado || "";
+  document.getElementById("folio").value = b.folio || generarFolio();
+  document.getElementById("notas").value = b.notas || "";
+
+  carrito = Array.isArray(b.carrito) ? b.carrito : [];
+  pintarCarrito();
+
+  setTimeout(()=>cargarFirmaBase64(b.firma),300);
+}
+
+function reiniciarFormularioDespuesDeGrabar(){
+  reiniciandoFormulario = true;
+
+  carrito = [];
+  productoSeleccionado = null;
+  pasoActual = 1;
+
+  document.getElementById("encargado").value = "";
+  document.getElementById("notas").value = "";
+  document.getElementById("folio").value = generarFolio();
+  document.getElementById("buscarProducto").value = "";
+  document.getElementById("resultados").innerHTML = "";
+  document.getElementById("resumenRevision").innerHTML = "";
+  document.getElementById("resumenFinal").innerHTML = "";
+
+  document.getElementById("modalCantidad").value = "";
+  document.getElementById("modalComentario").value = "";
+  document.getElementById("modalProducto").classList.add("oculto");
+
+  const canvas = document.getElementById("firmaCanvas");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  firmaTieneContenido = false;
+
+  pintarCarrito();
+
+  document.querySelectorAll(".paso").forEach(p=>p.classList.remove("activo"));
+  document.getElementById("paso1").classList.add("activo");
+
+  document.querySelectorAll(".step").forEach(s=>s.classList.remove("active"));
+  document.querySelector(`.step[data-step="1"]`).classList.add("active");
+
+  localStorage.removeItem(LS_BORRADOR);
+
+  setTimeout(()=>{
+    reiniciandoFormulario = false;
+    localStorage.removeItem(LS_BORRADOR);
+  },300);
+}
+
+function construirDocumentoDevolucion(){
+  const t = calcularTotales();
+  const tienda = document.getElementById("tienda").value;
+  const encargado = document.getElementById("encargado").value.trim();
+  const folio = document.getElementById("folio").value;
+  const notas = document.getElementById("notas").value.trim();
+
+  return {
+    folio,
+    tiendaOrigen:tienda,
+    destino:"MATRIZ",
+
+    estado:"SOLICITADA",
+    etapa:"PENDIENTE_REVISION",
+
+    tipoDocumento:"DEVOLUCION_MERCANCIA_MATRIZ",
+    tipoMovimientoPendiente:"SALIDA_DEVOLUCION_MATRIZ",
+    origen:"APP_DEVOLUCION_MATRIZ_TIENDA",
+
+    solicitante:{
+      nombre:encargado,
+      firmaBase64:obtenerFirmaBase64(),
+      fechaFirma:new Date().toISOString()
+    },
+
+    recepcionMatriz:{
+      estado:"PENDIENTE",
+      recibidoPor:null,
+      firmaReceptorBase64:null,
+      fechaRecepcion:null,
+      comentarioRecepcion:null
+    },
+
+    productos:carrito.map(i=>({
+      productoId:i.productoId,
+      codigo:i.codigo,
+      descripcion:i.descripcion,
+      unidad:i.unidad,
+      cantidad:i.cantidad,
+      costoUnitario:i.costoUnitario,
+      precioVenta:i.precioVenta,
+      subtotalCosto:i.subtotalCosto,
+      subtotalVenta:i.subtotalVenta,
+      departamento:i.departamento || "",
+      marca:i.marca || "",
+      motivo:i.motivo,
+      comentario:i.comentario || ""
+    })),
+
+    totales:{
+      renglones:carrito.length,
+      piezas:t.piezas,
+      costoEstimado:t.costo,
+      ventaEstimado:t.venta
+    },
+
+    notasAdicionales:notas,
+
+    aplicadoInventario:false,
+    movimientoInventarioId:null,
+
+    creadoPor:encargado,
+    creadoEnLocal:new Date().toISOString(),
+    actualizadoEnLocal:new Date().toISOString(),
+
+    creadoEn:serverTimestamp(),
+    actualizadoEn:serverTimestamp(),
+
+    historial:[
+      {
+        evento:"DEVOLUCION_GENERADA",
+        usuario:encargado,
+        fechaLocal:new Date().toISOString(),
+        comentario:"Documento creado por encargado de tienda para devolución a matriz."
+      }
+    ]
+  };
+}
+
+async function generarSolicitud(){
+  if(!navigator.onLine){
+    alert("No hay internet. La devolución queda guardada como borrador local.");
+    guardarBorradorSilencioso();
+    return;
+  }
+
+  const encargado = document.getElementById("encargado").value.trim();
+
+  if(!encargado){
+    alert("Falta nombre del encargado.");
+    return;
+  }
+
+  if(carrito.length === 0){
+    alert("No hay productos en la devolución.");
+    return;
+  }
+
+  if(!firmaTieneContenido){
+    alert("Falta la firma del encargado.");
+    return;
+  }
+
+  const tienda = document.getElementById("tienda").value;
+  const folio = document.getElementById("folio").value;
+  const documentoDevolucion = construirDocumentoDevolucion();
+
+  try{
+    document.getElementById("loader").style.display = "flex";
+    document.getElementById("loaderTexto").textContent = "Generando devolución a matriz...";
+
+await setDoc(
+  docRef(db, "TIENDAS", "PROVILEON", "DEVOLUCION", folio),
+  documentoDevolucion,
+  { merge:true }
+);
+    
+
+    generarPDF(documentoDevolucion);
+
+    reiniciarFormularioDespuesDeGrabar();
+
+    alert("Devolución PROVILEON generada correctamente.");
+  }catch(err){
+    console.error(err);
+    alert("Error al generar la devolución. El borrador queda guardado localmente.");
+    guardarBorradorSilencioso();
+  }finally{
+    document.getElementById("loader").style.display = "none";
+  }
+}
+
+function generarPDF(documento){
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p","mm","letter");
+
+  let y = 15;
+
+  pdf.setFont("helvetica","bold");
+  pdf.setFontSize(14);
+  pdf.text("COMPROBANTE DE DEVOLUCIÓN DE MERCANCÍA A MATRIZ",105,y,{align:"center"});
+
+  y += 8;
+  pdf.setFontSize(10);
+  pdf.setFont("helvetica","normal");
+  pdf.text("Documento de alta de devolución desde tienda",105,y,{align:"center"});
+
+  y += 12;
+
+  pdf.setFont("helvetica","bold");
+  pdf.text("Folio:",15,y);
+  pdf.setFont("helvetica","normal");
+  pdf.text(documento.folio,50,y);
+
+  y += 7;
+  pdf.setFont("helvetica","bold");
+  pdf.text("Tienda origen:",15,y);
+  pdf.setFont("helvetica","normal");
+  pdf.text(documento.tiendaOrigen,50,y);
+
+  y += 7;
+  pdf.setFont("helvetica","bold");
+  pdf.text("Destino:",15,y);
+  pdf.setFont("helvetica","normal");
+  pdf.text(documento.destino,50,y);
+
+  y += 7;
+  pdf.setFont("helvetica","bold");
+  pdf.text("Solicita:",15,y);
+  pdf.setFont("helvetica","normal");
+  pdf.text(documento.solicitante.nombre,50,y);
+
+  y += 7;
+  pdf.setFont("helvetica","bold");
+  pdf.text("Fecha:",15,y);
+  pdf.setFont("helvetica","normal");
+  pdf.text(new Date().toLocaleString("es-MX"),50,y);
+
+  y += 10;
+
+  pdf.setFont("helvetica","bold");
+  pdf.text("Productos a devolver",15,y);
+  y += 6;
+
+  pdf.setFontSize(8);
+  pdf.text("Código",15,y);
+  pdf.text("Descripción",42,y);
+  pdf.text("Cant.",130,y);
+  pdf.text("Motivo",145,y);
+  pdf.text("P. Público",178,y);
+
+  y += 4;
+  pdf.line(15,y,200,y);
+  y += 5;
+
+  pdf.setFont("helvetica","normal");
+
+  documento.productos.forEach(p=>{
+    if(y > 240){
+      pdf.addPage();
+      y = 15;
+    }
+
+    pdf.text(String(p.codigo).substring(0,16),15,y);
+    pdf.text(String(p.descripcion).substring(0,45),42,y);
+    pdf.text(String(p.cantidad),130,y);
+    pdf.text(String(p.motivo).substring(0,18),145,y);
+    pdf.text(`$${Number(p.subtotalVenta || 0).toFixed(2)}`,178,y);
+
+    y += 6;
+
+    if(p.comentario){
+      pdf.setTextColor(90);
+      pdf.text(`Comentario: ${String(p.comentario).substring(0,90)}`,42,y);
+      pdf.setTextColor(0);
+      y += 5;
+    }
+  });
+
+  y += 6;
+
+  pdf.setFont("helvetica","bold");
+  pdf.text(`Total piezas: ${documento.totales.piezas}`,15,y);
+
+  y += 6;
+  pdf.text(`Precio público total: $${Number(documento.totales.ventaEstimado || 0).toFixed(2)}`,15,y);
+
+  y += 10;
+
+  pdf.setFont("helvetica","bold");
+  pdf.text("Notas adicionales:",15,y);
+  y += 5;
+
+  pdf.setFont("helvetica","normal");
+  const notas = pdf.splitTextToSize(documento.notasAdicionales || "Sin notas adicionales.",180);
+  pdf.text(notas,15,y);
+
+  y += notas.length * 5 + 10;
+
+  if(documento.solicitante.firmaBase64){
+    pdf.setFont("helvetica","bold");
+    pdf.text("Firma del solicitante:",15,y);
+    y += 5;
+
+    pdf.addImage(documento.solicitante.firmaBase64,"PNG",15,y,70,28);
+    y += 33;
+
+    pdf.line(15,y,85,y);
+    y += 5;
+
+    pdf.setFont("helvetica","normal");
+    pdf.text(documento.solicitante.nombre,15,y);
+  }
+
+  y += 12;
+
+  pdf.setFontSize(8);
+  pdf.setTextColor(90);
+  pdf.text("Este comprobante solo representa la solicitud de devolución. La recepción final corresponde a matriz.",15,y);
+
+  pdf.save(`${documento.folio}.pdf`);
+}
+
+window.irPaso = irPaso;
+window.guardarBorrador = guardarBorrador;
+window.descargarCatalogo = descargarCatalogo;
+window.cerrarModal = cerrarModal;
+window.agregarProducto = agregarProducto;
+window.eliminarItem = eliminarItem;
+window.limpiarFirma = limpiarFirma;
+window.generarSolicitud = generarSolicitud;
+</script>
+
+</body>
+</html>

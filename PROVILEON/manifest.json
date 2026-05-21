@@ -1,24 +1,24 @@
 {
-  "name": "PROVEEDORA ALLENDE ONE",
-  "short_name": "PDD ALLENDE",
+  "name": "PROVSOFT PROVILEON",
+  "short_name": "PROVILEON",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f7fb",
   "theme_color": "#00416A",
-  "description": "Sistema PROVSOFT ALLENDE PROVEEDORA",
+  "description": "Sistema PROVSOFT Sucursal PROVILEON",
   "icons": [
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

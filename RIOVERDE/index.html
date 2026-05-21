@@ -5,9 +5,10 @@
 <title>PROVEEDORA RIO VERDE - MENÚ INICIO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#b80000">
-<link rel="icon" href="icons/icon-192.svg">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#00416A">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
 
@@ -147,6 +148,7 @@ html,body{
   text-decoration:none;
   box-shadow:0 8px 16px rgba(0,0,0,.16);
   overflow:hidden;
+  cursor:pointer;
 }
 
 .btn:hover{transform:translateY(-2px)}
@@ -239,7 +241,7 @@ html,body{
 
   <header class="header">
     <div class="logoBox">
-      <img src="logo.jfif" alt="Logo Proveedora">
+      <img src="./logo.jfif" alt="Logo Proveedora">
     </div>
 
     <div class="titulo">
@@ -250,7 +252,7 @@ html,body{
 
   <section class="contenido">
 
-    <button class="btn" id="btnInstall">
+    <button class="btn" id="btnInstall" type="button">
       <span class="icon">📲</span>
       <span class="btnText">
         <strong>Instalar aplicación</strong>
@@ -264,7 +266,7 @@ html,body{
         <h3 class="sectionTitle"><span></span>CONSULTAS</h3>
 
         <div class="menu">
-          <a class="btn verde" href="CATALOGOCENTRA.html">
+          <a class="btn verde" href="./CATALOGOCENTRA.html">
             <div class="icon">📦</div>
             <div class="btnText">
               <strong>Catálogo</strong>
@@ -272,7 +274,7 @@ html,body{
             </div>
           </a>
 
-          <a class="btn verde" href="listatransfer_rioverde.html">
+          <a class="btn verde" href="./listatransfer_rioverde.html">
             <div class="icon">📋</div>
             <div class="btnText">
               <strong>Listado de transferencias</strong>
@@ -287,7 +289,7 @@ html,body{
 
         <div class="menu">
 
-          <a class="btn rojo" href="solicitudmerca_rioverde.html">
+          <a class="btn rojo" href="./solicitudmerca_rioverde.html">
             <div class="icon">🚚</div>
             <div class="btnText">
               <strong>Solicitudes / Transferencias</strong>
@@ -295,15 +297,15 @@ html,body{
             </div>
           </a>
 
-          <a class="btn rojo" href="altamerma_rioverde.html">
+          <a class="btn rojo" href="./altamerma_rioverde.html">
             <div class="icon">⚠️</div>
             <div class="btnText">
-              <strong>Merma RIO VERDE </strong>
+              <strong>Merma RIO VERDE</strong>
               <small>Mercancía dañada, caducada o no vendible</small>
             </div>
           </a>
 
-          <a class="btn rojo" href="devoluciomerca_rioverde.html">
+          <a class="btn rojo" href="./devoluciomerca_rioverde.html">
             <div class="icon">↩️</div>
             <div class="btnText">
               <strong>Devolución de mercancía a Cedis</strong>
@@ -318,7 +320,7 @@ html,body{
         <h3 class="sectionTitle"><span></span>AUDITORÍA</h3>
 
         <div class="menu">
-          <a class="btn azul" href="CONTESTAINV.html">
+          <a class="btn azul" href="./CONTESTAINV.html">
             <div class="icon">🧾</div>
             <div class="btnText">
               <strong>Responder solicitud</strong>
@@ -337,7 +339,7 @@ html,body{
 
 </main>
 
-<script src="pwa-register.js"></script>
+<script src="./pwa-register.js"></script>
 
 <script>
 let deferredPrompt = null;
@@ -351,8 +353,16 @@ window.addEventListener("beforeinstallprompt", (e)=>{
 
 btnInstall.addEventListener("click", async ()=>{
   if(!deferredPrompt) return;
+
   deferredPrompt.prompt();
+
   await deferredPrompt.userChoice;
+
+  deferredPrompt = null;
+  btnInstall.style.display = "none";
+});
+
+window.addEventListener("appinstalled", ()=>{
   deferredPrompt = null;
   btnInstall.style.display = "none";
 });

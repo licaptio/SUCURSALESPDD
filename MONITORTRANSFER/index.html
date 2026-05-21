@@ -65,8 +65,20 @@ body{
   margin:auto;
 }
 
+.split-listado{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  align-items:start;
+}
+
 .section{
   margin-bottom:24px;
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:14px;
+  min-height:70vh;
 }
 
 .section-title{
@@ -244,6 +256,16 @@ th{
   color:white;
 }
 
+@media(max-width:900px){
+  .split-listado{
+    grid-template-columns:1fr;
+  }
+
+  .section{
+    min-height:auto;
+  }
+}
+
 @media(max-width:800px){
   .info-grid{
     grid-template-columns:1fr;
@@ -267,20 +289,24 @@ th{
 
 <section id="viewListado" class="view active">
 
-  <div class="section">
-    <div class="section-title">
-      <h2>No surtidas / pendientes</h2>
-      <span class="badge pending" id="badgePendientes">0 pendientes</span>
-    </div>
-    <div id="cardsPendientes" class="cards"></div>
-  </div>
+  <div class="split-listado">
 
-  <div class="section">
-    <div class="section-title">
-      <h2>Surtidas</h2>
-      <span class="badge done" id="badgeSurtidas">0 surtidas</span>
+    <div class="section">
+      <div class="section-title">
+        <h2>No surtidas / pendientes</h2>
+        <span class="badge pending" id="badgePendientes">0 pendientes</span>
+      </div>
+      <div id="cardsPendientes" class="cards"></div>
     </div>
-    <div id="cardsSurtidas" class="cards"></div>
+
+    <div class="section">
+      <div class="section-title">
+        <h2>Surtidas</h2>
+        <span class="badge done" id="badgeSurtidas">0 surtidas</span>
+      </div>
+      <div id="cardsSurtidas" class="cards"></div>
+    </div>
+
   </div>
 
 </section>

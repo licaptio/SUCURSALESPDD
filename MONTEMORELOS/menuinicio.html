@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+
+<title>PROVSOFT | MONTEMORELOS</title>
+
+<style>
+
+:root{
+    --azul:#00416A;
+    --azul2:#0c6cbd;
+    --bg:#f3f6fa;
+    --card:#ffffff;
+    --shadow:0 10px 25px rgba(0,0,0,.12);
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:
+    linear-gradient(135deg,#00416A 0%,#0c6cbd 100%);
+    min-height:100vh;
+    padding:25px;
+}
+
+.header{
+    width:100%;
+    max-width:1300px;
+    margin:auto;
+    margin-bottom:25px;
+}
+
+.titulo{
+    color:white;
+    font-size:38px;
+    font-weight:800;
+    letter-spacing:1px;
+}
+
+.sub{
+    color:rgba(255,255,255,.8);
+    margin-top:8px;
+    font-size:15px;
+}
+
+.grid{
+    width:100%;
+    max-width:1300px;
+    margin:auto;
+
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:22px;
+}
+
+.card{
+    background:var(--card);
+    border-radius:22px;
+    padding:28px;
+    box-shadow:var(--shadow);
+
+    transition:.25s;
+    cursor:pointer;
+    text-decoration:none;
+    color:#111;
+
+    position:relative;
+    overflow:hidden;
+}
+
+.card:hover{
+    transform:translateY(-6px) scale(1.02);
+}
+
+.card::before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:8px;
+    background:linear-gradient(to right,var(--azul),var(--azul2));
+}
+
+.icon{
+    font-size:52px;
+    margin-bottom:18px;
+}
+
+.nombre{
+    font-size:24px;
+    font-weight:700;
+    margin-bottom:10px;
+}
+
+.desc{
+    color:#666;
+    line-height:1.5;
+    font-size:14px;
+}
+
+.footer{
+    margin-top:22px;
+    display:flex;
+    justify-content:flex-end;
+}
+
+.btn{
+    background:var(--azul);
+    color:white;
+    padding:10px 18px;
+    border-radius:12px;
+    font-size:14px;
+    font-weight:bold;
+}
+
+.barra{
+    width:100%;
+    max-width:1300px;
+    margin:auto;
+    margin-top:35px;
+
+    background:rgba(255,255,255,.12);
+    backdrop-filter:blur(6px);
+
+    border-radius:18px;
+    padding:18px 22px;
+
+    color:white;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.estado{
+    font-size:14px;
+}
+
+@media(max-width:700px){
+
+    body{
+        padding:16px;
+    }
+
+    .titulo{
+        font-size:28px;
+    }
+
+    .card{
+        padding:22px;
+    }
+
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="titulo">
+        PROVSOFT | MONTEMORELOS
+    </div>
+
+    <div class="sub">
+        Centro de aplicaciones y operaciones de sucursal
+    </div>
+</div>
+
+<div class="grid">
+
+    <!-- INDEX PRINCIPAL -->
+    <a class="card" href="index_montemorelos.html">
+
+        <div class="icon">🏪</div>
+
+        <div class="nombre">
+            Inicio Sucursal
+        </div>
+
+        <div class="desc">
+            Acceso principal de operaciones generales de la sucursal Montemorelos.
+        </div>
+
+        <div class="footer">
+            <div class="btn">ABRIR</div>
+        </div>
+
+    </a>
+
+    <!-- TRANSFERENCIAS -->
+    <a class="card" href="listatransfer_montemorelos.html">
+
+        <div class="icon">📦</div>
+
+        <div class="nombre">
+            Transferencias
+        </div>
+
+        <div class="desc">
+            Consulta de transferencias surtidas y pendientes en formato tipo tarjetas.
+        </div>
+
+        <div class="footer">
+            <div class="btn">ABRIR</div>
+        </div>
+
+    </a>
+
+    <!-- MERMAS -->
+    <a class="card" href="solicitudmerca_montemorelos.html">
+
+        <div class="icon">⚠️</div>
+
+        <div class="nombre">
+            Solicitud de Merma
+        </div>
+
+        <div class="desc">
+            Generación y seguimiento de solicitudes de merma y productos dañados.
+        </div>
+
+        <div class="footer">
+            <div class="btn">ABRIR</div>
+        </div>
+
+    </a>
+
+    <!-- ALTA MERMA -->
+    <a class="card" href="altamerma_montemorelos.html">
+
+        <div class="icon">📝</div>
+
+        <div class="nombre">
+            Alta de Merma
+        </div>
+
+        <div class="desc">
+            Captura de artículos y evidencia para levantamiento de merma.
+        </div>
+
+        <div class="footer">
+            <div class="btn">ABRIR</div>
+        </div>
+
+    </a>
+
+    <!-- DEVOLUCIONES -->
+    <a class="card" href="devoluciomerca_montemorelos.html">
+
+        <div class="icon">↩️</div>
+
+        <div class="nombre">
+            Devoluciones
+        </div>
+
+        <div class="desc">
+            Gestión de devoluciones de mercancía y revisión de productos.
+        </div>
+
+        <div class="footer">
+            <div class="btn">ABRIR</div>
+        </div>
+
+    </a>
+
+</div>
+
+<div class="barra">
+
+    <div class="estado">
+        🟢 Sistema operativo
+    </div>
+
+    <div class="estado">
+        📍 Sucursal: MONTEMORELOS
+    </div>
+
+    <div class="estado" id="hora">
+        --
+    </div>
+
+</div>
+
+<script>
+
+function actualizarHora(){
+
+    const ahora = new Date();
+
+    const hora = ahora.toLocaleTimeString('es-MX',{
+        hour:'2-digit',
+        minute:'2-digit',
+        second:'2-digit'
+    });
+
+    const fecha = ahora.toLocaleDateString('es-MX');
+
+    document.getElementById('hora').innerHTML =
+        '🕒 ' + fecha + ' ' + hora;
+
+}
+
+setInterval(actualizarHora,1000);
+actualizarHora();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROVILEON | Inicio</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:Arial,sans-serif;
+}
+
+body{
+  background:#f4f6f9;
+  color:#1f2937;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+header{
+  background:linear-gradient(135deg,#00416A,#0c6cbd);
+  color:white;
+  padding:30px 20px;
+  text-align:center;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);
+}
+
+header h1{
+  font-size:34px;
+  margin-bottom:8px;
+}
+
+header p{
+  opacity:.92;
+  font-size:15px;
+}
+
+.main{
+  flex:1;
+  max-width:1200px;
+  width:100%;
+  margin:auto;
+  padding:30px 20px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:22px;
+}
+
+.card{
+  background:white;
+  border-radius:22px;
+  padding:24px;
+  text-decoration:none;
+  color:inherit;
+  border:1px solid #dbe3ea;
+  transition:.18s;
+  box-shadow:0 6px 18px rgba(0,0,0,.07);
+}
+
+.card:hover{
+  transform:translateY(-4px);
+  border-color:#0c6cbd;
+  box-shadow:0 10px 24px rgba(0,0,0,.12);
+}
+
+.icono{
+  font-size:46px;
+  margin-bottom:18px;
+}
+
+.card h2{
+  font-size:22px;
+  margin-bottom:10px;
+  color:#00416A;
+}
+
+.card p{
+  font-size:14px;
+  line-height:1.5;
+  color:#475467;
+}
+
+.footer{
+  text-align:center;
+  padding:15px;
+  font-size:13px;
+  color:#667085;
+}
+
+.badge{
+  display:inline-block;
+  margin-top:14px;
+  background:#eef4ff;
+  color:#00416A;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>PROVILEON</h1>
+  <p>Centro de operaciones y movimientos internos</p>
+</header>
+
+<main class="main">
+
+  <div class="grid">
+
+    <a class="card" href="solicitudmerca_provileon.html">
+      <div class="icono">📦</div>
+      <h2>Solicitud Transferencia</h2>
+      <p>
+        Crear solicitudes de transferencia entre sucursales,
+        captura rápida y operación móvil.
+      </p>
+      <span class="badge">SOLTRAN</span>
+    </a>
+
+    <a class="card" href="listatransfer_provileon.html">
+      <div class="icono">📋</div>
+      <h2>Visor Transferencias</h2>
+      <p>
+        Consulta de solicitudes pendientes,
+        surtidas y revisión completa de movimientos.
+      </p>
+      <span class="badge">VISOR</span>
+    </a>
+
+    <a class="card" href="altamerma_provileon.html">
+      <div class="icono">⚠️</div>
+      <h2>Solicitud Merma</h2>
+      <p>
+        Levantamiento de mermas,
+        productos dañados o diferencias de inventario.
+      </p>
+      <span class="badge">MERMAS</span>
+    </a>
+
+    <a class="card" href="devoluciomerca_provileon.html">
+      <div class="icono">↩️</div>
+      <h2>Devolución Mercancía</h2>
+      <p>
+        Devolución de mercancía a matriz,
+        reubicaciones y producto parado.
+      </p>
+      <span class="badge">DEVOLUCIONES</span>
+    </a>
+
+  </div>
+
+</main>
+
+<div class="footer">
+  PROVSOFT · PROVILEON · Sistema Operativo Interno
+</div>
+
+</body>
+</html>

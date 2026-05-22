@@ -737,6 +737,174 @@ tr.diff-row td{background:#fff7ed;}
     padding:6px;
   }
 }
+
+/* AJUSTE PANTALLA SELECCIÓN FULL SIN SCROLL NORMAL */
+#viewSucursal{
+  height:100vh;
+  overflow:hidden;
+}
+
+#viewSucursal .center-screen{
+  min-height:100vh;
+  height:100vh;
+  align-items:stretch;
+  justify-content:center;
+  padding:10px;
+  overflow:hidden;
+}
+
+#viewSucursal .selector-box{
+  width:100%;
+  max-width:1200px;
+  min-height:calc(100vh - 20px);
+  height:calc(100vh - 20px);
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  overflow:hidden;
+}
+
+#viewSucursal .logo-main{
+  max-width:180px;
+  margin:0 auto 10px;
+  flex:0 0 auto;
+}
+
+#viewSucursal h1{
+  font-size:24px;
+  margin:0 0 4px;
+  flex:0 0 auto;
+}
+
+#viewSucursal .sub{
+  margin-bottom:12px;
+  flex:0 0 auto;
+}
+
+#viewSucursal .sucursal-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  flex:0 1 auto;
+}
+
+#viewSucursal .sucursal-card-btn{
+  min-height:82px;
+  padding:13px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+#viewSucursal .sucursal-card-btn strong{
+  font-size:17px;
+  margin-bottom:4px;
+}
+
+#viewSucursal .sucursal-card-btn span{
+  font-size:11px;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+
+#viewSucursal #btnLogoutSelector{
+  margin-top:12px;
+  flex:0 0 auto;
+}
+
+@media(max-width:900px){
+  #viewSucursal .sucursal-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+
+@media(max-width:650px){
+  #viewSucursal .center-screen{
+    padding:8px;
+  }
+
+  #viewSucursal .selector-box{
+    min-height:calc(100vh - 16px);
+    height:calc(100vh - 16px);
+    padding:10px;
+    border-radius:18px;
+  }
+
+  #viewSucursal .logo-main{
+    max-width:120px;
+    margin-bottom:6px;
+  }
+
+  #viewSucursal h1{
+    font-size:20px;
+  }
+
+  #viewSucursal .sub{
+    font-size:12px;
+    margin-bottom:8px;
+  }
+
+  #viewSucursal .sucursal-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+
+  #viewSucursal .sucursal-card-btn{
+    min-height:66px;
+    padding:9px;
+    border-radius:13px;
+  }
+
+  #viewSucursal .sucursal-card-btn strong{
+    font-size:14px;
+  }
+
+  #viewSucursal .sucursal-card-btn span{
+    font-size:9px;
+    line-height:1.15;
+  }
+
+  #viewSucursal #btnLogoutSelector{
+    margin-top:8px;
+    padding:9px 10px;
+    font-size:14px;
+  }
+}
+
+@media(max-width:380px){
+  #viewSucursal .logo-main{
+    max-width:105px;
+  }
+
+  #viewSucursal h1{
+    font-size:18px;
+  }
+
+  #viewSucursal .sub{
+    font-size:11px;
+    margin-bottom:6px;
+  }
+
+  #viewSucursal .sucursal-card-btn{
+    min-height:58px;
+    padding:7px;
+  }
+
+  #viewSucursal .sucursal-card-btn strong{
+    font-size:12px;
+  }
+
+  #viewSucursal .sucursal-card-btn span{
+    font-size:8px;
+  }
+
+  #viewSucursal #btnLogoutSelector{
+    padding:7px 8px;
+    font-size:12px;
+  }
+}
+
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -837,7 +1005,6 @@ tr.diff-row td{background:#fff7ed;}
 </div>
       
 
-      <br>
       <button id="btnLogoutSelector" class="btn-secondary">Cerrar sesión</button>
     </div>
   </div>
@@ -2934,42 +3101,22 @@ async function generarPDFProfesional(payload) {
   try {
     logo = await cargarImagenComoDataURL(LOGO_URL);
   } catch(e){
-    console.warn(e);
+    console.warn('No se pudo cargar logo:', e);
   }
-
-const surtidos = ordenarPorConcepto(
-  payload.detalle.filter(x =>
-    Number(x.cantidad_surtida || 0) > 0
-  )
-);
-  
-
-  const noSurtidos = ordenarPorConcepto(
-    payload.detalle.filter(x =>
-      Number(x.cantidad_solicitada || 0) > 0 &&
-      Number(x.cantidad_surtida || 0) === 0
-    )
-  );
-
-  const agregados = ordenarPorConcepto(
-    payload.detalle.filter(x =>
-      x.agregado_en_surtido === true
-    )
-  );
 
   if (logo) {
     pdf.addImage(
       logo,
       'PNG',
       10,
-      6,
-      55,
-      20
+      7,
+      52,
+      18
     );
   }
 
   pdf.setFont('helvetica','bold');
-  pdf.setFontSize(18);
+  pdf.setFontSize(17);
 
   pdf.text(
     'SURTIDO DE TRANSFERENCIA',
@@ -2978,196 +3125,139 @@ const surtidos = ordenarPorConcepto(
     { align:'right' }
   );
 
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica','normal');
 
   pdf.text(
-    `Folio surtido: ${payload.folio_surtido}`,
-    10,
-    34
+    'PROVSOFT | Documento operativo de surtido',
+    pageWidth - 10,
+    22,
+    { align:'right' }
   );
 
-  pdf.text(
-    `Folio solicitud: ${payload.folio_solicitud}`,
-    10,
-    40
-  );
+  pdf.setDrawColor(0,65,106);
+  pdf.setLineWidth(.8);
+  pdf.line(10,30,pageWidth-10,30);
 
-  pdf.text(
-    `Sucursal destino: ${payload.sucursal_destino}`,
-    10,
-    46
-  );
+  y = 38;
 
-  pdf.text(
-    `Fecha: ${fechaMx(payload.fecha_guardado)}`,
-    10,
-    52
-  );
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica','bold');
+  pdf.text('Datos del documento',10,y);
 
-  pdf.text(
-    `Captura: ${payload.quien_captura || ''}`,
-    110,
-    34
-  );
+  y += 6;
+  pdf.setFont('helvetica','normal');
 
-  pdf.text(
-    `Surte: ${payload.quien_surte || ''}`,
-    110,
-    40
-  );
+  const datos = [
+    ['Folio surtido', payload.folio_surtido],
+    ['Folio solicitud', payload.folio_solicitud],
+    ['Sucursal destino', payload.sucursal_destino],
+    ['Almacén origen', payload.almacen_origen],
+    ['Fecha', fechaMx(payload.fecha_guardado)],
+    ['Estatus', payload.estatus],
+    ['Quién captura', payload.quien_captura || '-'],
+    ['Quién surte', payload.quien_surte || '-'],
+    ['Quién lleva', payload.quien_lleva || '-']
+  ];
 
-  pdf.text(
-    `Chofer: ${payload.quien_lleva || ''}`,
-    110,
-    46
-  );
+  const leftX = 10;
+  const rightX = 110;
 
-  y = 62;
-
-  function drawBloque(
-    titulo,
-    comentario,
-    lista,
-    tipo = 'normal'
-  ) {
-
-    if (!lista.length) return;
-
-    pdf.setFillColor(0,65,106);
-
-    if (tipo === 'info') {
-      pdf.setFillColor(249,115,22);
-    }
-
-    pdf.rect(10, y, 195, 8, 'F');
-
-    pdf.setTextColor(255,255,255);
+  datos.forEach((d, i) => {
+    const x = i % 2 === 0 ? leftX : rightX;
+    const yy = y + Math.floor(i / 2) * 6;
 
     pdf.setFont('helvetica','bold');
-    pdf.setFontSize(11);
+    pdf.text(`${d[0]}:`, x, yy);
 
-    pdf.text(
-      titulo,
-      13,
-      y + 5.4
-    );
+    pdf.setFont('helvetica','normal');
+    pdf.text(String(d[1] || '-'), x + 32, yy);
+  });
 
-    pdf.setTextColor(0,0,0);
+  y += 34;
 
-    y += 12;
+  const rows = payload.detalle.map((item, idx) => [
+    idx + 1,
+    item.codigo || '',
+    item.nombre || '',
+    Number(item.cantidad_solicitada || 0),
+    Number(item.cantidad_surtida || 0),
+    Number(item.diferencia || 0),
+    item.agregado_en_surtido ? 'SI' : 'NO',
+    money(item.precioPublico || 0)
+  ]);
 
-    pdf.setFont('helvetica','italic');
-    pdf.setFontSize(8.8);
+  pdf.autoTable({
+    startY:y,
 
-    const comentarioLines =
-      pdf.splitTextToSize(comentario, 182);
+    head:[[
+      '#',
+      'Código',
+      'Concepto',
+      'Solicitado',
+      'Surtido',
+      'Dif.',
+      'Extra',
+      'Costo'
+    ]],
 
-    pdf.text(
-      comentarioLines,
-      12,
-      y
-    );
+    body:rows,
 
-    y += comentarioLines.length * 4 + 4;
+    theme:'grid',
 
-    const rows = lista.map((item, idx) => [
-      idx + 1,
-      item.codigo || '',
-      item.nombre || '',
-      Number(
-        item.cantidad_surtida ||
-        item.cantidad_solicitada ||
-        0
-      ),
-      money(item.precioPublico || 0)
-    ]);
+    headStyles:{
+      fillColor:[0,65,106]
+    },
 
-    pdf.autoTable({
-      startY:y,
+    styles:{
+      fontSize:7.5,
+      cellPadding:2
+    },
 
-      head:[[
-        '#',
-        'Código',
-        'Concepto',
-        'Cantidad',
-        'Costo'
-      ]],
+    columnStyles:{
+      0:{cellWidth:8},
+      1:{cellWidth:24},
+      2:{cellWidth:75},
+      3:{cellWidth:18, halign:'center'},
+      4:{cellWidth:18, halign:'center'},
+      5:{cellWidth:14, halign:'center'},
+      6:{cellWidth:14, halign:'center'},
+      7:{cellWidth:25, halign:'right'}
+    },
 
-      body:rows,
+    margin:{
+      left:10,
+      right:10
+    }
+  });
 
-      theme:'grid',
+  y = pdf.lastAutoTable.finalY + 10;
 
-      headStyles:{
-        fillColor:
-          tipo === 'info'
-            ? [249,115,22]
-            : [0,65,106]
-      },
-
-      styles:{
-        fontSize:8,
-        cellPadding:2
-      },
-
-      columnStyles:{
-        0:{cellWidth:10},
-        1:{cellWidth:28},
-        2:{cellWidth:100},
-        3:{cellWidth:24},
-        4:{cellWidth:28}
-      },
-
-      margin:{
-        left:10,
-        right:10
-      }
-    });
-
-    y = pdf.lastAutoTable.finalY + 10;
-  }
-
-  drawBloque(
-    'MERCANCÍA SURTIDA',
-    'La siguiente mercancía fue surtida y enviada físicamente. Estos artículos SÍ ingresan al inventario de la sucursal destino.',
-    surtidos,
-    'normal'
-  );
-
-  drawBloque(
-    'BLOQUE INFORMATIVO — MERCANCÍA NO SURTIDA',
-    'Los siguientes artículos NO fueron surtidos. Esta sección es únicamente informativa y NO representa mercancía enviada.',
-    noSurtidos,
-    'info'
-  );
-
-  drawBloque(
-    'BLOQUE INFORMATIVO — MERCANCÍA AGREGADA',
-    'Los siguientes artículos fueron agregados durante el surtido. Estos productos SÍ fueron enviados físicamente y deben ingresar al inventario.',
-    agregados,
-    'info'
-  );
-
-  if (y > 220) {
+  if (y > 230) {
     pdf.addPage();
     y = 20;
   }
 
+  const totalSolicitado = payload.detalle.reduce((acc, x) => {
+    return acc + Number(x.cantidad_solicitada || 0) * Number(x.precioPublico || 0);
+  }, 0);
+
+  const totalSurtido = payload.detalle.reduce((acc, x) => {
+    return acc + Number(x.cantidad_surtida || 0) * Number(x.precioPublico || 0);
+  }, 0);
+
   pdf.setFont('helvetica','bold');
-  pdf.setFontSize(11);
+  pdf.setFontSize(10);
+  pdf.text(`Importe solicitado: ${money(totalSolicitado)}`, 10, y);
+  pdf.text(`Importe surtido: ${money(totalSurtido)}`, 110, y);
 
-  pdf.text('FIRMAS',10,y);
+  y += 18;
 
-  y += 22;
-
-  const boxW = 58;
-
-  function firmaBox(x,titulo,nombre='') {
-
+  function firmaBox(x,titulo,nombre) {
     pdf.roundedRect(
       x,
       y,
-      boxW,
+      58,
       28,
       2,
       2
@@ -3175,72 +3265,63 @@ const surtidos = ordenarPorConcepto(
 
     pdf.line(
       x + 4,
-      y + 18,
-      x + boxW - 4,
-      y + 18
+      y + 17,
+      x + 54,
+      y + 17
     );
 
     pdf.setFontSize(8);
-
+    pdf.setFont('helvetica','bold');
     pdf.text(
       titulo,
-      x + boxW/2,
-      y + 23,
+      x + 29,
+      y + 22,
       { align:'center' }
     );
 
+    pdf.setFont('helvetica','normal');
     pdf.text(
-      nombre,
-      x + boxW/2,
-      y + 26.5,
-      { align:'center' }
+      String(nombre || ''),
+      x + 29,
+      y + 26,
+      { align:'center', maxWidth:54 }
     );
   }
 
-  firmaBox(
-    10,
-    'CAPTURISTA',
-    payload.quien_captura || ''
-  );
-
-  firmaBox(
-    74,
-    'CHOFER',
-    payload.quien_lleva || ''
-  );
-
-  firmaBox(
-    138,
-    'RECIBE SUCURSAL'
-  );
+  firmaBox(10,'CAPTURA',payload.quien_captura);
+  firmaBox(74,'SURTE',payload.quien_surte);
+  firmaBox(138,'LLEVA',payload.quien_lleva);
 
   pdf.save(
     `${payload.folio_surtido}_${payload.sucursal_destino}.pdf`
   );
 }
 
+async function imprimirSolicitudActual() {
+  if (!validarGuardar()) return;
+
+  const payload = construirPayload(null, 'HOJA_CHECK');
+
+  await generarPDFHojaCheck(payload);
+}
+
 function bindEvents() {
 
   $('btnLogin').onclick = async () => {
-
-    const email =
-      $('loginEmail').value.trim();
-
-    const pass =
-      $('loginPassword').value;
+    const email = $('loginEmail').value.trim();
+    const pass = $('loginPassword').value;
 
     if (!email || !pass) {
       $('loginEstado').textContent =
-        'Capture correo y contraseña.';
+        'Ingrese correo y contraseña.';
       return;
     }
 
     try {
-
       $('btnLogin').disabled = true;
 
       $('loginEstado').textContent =
-        'Validando acceso...';
+        'Validando credenciales...';
 
       await signInWithEmailAndPassword(
         auth,
@@ -3248,241 +3329,153 @@ function bindEvents() {
         pass
       );
 
-    } catch(error) {
-
-      console.error(error);
-
+    } catch (error) {
       $('loginEstado').textContent =
-        error.message;
+        'Error de acceso: ' + error.message;
 
     } finally {
-
       $('btnLogin').disabled = false;
     }
   };
 
-  $('loginPassword')
-    .addEventListener('keydown',(e)=>{
-      if(e.key==='Enter'){
-        $('btnLogin').click();
-      }
-    });
+  $('btnLogoutSelector').onclick = async () => {
+    await liberarBloqueoSolicitud();
+    await signOut(auth);
+  };
 
-  document
-    .querySelectorAll('[data-sucursal]')
+  $('btnLogoutApp').onclick = async () => {
+    await liberarBloqueoSolicitud();
+    await signOut(auth);
+  };
+
+  $('btnCambiarSucursal').onclick = async () => {
+    await liberarBloqueoSolicitud();
+
+    sucursalActual = null;
+    solicitudOriginal = null;
+    detalle = [];
+
+    showView('viewSucursal');
+  };
+
+  document.querySelectorAll('.sucursal-card-btn')
     .forEach(btn => {
-
       btn.onclick = async () => {
+        const key = btn.dataset.sucursal;
 
-        sucursalActual =
-          SUCURSALES[btn.dataset.sucursal];
+        sucursalActual = SUCURSALES[key];
+
+        if (!sucursalActual) {
+          alert('Sucursal no configurada.');
+          return;
+        }
 
         showView('viewLoading');
 
-        setLoading('Cargando catálogo...');
-        await cargarCatalogo();
+        setLoading(
+          `Cargando ${sucursalActual.nombre}...`
+        );
 
-        setLoading('Cargando operadores...');
-        await cargarOperadores();
-
-        sistemaCargado = true;
+        if (!sistemaCargado) {
+          await cargarOperadores();
+          await cargarCatalogo();
+          sistemaCargado = true;
+        }
 
         $('subSucursal').textContent =
-          `Sucursal: ${sucursalActual.nombre}`;
+          `PROVSOFT | ${sucursalActual.nombre}`;
 
-        $('folioEntrada').value =
-          generarFolioEntrada();
-
-        $('sucursalDestino').value =
-          sucursalActual.nombre;
-
-        $('almacenOrigen').value =
-          sucursalActual.almacenOrigen;
-
-        actualizarHeaderInfo();
+        await limpiarPantalla(false);
 
         showView('viewApp');
-
-        setStatus(
-          `Sucursal ${sucursalActual.nombre} lista.`,
-          'ok'
-        );
 
         abrirModalInicioOperacion();
       };
     });
 
-  $('btnLogoutSelector').onclick =
-    () => signOut(auth);
+  $('btnCargarSolicitud').onclick = cargarSolicitud;
 
-  $('btnLogoutApp').onclick =
-    async () => {
-      await liberarBloqueoSolicitud();
-      signOut(auth);
-    };
-
-  $('btnCambiarSucursal').onclick = async () => {
-
-    cerrarModalInicioOperacion();
-
-    await limpiarPantalla();
-
-    sucursalActual = null;
-
-    showView('viewSucursal');
-  };
-
-  $('btnCargarSolicitud').onclick =
-    cargarSolicitud;
-
-  $('folioSolicitud').addEventListener('keydown', (e) => {
+  $('folioSolicitud').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
-      $('btnCargarSolicitud').click();
+      e.preventDefault();
+      cargarSolicitud();
     }
   });
 
-  $('btnAgregarProducto').onclick =
-    agregarProductoExtra;
+  $('btnNuevaOperacion').onclick = async () => {
+    await limpiarPantalla();
+    cerrarModalInicioOperacion();
+  };
 
-  $('btnGuardarCambios').onclick =
-    guardarCambios;
+  $('btnCerrarModalSolicitudes').onclick = () => {
+    $('modalSolicitudes').style.display = 'none';
+  };
 
-  $('btnGuardarSurtido').onclick =
-    guardarSurtido;
+  $('buscarSolicitudModal').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
 
-  $('btnImprimirSolicitud').onclick =
-    () => {
-
-      if (!validarGuardar()) return;
-
-      const payload =
-        construirPayload(null, 'PENDIENTE');
-
-      generarPDFHojaCheck(payload);
-    };
-
-  $('btnNuevaOperacion').onclick =
-    async () => {
-
-      if(solicitudOriginal && !confirm('¿Limpiar operación actual?')) return;
-
-      await limpiarPantalla();
-
-      abrirModalInicioOperacion();
-    };
-
-  $('btnCerrarModalSolicitudes').onclick =
-    () => {
-      $('modalSolicitudes').style.display='none';
-    };
-
-  $('buscarSolicitudModal')
-    .addEventListener('input',(e)=>{
-
-      const q =
-        String(e.target.value || '')
-          .trim()
-          .toLowerCase();
-
-      const filtradas =
-        solicitudesDisponibles.filter(x =>
-          String(x.folio || '')
-            .toLowerCase()
-            .includes(q)
-        );
-
-      renderListaSolicitudesModal(filtradas);
+    const lista = solicitudesDisponibles.filter(x => {
+      return String(x.folio || '').toLowerCase().includes(q);
     });
 
-  $('busquedaProducto')
-    .addEventListener('input',(e)=>{
+    renderListaSolicitudesModal(lista);
+  });
 
-      if(timerBusqueda)
-        clearTimeout(timerBusqueda);
+  $('busquedaProducto').addEventListener('input', e => {
+    clearTimeout(timerBusqueda);
 
-      timerBusqueda = setTimeout(()=>{
+    timerBusqueda = setTimeout(() => {
+      productoSeleccionado = null;
+      const lista = buscarEnCatalogo(e.target.value);
+      renderResultadosBusqueda(lista);
+    }, 150);
+  });
 
-        renderResultadosBusqueda(
-          buscarEnCatalogo(e.target.value)
-        );
+  $('busquedaProducto').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
 
-      },120);
-    });
+      const lista = buscarEnCatalogo(
+        $('busquedaProducto').value
+      );
 
-  $('busquedaProducto')
-    .addEventListener('keydown',(e)=>{
+      if (lista.length) {
+        productoSeleccionado = lista[0];
 
-      if(e.key === 'Enter'){
-        e.preventDefault();
+        $('busquedaProducto').value =
+          productoSeleccionado.concepto +
+          ' | ' +
+          productoSeleccionado.codigoBarra;
 
-        if(productoSeleccionado){
-          $('cantidadAgregar').focus();
-          $('cantidadAgregar').select();
-        } else {
-          const first = document.querySelector('#results .result-item[data-index]');
-          if(first) first.click();
-        }
+        $('results').style.display = 'none';
+
+        $('cantidadAgregar').focus();
+        $('cantidadAgregar').select();
       }
-    });
+    }
+  });
 
-  $('cantidadAgregar')
-    .addEventListener('keydown',(e)=>{
+  $('cantidadAgregar').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      agregarProductoExtra();
+    }
+  });
 
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        $('btnAgregarProducto').click();
-        enfocarPrimerCampoCarrito();
-      }
-    });
+  $('btnAgregarProducto').onclick = agregarProductoExtra;
 
-  $('btnAgregarProducto')
-    .addEventListener('keydown',(e)=>{
+  $('btnGuardarCambios').onclick = guardarCambios;
 
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        $('btnAgregarProducto').click();
-        enfocarPrimerCampoCarrito();
-      }
-    });
+  $('btnGuardarSurtido').onclick = guardarSurtido;
 
-  $('btnInstalarApp').onclick = async () => {
+  $('btnImprimirSolicitud').onclick = imprimirSolicitudActual;
 
-  if (!deferredInstallPrompt) {
-
-    $('loginEstado').textContent =
-      'La instalación aún no está disponible.';
-
-    return;
-  }
-
-  deferredInstallPrompt.prompt();
-
-  const result =
-    await deferredInstallPrompt.userChoice;
-
-  deferredInstallPrompt = null;
-
-  $('btnInstalarApp').style.display = 'none';
-
-  if (result.outcome === 'accepted') {
-
-    $('loginEstado').textContent =
-      'Aplicación instalada correctamente.';
-
-  } else {
-
-    $('loginEstado').textContent =
-      'Instalación cancelada.';
-  }
-};
-  
-  document.addEventListener('click',(e)=>{
-
+  document.addEventListener('click', e => {
     const box = $('results');
 
-    if(
-      !$('busquedaProducto').contains(e.target)
-      &&
+    if (
+      box &&
+      e.target !== $('busquedaProducto') &&
       !box.contains(e.target)
     ){
       box.style.display='none';

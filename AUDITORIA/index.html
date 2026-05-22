@@ -1248,60 +1248,93 @@
 
     const productos = await idbGetAll("productos");
 
-    // 1) Escaneo normal: coincidencia estricta contra código original.
-    // No se quitan ceros a la izquierda en códigos largos normales para evitar falsos positivos.
-    let p = productos.find(x => codigoIgualFlexible(info.codigoLimpio, x.codigoBarra, { permitirSinCeros:false }));
-
-    if(p){
-      p.__codigoEscaneado = info.codigoLimpio;
-      p.__origenCodigo = "ORIGINAL";
+    const limpiarProductoTemporal = (p) => {
+      if(!p) return null;
+      delete p.__codigoEscaneado;
+      delete p.__origenCodigo;
+      delete p.__codigoBascula;
+      delete p.__cantidadDetectada;
+      delete p.__origen;
       return p;
-    }
+    };
 
-    // 2) Escaneo normal: coincidencia estricta contra equivalentes.
-    p = productos.find(x => Array.isArray(x.codigosEquivalentes) &&
-      x.codigosEquivalentes.some(eq => codigoIgualFlexible(info.codigoLimpio, eq, { permitirSinCeros:false }))
-    );
-
-    if(p){
+    const marcarProducto = (p, origenCodigo, extra = {}) => {
+      if(!p) return null;
       p.__codigoEscaneado = info.codigoLimpio;
-      p.__origenCodigo = "EQUIVALENTE";
-      return p;
-    }
+      p.__origenCodigo = origenCodigo;
 
-    // 3) Báscula: solo si el formato realmente parece etiqueta de báscula.
-    // Aquí sí se permite comparar SKU con/sin ceros porque la báscula manda SKU interno.
+      if(extra.bascula){
+        p.__codigoBascula = extra.bascula;
+        p.__cantidadDetectada = extra.bascula.pesoKg;
+        p.__origen = "BASCULA";
+      }
+
+      return p;
+    };
+
+    const buscarPorCodigoBarraExacto = (codigos, permitirSinCeros=false) => {
+      const lista = Array.isArray(codigos) ? codigos.filter(Boolean) : [codigos].filter(Boolean);
+
+      return productos.find(x => {
+        limpiarProductoTemporal(x);
+        return lista.some(c => codigoIgualFlexible(c, x.codigoBarra, { permitirSinCeros }));
+      }) || null;
+    };
+
+    const buscarPorEquivalenteExacto = (codigos, permitirSinCeros=false) => {
+      const lista = Array.isArray(codigos) ? codigos.filter(Boolean) : [codigos].filter(Boolean);
+
+      return productos.find(x => {
+        limpiarProductoTemporal(x);
+        return Array.isArray(x.codigosEquivalentes) &&
+          x.codigosEquivalentes.some(eq => lista.some(c =>
+            codigoIgualFlexible(c, eq, { permitirSinCeros })
+          ));
+      }) || null;
+    };
+
+    // REGLA CRÍTICA:
+    // Si es etiqueta de báscula, NO se debe buscar primero por SKU corto contra codigoBarra.
+    // Ejemplo 2000044000408 => SKU 44. Si se busca primero "44", puede caer en otro producto
+    // cuyo código real sea 44. Por eso se prioriza el equivalente con prefijo 20+SKU: 2000044.
     if(info.bascula){
-      const candidatosBascula = [info.bascula.sku5, info.bascula.sku, info.bascula.codigoPrefijoSku].filter(Boolean);
+      const bascula = info.bascula;
 
-      p = productos.find(x => candidatosBascula.some(c =>
-        codigoIgualFlexible(c, x.codigoBarra, { permitirSinCeros:true })
-      ));
+      // 1) Coincidencia más segura: equivalente 20 + SKU5. Ejemplo: 2000044.
+      let p = buscarPorEquivalenteExacto([bascula.codigoPrefijoSku], false);
+      if(p) return marcarProducto(p, "BASCULA_EQUIVALENTE_PREFIJO_20", { bascula });
 
-      if(p){
-        p.__codigoEscaneado = info.codigoLimpio;
-        p.__origenCodigo = "BASCULA_ORIGINAL";
-        p.__codigoBascula = info.bascula;
-        p.__cantidadDetectada = info.bascula.pesoKg;
-        p.__origen = "BASCULA";
-        return p;
-      }
+      // 2) Coincidencia segura alternativa: codigoBarra 20 + SKU5.
+      p = buscarPorCodigoBarraExacto([bascula.codigoPrefijoSku], false);
+      if(p) return marcarProducto(p, "BASCULA_ORIGINAL_PREFIJO_20", { bascula });
 
-      p = productos.find(x => Array.isArray(x.codigosEquivalentes) &&
-        x.codigosEquivalentes.some(eq => candidatosBascula.some(c =>
-          codigoIgualFlexible(c, eq, { permitirSinCeros:true })
-        ))
-      );
+      // 3) Equivalente SKU5 exacto. Ejemplo: 00044.
+      p = buscarPorEquivalenteExacto([bascula.sku5], false);
+      if(p) return marcarProducto(p, "BASCULA_EQUIVALENTE_SKU5", { bascula });
 
-      if(p){
-        p.__codigoEscaneado = info.codigoLimpio;
-        p.__origenCodigo = "BASCULA_EQUIVALENTE";
-        p.__codigoBascula = info.bascula;
-        p.__cantidadDetectada = info.bascula.pesoKg;
-        p.__origen = "BASCULA";
-        return p;
-      }
+      // 4) Equivalente SKU sin ceros. Ejemplo: 44.
+      p = buscarPorEquivalenteExacto([bascula.sku], false);
+      if(p) return marcarProducto(p, "BASCULA_EQUIVALENTE_SKU", { bascula });
+
+      // 5) Ultimo recurso: codigoBarra SKU5 exacto.
+      p = buscarPorCodigoBarraExacto([bascula.sku5], false);
+      if(p) return marcarProducto(p, "BASCULA_ORIGINAL_SKU5", { bascula });
+
+      // 6) Ultimo recurso: codigoBarra SKU sin ceros. Esto queda al final para evitar falsos positivos.
+      p = buscarPorCodigoBarraExacto([bascula.sku], false);
+      if(p) return marcarProducto(p, "BASCULA_ORIGINAL_SKU", { bascula });
+
+      return null;
     }
+
+    // Escaneo normal: coincidencia estricta contra código original.
+    // No se quitan ceros a la izquierda en códigos largos normales para evitar falsos positivos.
+    let p = buscarPorCodigoBarraExacto(info.codigoLimpio, false);
+    if(p) return marcarProducto(p, "ORIGINAL");
+
+    // Escaneo normal: coincidencia estricta contra equivalentes.
+    p = buscarPorEquivalenteExacto(info.codigoLimpio, false);
+    if(p) return marcarProducto(p, "EQUIVALENTE");
 
     return null;
   }

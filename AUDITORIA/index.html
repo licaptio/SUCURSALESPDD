@@ -422,6 +422,64 @@
       font-weight:700;
     }
 
+
+    .catalog-progress{
+      margin-top:12px;
+      display:none;
+      background:#fffdf4;
+      border:1px solid #f4d35e;
+      border-radius:16px;
+      padding:10px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+    }
+
+    .catalog-progress.show{display:block}
+
+    .catalog-progress-head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      color:#7a2e00;
+      font-size:12px;
+      font-weight:900;
+      margin-bottom:7px;
+    }
+
+    .catalog-progress-track{
+      height:18px;
+      border-radius:999px;
+      overflow:hidden;
+      background:#fff3bf;
+      border:1px solid #f4d35e;
+    }
+
+    .catalog-progress-bar{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#f2b705,#d71920);
+      transition:width .18s ease;
+    }
+
+    .catalog-progress.indeterminate .catalog-progress-bar{
+      width:45%;
+      animation:catalogIndeterminate 1s infinite alternate ease-in-out;
+    }
+
+    @keyframes catalogIndeterminate{
+      from{transform:translateX(-35%)}
+      to{transform:translateX(150%)}
+    }
+
+    .catalog-progress-detail{
+      margin-top:7px;
+      font-size:11px;
+      color:var(--muted);
+      font-weight:800;
+      text-align:center;
+    }
+
     .hidden{display:none!important}
 
     @media(max-width:719px){
@@ -488,6 +546,17 @@
 
       <div class="subtitle" id="loginMsg">
         El acceso se valida desde Firebase en la colección usuarios_ruta.
+      </div>
+
+      <div id="catalogoProgress" class="catalog-progress">
+        <div class="catalog-progress-head">
+          <span id="catalogoProgressTitle">Catálogo</span>
+          <span id="catalogoProgressPercent">0%</span>
+        </div>
+        <div class="catalog-progress-track">
+          <div id="catalogoProgressBar" class="catalog-progress-bar"></div>
+        </div>
+        <div id="catalogoProgressDetail" class="catalog-progress-detail">Esperando inicio...</div>
       </div>
     </div>
   </section>
@@ -659,6 +728,11 @@
     loginUsuario: $("loginUsuario"),
     loginPassword: $("loginPassword"),
     loginMsg: $("loginMsg"),
+    catalogoProgress: $("catalogoProgress"),
+    catalogoProgressTitle: $("catalogoProgressTitle"),
+    catalogoProgressPercent: $("catalogoProgressPercent"),
+    catalogoProgressBar: $("catalogoProgressBar"),
+    catalogoProgressDetail: $("catalogoProgressDetail"),
     btnLogin: $("btnLogin"),
     userName: $("userName"),
     folioTxt: $("folioTxt"),
@@ -840,13 +914,62 @@
     };
   }
 
+  function mostrarProgresoCatalogo({ titulo="Catálogo", porcentaje=0, detalle="", indeterminado=false, visible=true } = {}){
+    if(!refs.catalogoProgress) return;
+
+    refs.catalogoProgress.classList.toggle("show", visible);
+    refs.catalogoProgress.classList.toggle("indeterminate", !!indeterminado);
+
+    refs.catalogoProgressTitle.textContent = titulo;
+
+    if(indeterminado){
+      refs.catalogoProgressPercent.textContent = "...";
+      refs.catalogoProgressBar.style.width = "45%";
+    }else{
+      const pct = Math.max(0, Math.min(100, Number(porcentaje) || 0));
+      refs.catalogoProgressPercent.textContent = `${Math.round(pct)}%`;
+      refs.catalogoProgressBar.style.width = `${pct}%`;
+    }
+
+    refs.catalogoProgressDetail.textContent = detalle || "";
+  }
+
+  function ocultarProgresoCatalogo(){
+    if(!refs.catalogoProgress) return;
+    refs.catalogoProgress.classList.remove("show", "indeterminate");
+  }
+
+  function esperarPintado(){
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
   async function descargarCatalogo(){
-    refs.loginMsg.textContent = "Descargando catálogo completo...";
+    refs.loginMsg.textContent = "Conectando con Firebase para descargar catálogo...";
+
+    mostrarProgresoCatalogo({
+      titulo:"Descargando catálogo",
+      indeterminado:true,
+      detalle:"Solicitando productos desde /productos..."
+    });
+
+    await esperarPintado();
 
     const snap = await getDocs(collection(db,"productos"));
-    let total = 0;
+    const totalDocs = snap.size || snap.docs.length || 0;
 
+    refs.loginMsg.textContent = `Catálogo recibido. Guardando ${totalDocs} productos en este equipo...`;
+
+    mostrarProgresoCatalogo({
+      titulo:"Guardando catálogo local",
+      porcentaje:0,
+      detalle:`0 / ${totalDocs} productos guardados en IndexedDB`
+    });
+
+    await esperarPintado();
     await idbClear("productos");
+
+    let total = 0;
+    let ultimoPaint = 0;
 
     for(const d of snap.docs){
       const data = d.data();
@@ -870,10 +993,29 @@
       p.texto = textoProducto(p);
       await idbPut("productos", p);
       total++;
+
+      const porcentaje = totalDocs ? Math.round((total / totalDocs) * 100) : 100;
+
+      if(total === totalDocs || total - ultimoPaint >= 25){
+        ultimoPaint = total;
+        refs.loginMsg.textContent = `Guardando catálogo local: ${porcentaje}%`;
+        mostrarProgresoCatalogo({
+          titulo:"Guardando catálogo local",
+          porcentaje,
+          detalle:`${total} / ${totalDocs} productos guardados en IndexedDB`
+        });
+        await esperarPintado();
+      }
     }
 
     await setMeta("catalogoDescargadoEn", nowLocal());
     await setMeta("catalogoTotal", total);
+
+    mostrarProgresoCatalogo({
+      titulo:"Catálogo listo",
+      porcentaje:100,
+      detalle:`${total} productos disponibles para escanear por código original o equivalente`
+    });
 
     refs.loginMsg.textContent = `Catálogo completo local listo: ${total} productos.`;
   }
@@ -885,6 +1027,11 @@
       await descargarCatalogo();
     }else{
       refs.loginMsg.textContent = `Catálogo local cargado: ${total} productos.`;
+      mostrarProgresoCatalogo({
+        titulo:"Catálogo local listo",
+        porcentaje:100,
+        detalle:`${total} productos cargados desde IndexedDB`
+      });
     }
   }
 

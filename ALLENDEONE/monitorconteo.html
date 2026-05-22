@@ -10,11 +10,16 @@
   box-sizing:border-box;
 }
 
+html{
+  scroll-behavior:smooth;
+}
+
 body{
   margin:0;
   font-family:Arial,sans-serif;
   background:#f3f4f6;
   color:#111827;
+  overflow:hidden;
 }
 
 header{
@@ -40,6 +45,8 @@ h1{
 
 .panel{
   padding:14px;
+  height:calc(100vh - 92px);
+  overflow:hidden;
 }
 
 .stats{
@@ -87,37 +94,22 @@ h1{
   color:#991b1b;
 }
 
-table{
+.tabla-wrapper{
   width:100%;
-  border-collapse:collapse;
-  background:white;
+  height:calc(100vh - 260px);
+  min-height:350px;
+  overflow-y:auto;
+  overflow-x:auto;
   border-radius:14px;
-  overflow:hidden;
+  background:white;
   box-shadow:0 4px 12px rgba(0,0,0,.08);
+  border:1px solid #d1d5db;
 }
 
 table{
   width:100%;
   border-collapse:collapse;
   background:white;
-  border-radius:14px;
-  overflow:hidden;
-  box-shadow:0 4px 12px rgba(0,0,0,.08);
-}
-
-thead{
-  position:sticky;
-  top:0;
-  z-index:20;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:white;
-  border-radius:14px;
-  overflow:hidden;
-  box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
 thead{
@@ -178,8 +170,22 @@ tr.nuevo{
 
 @media(max-width:900px){
 
+  body{
+    overflow:auto;
+  }
+
+  .panel{
+    height:auto;
+    overflow:visible;
+  }
+
   .stats{
     grid-template-columns:1fr 1fr;
+  }
+
+  .tabla-wrapper{
+    height:calc(100vh - 300px);
+    min-height:360px;
   }
 
   th,td{
@@ -193,6 +199,11 @@ tr.nuevo{
 
   .stats{
     grid-template-columns:1fr;
+  }
+
+  .tabla-wrapper{
+    height:calc(100vh - 500px);
+    min-height:320px;
   }
 
 }
@@ -238,28 +249,32 @@ tr.nuevo{
 
   </div>
 
-  <table>
+  <div class="tabla-wrapper">
 
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Usuario</th>
-        <th>Código</th>
-        <th>Producto</th>
-        <th>Cantidad</th>
-        <th>Hora</th>
-      </tr>
-    </thead>
+    <table>
 
-    <tbody id="tbody">
-      <tr>
-        <td colspan="6">
-          Esperando información...
-        </td>
-      </tr>
-    </tbody>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Usuario</th>
+          <th>Código</th>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Hora</th>
+        </tr>
+      </thead>
 
-  </table>
+      <tbody id="tbody">
+        <tr>
+          <td colspan="6">
+            Esperando información...
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+
+  </div>
 
 </div>
 

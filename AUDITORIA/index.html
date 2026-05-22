@@ -884,13 +884,68 @@
 
 
   function soloDigitos(valor){
-    return String(valor || "").replace(/\D/g, "").trim();
+    return String(valor ?? "").replace(/\D/g, "").trim();
   }
 
   function sinCerosIzquierda(valor){
     const limpio = soloDigitos(valor);
     const reducido = limpio.replace(/^0+/, "");
     return reducido || limpio;
+  }
+
+  function limpiarCodigoFlexible(valor){
+    if(valor === null || valor === undefined) return "";
+
+    let txt = String(valor).trim();
+
+    // Firestore a veces guarda códigos como número. Si vinieran como 7.50123e+12,
+    // se expande para no perder la comparación del código.
+    if(/^[0-9]+(?:\.[0-9]+)?e\+?[0-9]+$/i.test(txt)){
+      const n = Number(txt);
+      if(Number.isFinite(n)){
+        txt = Math.trunc(n).toLocaleString("fullwide", { useGrouping:false });
+      }
+    }
+
+    return txt.replace(/\.0+$/, "").replace(/\D/g, "").trim();
+  }
+
+  function extraerCodigosEquivalentes(data){
+    const raw = data?.codigosEquivalentes;
+    let arr = [];
+
+    if(Array.isArray(raw)){
+      arr = raw;
+    }else if(raw && typeof raw === "object"){
+      arr = Object.values(raw);
+    }else if(raw !== null && raw !== undefined && raw !== ""){
+      arr = String(raw).split(/[\s,;|]+/);
+    }
+
+    return Array.from(new Set(
+      arr
+        .map(x => limpiarCodigoFlexible(x))
+        .filter(Boolean)
+    ));
+  }
+
+  function codigoIgualFlexible(codigoEntrada, codigoProducto, { permitirSinCeros=false } = {}){
+    const a = limpiarCodigoFlexible(codigoEntrada);
+    const b = limpiarCodigoFlexible(codigoProducto);
+
+    if(!a || !b) return false;
+    if(a === b) return true;
+
+    // Solo se permite quitar ceros cuando viene de báscula o cuando claramente
+    // el catálogo perdió ceros por estar guardado como número. Esto evita que
+    // un código largo normal caiga en otro artículo corto por accidente.
+    if(permitirSinCeros){
+      const aa = sinCerosIzquierda(a);
+      const bb = sinCerosIzquierda(b);
+      return aa && bb && aa === bb;
+    }
+
+    return false;
   }
 
   function parsearCodigoBascula(codigo){
@@ -1138,12 +1193,8 @@
     for(const d of snap.docs){
       const data = d.data();
 
-      const codigoBarra = String(data.codigoBarra || d.id || "").trim();
-      const codigosEquivalentes = Array.isArray(data.codigosEquivalentes)
-        ? data.codigosEquivalentes
-            .map(x => String(x || "").trim())
-            .filter(Boolean)
-        : [];
+      const codigoBarra = limpiarCodigoFlexible(data.codigoBarra || d.id || "");
+      const codigosEquivalentes = extraerCodigosEquivalentes(data);
 
       const p = {
         id: d.id,
@@ -1196,46 +1247,60 @@
     if(!info.codigoLimpio) return null;
 
     const productos = await idbGetAll("productos");
-    const variantesEntrada = info.variantes;
 
-    let p = productos.find(x => {
-      const codigosProducto = variantesProducto({
-        id: x.id,
-        codigoBarra: x.codigoBarra,
-        codigosEquivalentes: []
-      });
-      return codigosProducto.some(c => variantesEntrada.includes(c));
-    });
+    // 1) Escaneo normal: coincidencia estricta contra código original.
+    // No se quitan ceros a la izquierda en códigos largos normales para evitar falsos positivos.
+    let p = productos.find(x => codigoIgualFlexible(info.codigoLimpio, x.codigoBarra, { permitirSinCeros:false }));
 
     if(p){
       p.__codigoEscaneado = info.codigoLimpio;
-      p.__origenCodigo = info.bascula ? "BASCULA_ORIGINAL" : "ORIGINAL";
-      if(info.bascula){
-        p.__codigoBascula = info.bascula;
-        p.__cantidadDetectada = info.bascula.pesoKg;
-        p.__origen = "BASCULA";
-      }
+      p.__origenCodigo = "ORIGINAL";
       return p;
     }
 
-    p = productos.find(x => {
-      const codigosProducto = variantesProducto({
-        id: "",
-        codigoBarra: "",
-        codigosEquivalentes: x.codigosEquivalentes
-      });
-      return codigosProducto.some(c => variantesEntrada.includes(c));
-    });
+    // 2) Escaneo normal: coincidencia estricta contra equivalentes.
+    p = productos.find(x => Array.isArray(x.codigosEquivalentes) &&
+      x.codigosEquivalentes.some(eq => codigoIgualFlexible(info.codigoLimpio, eq, { permitirSinCeros:false }))
+    );
 
     if(p){
       p.__codigoEscaneado = info.codigoLimpio;
-      p.__origenCodigo = info.bascula ? "BASCULA_EQUIVALENTE" : "EQUIVALENTE";
-      if(info.bascula){
+      p.__origenCodigo = "EQUIVALENTE";
+      return p;
+    }
+
+    // 3) Báscula: solo si el formato realmente parece etiqueta de báscula.
+    // Aquí sí se permite comparar SKU con/sin ceros porque la báscula manda SKU interno.
+    if(info.bascula){
+      const candidatosBascula = [info.bascula.sku5, info.bascula.sku, info.bascula.codigoPrefijoSku].filter(Boolean);
+
+      p = productos.find(x => candidatosBascula.some(c =>
+        codigoIgualFlexible(c, x.codigoBarra, { permitirSinCeros:true })
+      ));
+
+      if(p){
+        p.__codigoEscaneado = info.codigoLimpio;
+        p.__origenCodigo = "BASCULA_ORIGINAL";
         p.__codigoBascula = info.bascula;
         p.__cantidadDetectada = info.bascula.pesoKg;
         p.__origen = "BASCULA";
+        return p;
       }
-      return p;
+
+      p = productos.find(x => Array.isArray(x.codigosEquivalentes) &&
+        x.codigosEquivalentes.some(eq => candidatosBascula.some(c =>
+          codigoIgualFlexible(c, eq, { permitirSinCeros:true })
+        ))
+      );
+
+      if(p){
+        p.__codigoEscaneado = info.codigoLimpio;
+        p.__origenCodigo = "BASCULA_EQUIVALENTE";
+        p.__codigoBascula = info.bascula;
+        p.__cantidadDetectada = info.bascula.pesoKg;
+        p.__origen = "BASCULA";
+        return p;
+      }
     }
 
     return null;

@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Visor EN VIVO | Inventario Multiusuario</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f3f4f6;
+  color:#111827;
+}
+
+header{
+  background:#0f172a;
+  color:white;
+  padding:16px;
+  position:sticky;
+  top:0;
+  z-index:50;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);
+}
+
+h1{
+  margin:0;
+  font-size:20px;
+}
+
+.sub{
+  margin-top:5px;
+  font-size:13px;
+  opacity:.8;
+}
+
+.panel{
+  padding:14px;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.card{
+  background:white;
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.card h2{
+  margin:0;
+  font-size:13px;
+  color:#6b7280;
+}
+
+.num{
+  margin-top:8px;
+  font-size:28px;
+  font-weight:bold;
+}
+
+#status{
+  display:inline-block;
+  padding:10px 14px;
+  border-radius:10px;
+  font-size:13px;
+  margin-bottom:14px;
+  background:#e5e7eb;
+}
+
+.ok{
+  background:#dcfce7!important;
+  color:#166534;
+}
+
+.err{
+  background:#fee2e2!important;
+  color:#991b1b;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+thead{
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+thead{
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+
+th{
+  background:#111827;
+  color:white;
+  padding:10px;
+  text-align:left;
+  font-size:13px;
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+
+td{
+  padding:10px;
+  border-bottom:1px solid #e5e7eb;
+  font-size:13px;
+}
+
+tr:hover{
+  background:#f9fafb;
+}
+
+tr.nuevo{
+  animation:flash 1.2s ease;
+}
+
+@keyframes flash{
+  from{
+    background:#fef3c7;
+  }
+  to{
+    background:white;
+  }
+}
+
+.small{
+  font-size:11px;
+  color:#6b7280;
+  margin-top:2px;
+}
+
+.usuario{
+  font-weight:bold;
+  color:#0c4a6e;
+}
+
+.cantidad{
+  font-weight:bold;
+  font-size:15px;
+}
+
+@media(max-width:900px){
+
+  .stats{
+    grid-template-columns:1fr 1fr;
+  }
+
+  th,td{
+    font-size:12px;
+    padding:8px;
+  }
+
+}
+
+@media(max-width:600px){
+
+  .stats{
+    grid-template-columns:1fr;
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Visor EN VIVO Inventario Multiusuario</h1>
+  <div class="sub">
+    Conteo: ALLENDE_MAYO_2026
+  </div>
+</header>
+
+<div class="panel">
+
+  <div id="status">
+    Conectando...
+  </div>
+
+  <div class="stats">
+
+    <div class="card">
+      <h2>Total Partidas</h2>
+      <div class="num" id="totalPartidas">0</div>
+    </div>
+
+    <div class="card">
+      <h2>Total Piezas</h2>
+      <div class="num" id="totalPiezas">0</div>
+    </div>
+
+    <div class="card">
+      <h2>Usuarios Activos</h2>
+      <div class="num" id="totalUsuarios">0</div>
+    </div>
+
+    <div class="card">
+      <h2>Último Registro</h2>
+      <div class="num" id="ultimoRegistro">--:--</div>
+    </div>
+
+  </div>
+
+  <table>
+
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Usuario</th>
+        <th>Código</th>
+        <th>Producto</th>
+        <th>Cantidad</th>
+        <th>Hora</th>
+      </tr>
+    </thead>
+
+    <tbody id="tbody">
+      <tr>
+        <td colspan="6">
+          Esperando información...
+        </td>
+      </tr>
+    </tbody>
+
+  </table>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getFirestore,
+  collection,
+  query,
+  orderBy,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* =========================================
+   FIREBASE
+========================================= */
+
+const firebaseConfig = {
+
+  apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+  authDomain: "inventariopv-643f1.firebaseapp.com",
+  projectId: "inventariopv-643f1",
+  storageBucket: "inventariopv-643f1.firebasestorage.app",
+  messagingSenderId: "96242533231",
+  appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+
+};
+
+/* =========================================
+   CONFIG
+========================================= */
+
+const CONTEO_ID = "ALLENDE_MAYO_2026";
+
+/* =========================================
+   INIT
+========================================= */
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* =========================================
+   DOM
+========================================= */
+
+const tbody = document.getElementById("tbody");
+
+const totalPartidasEl = document.getElementById("totalPartidas");
+const totalPiezasEl = document.getElementById("totalPiezas");
+const totalUsuariosEl = document.getElementById("totalUsuarios");
+const ultimoRegistroEl = document.getElementById("ultimoRegistro");
+const statusBox = document.getElementById("status");
+
+/* =========================================
+   GLOBAL
+========================================= */
+
+const listenersUsuarios = new Map();
+const partidasGlobales = new Map();
+const usuariosDetectados = new Set();
+const registrosNuevos = new Set();
+
+/* =========================================
+   HELPERS
+========================================= */
+
+function obtenerCantidad(data){
+
+  return Number(
+    data.cantidad ??
+    data.cantidad_contada ??
+    data.conteo ??
+    data.piezas ??
+    0
+  );
+
+}
+
+function obtenerCodigo(data){
+
+  return (
+    data.codigo ??
+    data.codigoBarra ??
+    data.codigo_barra ??
+    data.codigoOriginal ??
+    data.codigoEscaneadoUltimo ??
+    data.productoId ??
+    data.sku ??
+    ""
+  );
+
+}
+
+function obtenerNombre(data){
+
+  return (
+    data.descripcion ??
+    data.nombre ??
+    data.concepto ??
+    data.producto ??
+    ""
+  );
+
+}
+
+function obtenerFecha(data){
+
+  return (
+    data.epochMs ??
+    data.syncServer ??
+    data.timestamp ??
+    data.creado_en ??
+    data.updatedAt ??
+    data.fecha ??
+    null
+  );
+
+}
+
+function fechaMs(fecha){
+
+  try{
+
+    if(!fecha) return 0;
+
+    if(typeof fecha === "number"){
+      return fecha;
+    }
+
+    if(fecha.toDate){
+      return fecha.toDate().getTime();
+    }
+
+    return new Date(fecha).getTime();
+
+  }catch(e){
+
+    return 0;
+
+  }
+
+}
+
+function formatearFecha(fecha,data){
+
+  try{
+
+    if(data && data.fecha && data.hora){
+      return data.fecha + " " + data.hora;
+    }
+
+    if(!fecha) return "";
+
+    if(typeof fecha === "number"){
+      return new Date(fecha).toLocaleString("es-MX");
+    }
+
+    if(fecha.toDate){
+      return fecha.toDate().toLocaleString("es-MX");
+    }
+
+    return new Date(fecha).toLocaleString("es-MX");
+
+  }catch(e){
+
+    return "";
+
+  }
+
+}
+
+function obtenerUsuarioNombre(usuarioId,usuarioData,data){
+
+  return (
+    data.usuarioNombre ??
+    usuarioData.nombre ??
+    usuarioData.usuarioNombre ??
+    usuarioData.usuario ??
+    usuarioData.email ??
+    data.usuario ??
+    usuarioId
+  );
+
+}
+
+/* =========================================
+   RENDER
+========================================= */
+
+function renderizar(){
+
+  const partidas = Array.from(partidasGlobales.values());
+
+  partidas.sort((a,b)=>{
+
+    return fechaMs(b.fechaRaw) - fechaMs(a.fechaRaw);
+
+  });
+
+  tbody.innerHTML = "";
+
+  if(partidas.length === 0){
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6">
+          Sin registros todavía.
+        </td>
+      </tr>
+    `;
+
+    totalPartidasEl.textContent = "0";
+    totalPiezasEl.textContent = "0";
+    totalUsuariosEl.textContent = usuariosDetectados.size.toLocaleString("es-MX");
+    ultimoRegistroEl.textContent = "--:--";
+
+    return;
+
+  }
+
+  let totalPiezas = 0;
+  let ultimaFecha = null;
+
+  partidas.forEach((item,index)=>{
+
+    totalPiezas += item.cantidad;
+
+    const fechaActual = fechaMs(item.fechaRaw);
+
+    if(!ultimaFecha || fechaActual > ultimaFecha){
+      ultimaFecha = fechaActual;
+    }
+
+    const tr = document.createElement("tr");
+
+    if(registrosNuevos.has(item.key)){
+      tr.classList.add("nuevo");
+    }
+
+    tr.innerHTML = `
+      <td>${index + 1}</td>
+
+      <td>
+        <div class="usuario">
+          ${item.usuarioNombre}
+        </div>
+
+        <div class="small">
+          ${item.usuarioId}
+        </div>
+      </td>
+
+      <td>
+        <b>${item.codigo}</b>
+      </td>
+
+      <td>
+        ${item.nombre}
+      </td>
+
+      <td class="cantidad">
+        ${item.cantidad}
+      </td>
+
+      <td>
+        ${item.fecha}
+
+        <div class="small">
+          ${item.id}
+        </div>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+
+  });
+
+  totalPartidasEl.textContent =
+    partidas.length.toLocaleString("es-MX");
+
+  totalPiezasEl.textContent =
+    totalPiezas.toLocaleString("es-MX");
+
+  totalUsuariosEl.textContent =
+    usuariosDetectados.size.toLocaleString("es-MX");
+
+  if(ultimaFecha){
+
+    ultimoRegistroEl.textContent =
+      new Date(ultimaFecha).toLocaleTimeString("es-MX",{
+        hour:"2-digit",
+        minute:"2-digit",
+        second:"2-digit"
+      });
+
+  }
+
+}
+
+/* =========================================
+   ESCUCHAR PARTIDAS POR USUARIO
+========================================= */
+
+function escucharPartidas(usuarioId,usuarioData){
+
+  const partidasRef = collection(
+    db,
+    "CONTEOS_INVENTARIO",
+    CONTEO_ID,
+    "USUARIOS",
+    usuarioId,
+    "PARTIDAS"
+  );
+
+  const q = query(
+    partidasRef,
+    orderBy("epochMs","desc")
+  );
+
+  const unsubscribe = onSnapshot(
+
+    q,
+
+    snapshot => {
+
+      snapshot.docChanges().forEach(change => {
+
+        const partidaId = change.doc.id;
+        const data = change.doc.data();
+        const key = usuarioId + "_" + partidaId;
+
+        if(change.type === "removed"){
+
+          partidasGlobales.delete(key);
+
+          return;
+
+        }
+
+        if(data.eliminado === true){
+
+          partidasGlobales.delete(key);
+
+          renderizar();
+
+          return;
+
+        }
+
+        registrosNuevos.add(key);
+
+        setTimeout(()=>{
+
+          registrosNuevos.delete(key);
+
+          renderizar();
+
+        },1500);
+
+        const fechaRaw = obtenerFecha(data);
+
+        partidasGlobales.set(key,{
+
+          key,
+          id: partidaId,
+          usuarioId,
+
+          usuarioNombre: obtenerUsuarioNombre(
+            usuarioId,
+            usuarioData,
+            data
+          ),
+
+          codigo: obtenerCodigo(data),
+          nombre: obtenerNombre(data),
+          cantidad: obtenerCantidad(data),
+          fechaRaw,
+          fecha: formatearFecha(fechaRaw,data)
+
+        });
+
+      });
+
+      renderizar();
+
+    },
+
+    error => {
+
+      console.error(error);
+
+      statusBox.textContent =
+        "Error escuchando partidas de usuario " + usuarioId + ": " + error.message;
+
+      statusBox.className = "err";
+
+    }
+
+  );
+
+  listenersUsuarios.set(usuarioId,unsubscribe);
+
+}
+
+/* =========================================
+   ESCUCHAR USUARIOS
+========================================= */
+
+function iniciar(){
+
+  statusBox.textContent =
+    "Conectando visor multiusuario...";
+
+  const usuariosRef = collection(
+    db,
+    "CONTEOS_INVENTARIO",
+    CONTEO_ID,
+    "USUARIOS"
+  );
+
+  onSnapshot(
+
+    usuariosRef,
+
+    snapshot => {
+
+      statusBox.textContent =
+        "EN VIVO · sincronización automática multiusuario";
+
+      statusBox.className = "ok";
+
+      snapshot.docChanges().forEach(change => {
+
+        const usuarioId = change.doc.id;
+        const usuarioData = change.doc.data();
+
+        if(change.type === "removed"){
+
+          usuariosDetectados.delete(usuarioId);
+
+          if(listenersUsuarios.has(usuarioId)){
+
+            listenersUsuarios.get(usuarioId)();
+            listenersUsuarios.delete(usuarioId);
+
+          }
+
+          for(const [key,item] of partidasGlobales.entries()){
+
+            if(item.usuarioId === usuarioId){
+              partidasGlobales.delete(key);
+            }
+
+          }
+
+          renderizar();
+
+          return;
+
+        }
+
+        usuariosDetectados.add(usuarioId);
+
+        if(!listenersUsuarios.has(usuarioId)){
+
+          escucharPartidas(usuarioId,usuarioData);
+
+        }
+
+      });
+
+      renderizar();
+
+    },
+
+    error => {
+
+      console.error(error);
+
+      statusBox.textContent =
+        "Error conectando usuarios: " + error.message;
+
+      statusBox.className = "err";
+
+    }
+
+  );
+
+}
+
+/* =========================================
+   START
+========================================= */
+
+iniciar();
+
+</script>
+
+</body>
+</html>

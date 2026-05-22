@@ -797,17 +797,45 @@ tr.diff-row td{background:#fff7ed;}
       <h1>Seleccionar sucursal</h1>
       <div id="usuarioActivo" class="sub">Sesión activa.</div>
 
-      <div class="sucursal-grid">
-        <button class="sucursal-card-btn" data-sucursal="allende1">
-          <strong>ALLENDE 1</strong>
-          <span>/TIENDAS/ALLENDE 1/transferencias1</span>
-        </button>
+<div class="sucursal-grid">
 
-        <button class="sucursal-card-btn" data-sucursal="central">
-          <strong>CENTRAL</strong>
-          <span>/TIENDAS/CENTRAL/SOLTRAN</span>
-        </button>
-      </div>
+  <button class="sucursal-card-btn" data-sucursal="allende1">
+    <strong>ALLENDE 1</strong>
+    <span>/TIENDAS/ALLENDE 1/transferencias1</span>
+  </button>
+
+  <button class="sucursal-card-btn" data-sucursal="allende2">
+    <strong>ALLENDE 2</strong>
+    <span>/TIENDAS/ALLENDE 2/SOLTRAN</span>
+  </button>
+
+  <button class="sucursal-card-btn" data-sucursal="montemorelos">
+    <strong>MONTEMORELOS</strong>
+    <span>/TIENDAS/MONTEMORELOS/SOLTRAN</span>
+  </button>
+
+  <button class="sucursal-card-btn" data-sucursal="central">
+    <strong>CENTRAL</strong>
+    <span>/TIENDAS/CENTRAL/SOLTRAN</span>
+  </button>
+
+  <button class="sucursal-card-btn" data-sucursal="osito">
+    <strong>OSITO</strong>
+    <span>/TIENDAS/OSITO/SOLTRAN</span>
+  </button>
+
+  <button class="sucursal-card-btn" data-sucursal="rioverde">
+    <strong>RIO VERDE</strong>
+    <span>/TIENDAS/RIO VERDE/SOLTRAN</span>
+  </button>
+
+  <button class="sucursal-card-btn" data-sucursal="provileon">
+    <strong>PROVILEON</strong>
+    <span>/TIENDAS/PROVILEON/SOLTRAN</span>
+  </button>
+
+</div>
+      
 
       <br>
       <button id="btnLogoutSelector" class="btn-secondary">Cerrar sesión</button>
@@ -1036,6 +1064,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const SUCURSALES = {
+
   allende1: {
     clave: 'allende1',
     nombre: 'ALLENDE 1',
@@ -1043,15 +1072,57 @@ const SUCURSALES = {
     surtido: ['TIENDAS', 'ALLENDE 1', 'SURTIDOTRANS'],
     almacenOrigen: 'CEDIS MATRIZ'
   },
+
+  allende2: {
+    clave: 'allende2',
+    nombre: 'ALLENDE 2',
+    solicitudes: ['TIENDAS', 'ALLENDE 2', 'SOLTRAN'],
+    surtido: ['TIENDAS', 'ALLENDE 2', 'SURTIDOTRANS'],
+    almacenOrigen: 'CEDIS MATRIZ'
+  },
+
+  montemorelos: {
+    clave: 'montemorelos',
+    nombre: 'MONTEMORELOS',
+    solicitudes: ['TIENDAS', 'MONTEMORELOS', 'SOLTRAN'],
+    surtido: ['TIENDAS', 'MONTEMORELOS', 'SURTIDOTRANS'],
+    almacenOrigen: 'CEDIS MATRIZ'
+  },
+
   central: {
     clave: 'central',
     nombre: 'CENTRAL',
     solicitudes: ['TIENDAS', 'CENTRAL', 'SOLTRAN'],
     surtido: ['TIENDAS', 'CENTRAL', 'SURTIDOTRANS'],
     almacenOrigen: 'CEDIS MATRIZ'
-  }
-};
+  },
 
+  osito: {
+    clave: 'osito',
+    nombre: 'OSITO',
+    solicitudes: ['TIENDAS', 'OSITO', 'SOLTRAN'],
+    surtido: ['TIENDAS', 'OSITO', 'SURTIDOTRANS'],
+    almacenOrigen: 'CEDIS MATRIZ'
+  },
+
+  rioverde: {
+    clave: 'rioverde',
+    nombre: 'RIO VERDE',
+    solicitudes: ['TIENDAS', 'RIO VERDE', 'SOLTRAN'],
+    surtido: ['TIENDAS', 'RIO VERDE', 'SURTIDOTRANS'],
+    almacenOrigen: 'CEDIS MATRIZ'
+  },
+
+  provileon: {
+    clave: 'provileon',
+    nombre: 'PROVILEON',
+    solicitudes: ['TIENDAS', 'PROVILEON', 'SOLTRAN'],
+    surtido: ['TIENDAS', 'PROVILEON', 'SURTIDOTRANS'],
+    almacenOrigen: 'CEDIS MATRIZ'
+  }
+
+};
+  
 const COLECCION_OPERADORES = 'usuarios_ruta';
 const COLECCION_PRODUCTOS = 'productos';
 const LOGO_URL = './logo.jfif';

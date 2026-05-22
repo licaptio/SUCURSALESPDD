@@ -468,6 +468,7 @@
         0 0 0 9999px rgba(0,0,0,.42),
         0 0 22px rgba(0,255,136,.65),
         inset 0 0 18px rgba(0,255,136,.18);
+
       position:relative;
     }
 
@@ -544,7 +545,7 @@
 
     .cart-list{
       display:grid;
-      gap:8px;
+      gap:7px;
       flex:1;
       min-height:0;
       max-height:none;
@@ -556,26 +557,95 @@
     .cart-item{
       background:white;
       border:1px solid #f4d35e;
-      border-radius:16px;
-      padding:10px;
+      border-radius:14px;
+      padding:8px 9px;
     }
 
-    .cart-top{
+    .cart-row-compact{
       display:grid;
-      grid-template-columns:1fr auto;
+      grid-template-columns:minmax(72px,92px) minmax(0,1fr) auto auto;
       gap:8px;
-      align-items:start;
+      align-items:center;
     }
 
-    .cart-name{font-weight:800;color:#8a4b00;font-size:14px}
-    .cart-code{font-size:11px;color:var(--muted);font-weight:700}
-    .cart-qty{font-size:22px;font-weight:900;color:#111827}
+    .cart-code-compact{
+      color:var(--muted);
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
 
-    .cart-actions{
+    .cart-name-compact{
+      color:#8a4b00;
+      font-size:13px;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      line-height:1.15;
+    }
+
+    .cart-qty-control{
       display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:6px;
-      margin-top:8px;
+      grid-template-columns:32px minmax(34px,auto) 32px;
+      align-items:center;
+      justify-items:center;
+      border:1px solid #f4d35e;
+      background:#fff8dc;
+      border-radius:999px;
+      overflow:hidden;
+      min-width:104px;
+      height:36px;
+    }
+
+    .cart-qty-control button{
+      width:32px;
+      height:36px;
+      padding:0;
+      border-radius:0;
+      background:#fff3bf;
+      color:#5c3b00;
+      font-size:18px;
+      font-weight:900;
+      line-height:1;
+    }
+
+    .cart-qty-number{
+      min-width:34px;
+      padding:0 6px;
+      color:#111827;
+      font-size:17px;
+      font-weight:900;
+      text-align:center;
+      white-space:nowrap;
+    }
+
+    .cart-delete-btn{
+      width:38px;
+      height:36px;
+      padding:0;
+      border-radius:12px;
+      background:#fee2e2;
+      color:var(--danger);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:17px;
+    }
+
+    @media(max-width:420px){
+      .cart-row-compact{
+        grid-template-columns:72px minmax(0,1fr) auto auto;
+        gap:6px;
+      }
+      .cart-code-compact{font-size:10px}
+      .cart-name-compact{font-size:12px}
+      .cart-qty-control{min-width:96px;height:34px;grid-template-columns:30px minmax(32px,auto) 30px}
+      .cart-qty-control button{width:30px;height:34px}
+      .cart-qty-number{font-size:16px;min-width:32px;padding:0 4px}
+      .cart-delete-btn{width:34px;height:34px}
     }
 
     .info-line{
@@ -1102,8 +1172,6 @@
 
     let txt = String(valor).trim();
 
-    // Firestore a veces guarda códigos como número. Si vinieran como 7.50123e+12,
-    // se expande para no perder la comparación del código.
     if(/^[0-9]+(?:\.[0-9]+)?e\+?[0-9]+$/i.test(txt)){
       const n = Number(txt);
       if(Number.isFinite(n)){
@@ -1140,9 +1208,6 @@
     if(!a || !b) return false;
     if(a === b) return true;
 
-    // Solo se permite quitar ceros cuando viene de báscula o cuando claramente
-    // el catálogo perdió ceros por estar guardado como número. Esto evita que
-    // un código largo normal caiga en otro artículo corto por accidente.
     if(permitirSinCeros){
       const aa = sinCerosIzquierda(a);
       const bb = sinCerosIzquierda(b);
@@ -1155,9 +1220,6 @@
   function parsearCodigoBascula(codigo){
     const limpio = soloDigitos(codigo);
 
-    // Formato EAN13 variable usado por básculas:
-    // 20 + SKU interno 5 dígitos + peso 5 dígitos + checksum
-    // Ejemplo: 2000044000408 = SKU 00044 / 0.040 kg
     if(limpio.length !== 13 || !limpio.startsWith("20")) return null;
 
     const sku5 = limpio.substring(2, 7);
@@ -1392,8 +1454,6 @@
     let total = 0;
     let ultimoPaint = 0;
 
-    // No se borra el índice anterior antes de descargar.
-    // Si existía catálogo usable, no se pierde por una descarga interrumpida.
     for(const d of snap.docs){
       const data = d.data();
 
@@ -1497,46 +1557,33 @@
       }) || null;
     };
 
-    // REGLA CRÍTICA:
-    // Si es etiqueta de báscula, NO se debe buscar primero por SKU corto contra codigoBarra.
-    // Ejemplo 2000044000408 => SKU 44. Si se busca primero "44", puede caer en otro producto
-    // cuyo código real sea 44. Por eso se prioriza el equivalente con prefijo 20+SKU: 2000044.
     if(info.bascula){
       const bascula = info.bascula;
 
-      // 1) Coincidencia más segura: equivalente 20 + SKU5. Ejemplo: 2000044.
       let p = buscarPorEquivalenteExacto([bascula.codigoPrefijoSku], false);
       if(p) return marcarProducto(p, "BASCULA_EQUIVALENTE_PREFIJO_20", { bascula });
 
-      // 2) Coincidencia segura alternativa: codigoBarra 20 + SKU5.
       p = buscarPorCodigoBarraExacto([bascula.codigoPrefijoSku], false);
       if(p) return marcarProducto(p, "BASCULA_ORIGINAL_PREFIJO_20", { bascula });
 
-      // 3) Equivalente SKU5 exacto. Ejemplo: 00044.
       p = buscarPorEquivalenteExacto([bascula.sku5], false);
       if(p) return marcarProducto(p, "BASCULA_EQUIVALENTE_SKU5", { bascula });
 
-      // 4) Equivalente SKU sin ceros. Ejemplo: 44.
       p = buscarPorEquivalenteExacto([bascula.sku], false);
       if(p) return marcarProducto(p, "BASCULA_EQUIVALENTE_SKU", { bascula });
 
-      // 5) Ultimo recurso: codigoBarra SKU5 exacto.
       p = buscarPorCodigoBarraExacto([bascula.sku5], false);
       if(p) return marcarProducto(p, "BASCULA_ORIGINAL_SKU5", { bascula });
 
-      // 6) Ultimo recurso: codigoBarra SKU sin ceros. Esto queda al final para evitar falsos positivos.
       p = buscarPorCodigoBarraExacto([bascula.sku], false);
       if(p) return marcarProducto(p, "BASCULA_ORIGINAL_SKU", { bascula });
 
       return null;
     }
 
-    // Escaneo normal: coincidencia estricta contra código original.
-    // No se quitan ceros a la izquierda en códigos largos normales para evitar falsos positivos.
     let p = buscarPorCodigoBarraExacto(info.codigoLimpio, false);
     if(p) return marcarProducto(p, "ORIGINAL");
 
-    // Escaneo normal: coincidencia estricta contra equivalentes.
     p = buscarPorEquivalenteExacto(info.codigoLimpio, false);
     if(p) return marcarProducto(p, "EQUIVALENTE");
 
@@ -1544,687 +1591,664 @@
   }
 
   async function buscarProductosTexto(term){
-    const words = normalizar(term).split(/\s+/).filter(Boolean);
-    if(!words.length) return [];
+    const texto = normalizar(term);
+
+    if(!texto) return [];
+
+    const tokens = texto.split(" ").filter(Boolean);
 
     const productos = await idbGetAll("productos");
 
-    return productos
-      .map(p => {
-        const score = words.reduce((acc,w)=> acc + (p.texto.includes(w) ? 1 : 0), 0);
-        return { ...p, score };
-      })
-      .filter(p => p.score === words.length)
-      .slice(0,50);
-  }
+    const resultados = [];
 
-  function entrarModoCantidad(){
-    document.body.classList.add("modo-cantidad");
-    refs.capturaScannerBox?.classList.add("hidden");
-    refs.productoBox.classList.remove("hidden");
-    refs.resultados.innerHTML = "";
-    refs.buscarInput.value = "";
-  }
+    for(const p of productos){
 
-  function salirModoCantidad(){
-    document.body.classList.remove("modo-cantidad");
-    refs.productoBox.classList.add("hidden");
-    refs.capturaScannerBox?.classList.remove("hidden");
-    refs.codigoInput.value = "";
-    refs.cantidadInput.value = "";
-    currentProduct = null;
-    if(!$("tabCaptura").classList.contains("hidden")){
-      setTimeout(()=>refs.codigoInput.focus(),80);
+      let score = 0;
+
+      const textoProd = p.texto || "";
+
+      for(const t of tokens){
+
+        if(textoProd.includes(t)){
+          score += 10;
+        }
+
+        if((p.concepto || "").toLowerCase().includes(t)){
+          score += 20;
+        }
+
+        if((p.codigoBarra || "").includes(t)){
+          score += 40;
+        }
+
+        if(Array.isArray(p.codigosEquivalentes)){
+
+          if(p.codigosEquivalentes.some(eq => String(eq).includes(t))){
+            score += 35;
+          }
+        }
+      }
+
+      if(score > 0){
+        resultados.push({ ...p, score });
+      }
     }
+
+    resultados.sort((a,b)=> b.score - a.score);
+
+    return resultados.slice(0,50);
   }
 
-  function mostrarProducto(p){
-    currentProduct = p;
+  function entrarModoCantidad(producto){
 
-    entrarModoCantidad();
-    refs.prodNombre.textContent = p.concepto || "SIN DESCRIPCIÓN";
-    const equivs = Array.isArray(p.codigosEquivalentes) && p.codigosEquivalentes.length
-      ? ` | Equiv: ${p.codigosEquivalentes.join(", ")}`
-      : "";
-    const escaneado = p.__codigoEscaneado ? ` | Escaneado: ${p.__codigoEscaneado}` : "";
-    const unidad = p.unidadMedidaSat ? ` | Unidad: ${p.unidadMedidaSat}` : "";
-    const bascula = p.__codigoBascula ? ` | Báscula SKU: ${p.__codigoBascula.sku} | Peso: ${p.__codigoBascula.pesoKg} kg` : "";
-    refs.prodCodigo.textContent = `Código original: ${p.codigoBarra || p.id}${equivs}${unidad}${escaneado}${bascula}`;
+    currentProduct = producto;
 
-    if(p.__cantidadDetectada){
-      refs.cantidadInput.value = p.__cantidadDetectada;
+    document.body.classList.add("modo-cantidad");
+
+    refs.productoBox.classList.remove("hidden");
+
+    refs.prodNombre.textContent = producto.concepto || "SIN DESCRIPCIÓN";
+
+    refs.prodCodigo.textContent =
+      producto.__codigoEscaneado ||
+      producto.codigoBarra ||
+      producto.id;
+
+    if(producto.__cantidadDetectada){
+      refs.cantidadInput.value = producto.__cantidadDetectada;
     }else{
       refs.cantidadInput.value = "";
     }
 
-    setTimeout(()=>refs.cantidadInput.focus(),80);
+    setTimeout(()=>{
+      refs.cantidadInput.focus();
+      refs.cantidadInput.select();
+    },120);
   }
 
-  async function agregarPartida(producto, cantidad, origen="MANUAL"){
-    const codigoOriginal = String(producto.codigoBarra || producto.id).trim();
-    const codigoEscaneado = String(producto.__codigoEscaneado || codigoOriginal).trim();
-    const cantidadNormalizada = normalizarCantidad(cantidad);
+  function salirModoCantidad(){
 
-    if(!cantidadNormalizada || cantidadNormalizada <= 0){
-      alert("Cantidad inválida.");
+    currentProduct = null;
+
+    document.body.classList.remove("modo-cantidad");
+
+    refs.productoBox.classList.add("hidden");
+
+    refs.cantidadInput.value = "";
+
+    refs.codigoInput.value = "";
+
+    setTimeout(()=>{
+      refs.codigoInput.focus();
+    },100);
+  }
+
+  async function procesarCodigo(codigo){
+
+    resetInactivity();
+
+    const producto = await buscarProductoPorCodigo(codigo);
+
+    if(!producto){
+
+      beep(240,220);
+
+      alert("Producto no encontrado.");
+
+      refs.codigoInput.value = "";
+      refs.codigoInput.focus();
+
       return;
     }
 
+    beep();
+
+    entrarModoCantidad(producto);
+  }
+
+  async function agregarPartida(producto, cantidad, origen="MANUAL"){
+
     const partida = {
       id: generarIdEntrada(),
-      codigo: codigoOriginal,
-      codigoOriginal,
-      codigoEscaneadoUltimo: codigoEscaneado,
-      codigosEscaneados: [codigoEscaneado].filter(Boolean),
-      productoId: producto.id,
-      descripcion: producto.concepto || "SIN DESCRIPCIÓN",
-      unidadMedidaSat: producto.unidadMedidaSat || "",
-      cantidad: cantidadNormalizada,
-
-      usuarioId: currentUser.id,
+      conteoId: CONTEO_ID,
+      folio: await getMeta("folioConteo"),
       usuario: currentUser.usuario,
       usuarioNombre: currentUser.nombre,
-      rol: currentUser.rol,
-      rutaId: currentUser.rutaId,
-
-      conteoId: CONTEO_ID,
-      conteoNombre: CONTEO_NOMBRE,
-
+      codigo: producto.codigoBarra || producto.id,
+      codigoOriginal:
+        producto.__codigoEscaneado ||
+        producto.codigoBarra ||
+        producto.id,
+      descripcion: producto.concepto || "",
+      cantidad: round3(cantidad),
+      unidad: producto.unidadMedidaSat || "",
+      origen,
+      sincronizado: false,
+      eliminado: false,
       fecha: nowDate(),
       hora: nowTime(),
-      epochMs: Date.now(),
-
-      origen,
-      origenCodigo: producto.__origenCodigo || "ORIGINAL",
-      tipoConteo: "ENTRADA_INDIVIDUAL",
-      sincronizado: false,
-      eliminado: false
+      creadoEn: nowLocal(),
+      epochMs: Date.now()
     };
+
+    if(producto.__codigoBascula){
+      partida.bascula = producto.__codigoBascula;
+    }
 
     await idbPut("partidas", partida);
 
     pendingCounter++;
 
     refs.lastSaved.classList.remove("hidden");
-    refs.lastSaved.textContent = `Entrada guardada: ${partida.descripcion} | Cantidad: ${partida.cantidad}`;
+
+    refs.lastSaved.innerHTML = `
+      ✅ Guardado<br>
+      <strong>${partida.descripcion}</strong><br>
+      Cantidad: ${partida.cantidad}
+    `;
+
+    await actualizarUltimosEscaneados();
+
+    await renderCarrito();
 
     salirModoCantidad();
 
-    beep();
+    if(pendingCounter >= SYNC_EVERY_ITEMS && navigator.onLine){
 
-    await actualizarResumen();
+      pendingCounter = 0;
 
-    if(pendingCounter >= SYNC_EVERY_ITEMS){
-      await syncFirebase(false);
+      syncFirebase(false);
     }
   }
 
-  function escapeHtml(txt){
-    return String(txt ?? "")
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;")
-      .replace(/'/g,"&#039;");
-  }
+  async function actualizarUltimosEscaneados(){
 
-  function renderUltimosEscaneados(partidasActivas=[]){
-    if(!refs.ultimosEscaneados) return;
-
-    const ultimos = [...partidasActivas]
+    const partidas = (await idbGetAll("partidas"))
+      .filter(x => !x.eliminado)
       .sort((a,b)=> (b.epochMs || 0) - (a.epochMs || 0))
       .slice(0,2);
 
-    if(!ultimos.length){
+    if(!partidas.length){
+
       refs.ultimosEscaneados.innerHTML = `
         <div class="last-scanned-card">
           <div class="last-scanned-label">Sin escaneos todavía</div>
-          <div class="last-scanned-name">Aquí aparecerán los últimos dos artículos guardados.</div>
+          <div class="last-scanned-name">
+            Aquí aparecerán los últimos dos artículos guardados.
+          </div>
           <div class="last-scanned-meta">
             <span>---</span>
             <span>---</span>
           </div>
         </div>
       `;
+
       return;
     }
 
-    refs.ultimosEscaneados.innerHTML = ultimos.map((p,idx)=>`
+    refs.ultimosEscaneados.innerHTML = partidas.map(p=>`
+
       <div class="last-scanned-card">
-        <div class="last-scanned-label">${idx === 0 ? "Último escaneado" : "Anterior escaneado"}</div>
-        <div class="last-scanned-name">${escapeHtml(p.descripcion)}</div>
-        <div class="last-scanned-meta">
-          <span>${escapeHtml(p.codigoOriginal || p.codigo)}${p.codigoEscaneadoUltimo && p.codigoEscaneadoUltimo !== (p.codigoOriginal || p.codigo) ? " / EQ " + escapeHtml(p.codigoEscaneadoUltimo) : ""}</span>
-          <span>Cant: ${escapeHtml(p.cantidad)} ${escapeHtml(p.unidadMedidaSat || "")}</span>
+
+        <div class="last-scanned-label">
+          ${p.codigoOriginal || p.codigo}
         </div>
+
+        <div class="last-scanned-name">
+          ${p.descripcion}
+        </div>
+
+        <div class="last-scanned-meta">
+          <span>${p.cantidad}</span>
+          <span>${p.hora}</span>
+        </div>
+
       </div>
+
     `).join("");
   }
 
   async function actualizarResumen(){
-    const partidas = await idbGetAll("partidas");
-    const activas = partidas.filter(x => !x.eliminado);
-    const piezas = activas.reduce((a,b)=> a + Number(b.cantidad || 0), 0);
 
-    if(refs.totalPartidas) refs.totalPartidas.textContent = activas.length;
-    if(refs.totalPiezas) refs.totalPiezas.textContent = round3(piezas);
-    refs.syncPill.textContent = `Pendiente: ${activas.filter(x => !x.sincronizado).length}`;
-    refs.cartSummary.textContent = `${activas.length} entradas | ${round3(piezas)} piezas/unidades`;
-    renderUltimosEscaneados(activas);
-  }
-
-  async function renderCarrito(){
     const partidas = (await idbGetAll("partidas"))
-      .filter(x => !x.eliminado)
-      .sort((a,b)=> (b.epochMs || 0) - (a.epochMs || 0));
+      .filter(x => !x.eliminado);
 
-    await actualizarResumen();
+    const totalPartidas = partidas.length;
 
-    if(!partidas.length){
-      refs.cartList.innerHTML = `<div class="subtitle">No hay entradas de conteo todavía.</div>`;
-      return;
-    }
+    const totalPiezas = partidas.reduce((acc,x)=>{
+      return acc + Number(x.cantidad || 0);
+    },0);
 
-    refs.cartList.innerHTML = "";
+    refs.cartSummary.textContent =
+      `${totalPartidas} partidas | ${round3(totalPiezas)} piezas/unidades`;
 
-    for(const p of partidas){
-      const div = document.createElement("div");
-      div.className = "cart-item";
+    const pendientes = partidas.filter(x => !x.sincronizado).length;
 
-      div.innerHTML = `
-        <div class="cart-top">
-          <div>
-            <div class="cart-name">${p.descripcion}</div>
-            <div class="cart-code">Original: ${p.codigoOriginal || p.codigo}${p.codigoEscaneadoUltimo && p.codigoEscaneadoUltimo !== (p.codigoOriginal || p.codigo) ? " | Último escaneo: " + p.codigoEscaneadoUltimo : ""} | ${p.fecha} ${p.hora}</div>
-          </div>
-          <div class="cart-qty">${p.cantidad}${p.unidadMedidaSat ? " " + p.unidadMedidaSat : ""}</div>
-        </div>
-
-        <div class="cart-actions">
-          <button class="btn-small btn2" data-act="menos" data-id="${p.id}">−1</button>
-          <button class="btn-small btn2" data-act="mas" data-id="${p.id}">+1</button>
-          <button class="btn-small btn2" data-act="editar" data-id="${p.id}">Editar entrada</button>
-          <button class="btn-small btn-danger" data-act="borrar" data-id="${p.id}">Borrar entrada</button>
-        </div>
-      `;
-
-      refs.cartList.appendChild(div);
-    }
+    refs.syncPill.textContent = `Pendiente: ${pendientes}`;
   }
 
-  async function modificarPartida(idEntrada, accion){
-    const p = await idbGet("partidas", idEntrada);
-    if(!p) return;
-
-    if(accion === "menos"){
-      p.cantidad = round3(Math.max(0, Number(p.cantidad || 0) - 1));
-    }
-
-    if(accion === "mas"){
-      p.cantidad = round3(Number(p.cantidad || 0) + 1);
-    }
-
-    if(accion === "editar"){
-      const nuevo = prompt("Nueva cantidad:", p.cantidad);
-      if(nuevo === null) return;
-
-      const n = normalizarCantidad(nuevo);
-      if(!n || n <= 0) return alert("Cantidad inválida.");
-
-      p.cantidad = n;
-    }
-
-    if(accion === "borrar"){
-      if(!confirm("¿Borrar esta entrada del conteo local?")) return;
-
-      p.eliminado = true;
-      p.cantidad = 0;
-    }
-
-    p.sincronizado = false;
-    p.fecha = nowDate();
-    p.hora = nowTime();
-    p.epochMs = Date.now();
-
-    await idbPut("partidas", p);
-    await renderCarrito();
-  }
-
-  async function syncFirebase(showAlert=true){
-    if(!currentUser) return;
+  async function syncFirebase(mostrarMensaje=true){
 
     if(!navigator.onLine){
-      actualizarOnline();
-      if(showAlert) alert("Sin internet. Se queda guardado local.");
+
+      if(mostrarMensaje){
+        alert("Sin internet.");
+      }
+
       return;
     }
 
-    const partidas = await idbGetAll("partidas");
-    const pendientes = partidas.filter(x => !x.sincronizado);
+    const partidas = (await idbGetAll("partidas"))
+      .filter(x => !x.sincronizado);
 
-    const userRef = doc(db, "CONTEOS_INVENTARIO", CONTEO_ID, "USUARIOS", currentUser.id);
+    if(!partidas.length){
 
-    await setDoc(userRef, {
-      usuarioId: currentUser.id,
-      usuario: currentUser.usuario,
-      usuarioNombre: currentUser.nombre,
-      rol: currentUser.rol,
-      rutaId: currentUser.rutaId,
+      refs.syncPill.textContent = "Pendiente: 0";
 
-      conteoId: CONTEO_ID,
-      conteoNombre: CONTEO_NOMBRE,
+      if(mostrarMensaje){
+        alert("Nada pendiente.");
+      }
 
-      estado: "EN_PROCESO",
-      ultimaSyncLocal: nowLocal(),
-      ultimaSyncServer: serverTimestamp(),
-      totalPartidas: partidas.filter(x=>!x.eliminado).length
-    }, { merge:true });
+      return;
+    }
 
-    for(const p of pendientes){
-      const partRef = doc(
+    refs.syncPill.textContent = `Subiendo ${partidas.length}...`;
+
+    for(const p of partidas){
+
+      const ref = doc(
         db,
-        "CONTEOS_INVENTARIO",
+        "conteos",
         CONTEO_ID,
-        "USUARIOS",
-        currentUser.id,
-        "PARTIDAS",
-        p.id || p.codigo
+        "partidas",
+        p.id
       );
 
-      await setDoc(partRef, {
+      await setDoc(ref,{
         ...p,
-        sincronizado: true,
-        syncServer: serverTimestamp()
-      }, { merge:true });
+        syncedAt: serverTimestamp()
+      });
 
       p.sincronizado = true;
+
       await idbPut("partidas", p);
     }
 
-    pendingCounter = 0;
     await actualizarResumen();
 
-    if(showAlert) alert("Sincronización completa.");
-  }
-
-  async function finalizarConteo(){
-    if(!confirm("¿Finalizar tu conteo? Después quedará marcado como FINALIZADO.")) return;
-
-    await syncFirebase(false);
-
-    const userRef = doc(db, "CONTEOS_INVENTARIO", CONTEO_ID, "USUARIOS", currentUser.id);
-
-    await setDoc(userRef, {
-      estado: "FINALIZADO",
-      finalizadoLocal: nowLocal(),
-      finalizadoServer: serverTimestamp()
-    }, { merge:true });
-
-    alert("Conteo finalizado y sincronizado.");
-    await logout();
-  }
-
-  function switchTab(name){
-    document.querySelectorAll(".tabView").forEach(x=>x.classList.add("hidden"));
-    $("tab" + name).classList.remove("hidden");
-
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    document.querySelector(`.tab[data-tab="${name}"]`)?.classList.add("active");
-
-    if(name === "Carrito") renderCarrito();
-    if(name === "Captura" && !currentProduct) setTimeout(()=>refs.codigoInput.focus(),80);
-    if(name === "Captura" && currentProduct) setTimeout(()=>refs.cantidadInput.focus(),80);
-  }
-
-  function actualizarOnline(){
-    refs.onlinePill.textContent = navigator.onLine ? "🟢 Online" : "🔴 Offline";
-  }
-
-  function resetInactivity(){
-    clearTimeout(inactivityTimer);
-
-    inactivityTimer = setTimeout(async ()=>{
-      if(currentUser){
-        await syncFirebase(false);
-        alert("Sesión cerrada por inactividad. Se sincronizó lo pendiente.");
-        await logout();
-      }
-    }, AUTO_LOGOUT_MS);
-  }
-
-  async function login(){
-    try{
-      if(!catalogoListo){
-        bloquearLogin("Preparando catálogo...");
-        refs.loginMsg.textContent = catalogoPreparando
-          ? "Espera: el catálogo todavía se está preparando."
-          : "El catálogo todavía no está listo.";
-
-        await prepararCatalogoAlAbrir();
-      }
-
-      if(!catalogoListo){
-        throw new Error("Catálogo no listo. No se puede entrar todavía.");
-      }
-
-      refs.btnLogin.disabled = true;
-      refs.btnLogin.textContent = "Validando usuario...";
-
-      const user = await loginFirebase();
-      currentUser = user;
-
-      localStorage.setItem("conteoUser", JSON.stringify(currentUser));
-
-      let folio = await getMeta("folioSesion");
-      if(!folio){
-        folio = generarFolio();
-        await setMeta("folioSesion", folio);
-      }
-
-      refs.userName.textContent = currentUser.nombre;
-      refs.folioTxt.textContent = folio;
-      refs.sessionInfo.textContent = `${currentUser.nombre} | ${currentUser.usuario} | ${currentUser.rol || "SIN ROL"}`;
-
-      document.body.classList.add("app-logged-in");
-      refs.viewLogin.classList.remove("active");
-      refs.viewApp.classList.add("active");
-
-      await actualizarResumen();
-
-      switchTab("Captura");
-      startTimers();
-
-    }catch(e){
-      refs.loginMsg.textContent = e.message || "Error al iniciar sesión.";
-      alert(e.message || "Error al iniciar sesión.");
-      if(catalogoListo) habilitarLogin();
+    if(mostrarMensaje){
+      alert("Sincronización completa.");
     }
   }
 
+  function actualizarOnline(){
+
+    if(navigator.onLine){
+
+      refs.onlinePill.textContent = "🟢 Online";
+
+    }else{
+
+      refs.onlinePill.textContent = "🔴 Offline";
+    }
+  }
+
+  function switchTab(tab){
+
+    document.querySelectorAll(".tab")
+      .forEach(x=>x.classList.remove("active"));
+
+    document.querySelectorAll(".tabView")
+      .forEach(x=>x.classList.add("hidden"));
+
+    document.querySelector(`.tab[data-tab="${tab}"]`)
+      ?.classList.add("active");
+
+    $(`tab${tab}`)?.classList.remove("hidden");
+
+    if(tab === "Carrito"){
+      renderCarrito();
+    }
+  }
+
+  async function finalizarConteo(){
+
+    if(!confirm("¿Finalizar conteo?")){
+      return;
+    }
+
+    if(navigator.onLine){
+      await syncFirebase(false);
+    }
+
+    alert("Conteo finalizado.");
+  }
+
   async function logout(){
-    await cerrarCamara();
 
     currentUser = null;
-    localStorage.removeItem("conteoUser");
-
-    clearInterval(syncTimer);
-    clearTimeout(inactivityTimer);
 
     document.body.classList.remove("app-logged-in");
+
     refs.viewApp.classList.remove("active");
     refs.viewLogin.classList.add("active");
 
     refs.loginPassword.value = "";
-    salirModoCantidad();
-    refs.codigoInput.value = "";
-    refs.buscarInput.value = "";
-    refs.resultados.innerHTML = "";
-    if(catalogoListo) habilitarLogin();
+
+    switchTab("Captura");
+  }
+
+  function resetInactivity(){
+
+    clearTimeout(inactivityTimer);
+
+    inactivityTimer = setTimeout(async ()=>{
+
+      alert("Sesión cerrada por inactividad.");
+
+      await cerrarSesionSeguro();
+
+    }, AUTO_LOGOUT_MS);
   }
 
   function startTimers(){
+
     clearInterval(syncTimer);
-    syncTimer = setInterval(()=>syncFirebase(false), SYNC_INTERVAL_MS);
-    resetInactivity();
-  }
 
-  function abrirModalCamara(){
-    refs.scannerModal.classList.add("show");
-    refs.scannerModal.setAttribute("aria-hidden","false");
-    refs.scannerMsg.textContent = "Abriendo cámara...";
-    document.body.style.overflow = "hidden";
-  }
+    syncTimer = setInterval(async ()=>{
 
-  async function cerrarCamara(){
-    if(lector){
-      try{
-        await lector.stop();
-      }catch{}
+      if(!navigator.onLine) return;
 
-      try{
-        await lector.clear();
-      }catch{}
+      const partidas = (await idbGetAll("partidas"))
+        .filter(x => !x.sincronizado);
 
-      lector = null;
-    }
+      if(partidas.length){
+        syncFirebase(false);
+      }
 
-    refs.lector.innerHTML = "";
-    refs.scannerModal.classList.remove("show");
-    refs.scannerModal.setAttribute("aria-hidden","true");
-    refs.scannerMsg.textContent = "Cámara cerrada.";
-    document.body.style.overflow = "";
+    }, SYNC_INTERVAL_MS);
   }
 
   async function startStopCamara(){
-    resetInactivity();
 
     if(lector){
       await cerrarCamara();
       return;
     }
 
-    abrirModalCamara();
+    refs.scannerModal.classList.add("show");
+
+    refs.lector.style.display = "block";
+
     lector = new Html5Qrcode("lector");
 
+    await lector.start(
+      { facingMode:"environment" },
+      {
+        fps:10,
+        qrbox:{ width:260, height:260 }
+      },
+      async (decodedText)=>{
+
+        await cerrarCamara();
+
+        await procesarCodigo(decodedText);
+      }
+    );
+  }
+
+  async function cerrarCamara(){
+
     try{
-      const box = Math.floor(Math.min(window.innerWidth * .78, window.innerHeight * .48, 340));
 
-      await lector.start(
-        { facingMode:"environment" },
-        { fps:10, qrbox:{ width:box, height:box } },
-        async codigo => {
-          refs.scannerMsg.textContent = `Código detectado: ${codigo}`;
-          beep(80,980);
+      if(lector){
 
-          await cerrarCamara();
+        await lector.stop();
+        await lector.clear();
 
-          refs.codigoInput.value = codigo;
-          await procesarCodigo(codigo);
-        },
-        () => {}
-      );
-
-      refs.scannerMsg.textContent = "Buscando código... Puedes cerrar si no vas a capturar.";
+        lector = null;
+      }
 
     }catch(e){
-      await cerrarCamara();
-      alert("No se pudo abrir la cámara. Revisa permisos del navegador.");
+      console.error(e);
+    }
+
+    refs.scannerModal.classList.remove("show");
+  }
+
+  async function iniciarSesion(){
+
+    try{
+
+      await asegurarCatalogo();
+
+      currentUser = await loginFirebase();
+
+      document.body.classList.add("app-logged-in");
+
+      refs.viewLogin.classList.remove("active");
+      refs.viewApp.classList.add("active");
+
+      refs.userName.textContent = currentUser.nombre;
+
+      refs.sessionInfo.textContent =
+        `${currentUser.usuario} | ${currentUser.rol || "usuario"}`;
+
+      let folio = await getMeta("folioConteo");
+
+      if(!folio){
+
+        folio = generarFolio();
+
+        await setMeta("folioConteo", folio);
+      }
+
+      refs.folioTxt.textContent = folio;
+
+      refs.codigoInput.focus();
+
+      await actualizarUltimosEscaneados();
+
+      await renderCarrito();
+
+      resetInactivity();
+
+    }catch(e){
+
+      alert(e.message || "No se pudo iniciar sesión.");
     }
   }
 
-  async function procesarCodigo(codigo){
-    const p = await buscarProductoPorCodigo(codigo);
+  refs.btnLogin.addEventListener("click", iniciarSesion);
 
-    if(!p){
-      beep(160,300);
-      const info = variantesCodigoBusqueda(codigo);
-      const extra = info.bascula
-        ? `\n\nCódigo báscula detectado. SKU extraído: ${info.bascula.sku} / ${info.bascula.sku5}. Peso: ${info.bascula.pesoKg} kg.\nRevisa que ese SKU esté en codigoBarra o codigosEquivalentes del producto.`
-        : "";
-      alert(`Producto no encontrado en catálogo local.${extra}`);
-      return;
+  refs.loginPassword.addEventListener("keydown", e => {
+
+    if(e.key === "Enter"){
+      iniciarSesion();
+    }
+  });
+
+  async function cerrarSesionSeguro(){
+
+    try{
+
+      if(navigator.onLine){
+
+        refs.syncPill.textContent = "Sincronizando...";
+
+        await syncFirebase(false);
+      }
+
+    }catch(e){
+
+      console.error(e);
     }
 
-    // Si viene de báscula, ya trae cantidad/peso. Entra directo al conteo.
-    if(p.__codigoBascula && p.__cantidadDetectada){
-      await agregarPartida(p, p.__cantidadDetectada, "BASCULA");
-      return;
-    }
-
-    mostrarProducto(p);
-  }
-
-  let buscarTimer = null;
-
-  async function renderBusqueda(term){
-    refs.resultados.innerHTML = "Buscando...";
-
-    const rows = await buscarProductosTexto(term);
-
-    if(!rows.length){
-      refs.resultados.innerHTML = `<div class="subtitle">Sin resultados.</div>`;
-      return;
-    }
-
-    refs.resultados.innerHTML = "";
-
-    for(const p of rows){
-      const div = document.createElement("div");
-      div.className = "result-item";
-
-      div.innerHTML = `
-        <div class="result-title">${p.concepto}</div>
-        <div class="result-code">Original: ${p.codigoBarra || p.id}${p.codigosEquivalentes?.length ? " | Equiv: " + p.codigosEquivalentes.join(", ") : ""}${p.unidadMedidaSat ? " | Unidad: " + p.unidadMedidaSat : ""}</div>
-        <button class="btn-small btn-ok mt" data-id="${p.id}">Usar producto</button>
-      `;
-
-      div.querySelector("button").addEventListener("click", ()=>{
-        mostrarProducto(p);
-        switchTab("Captura");
-      });
-
-      refs.resultados.appendChild(div);
-    }
+    await logout();
   }
 
   async function init(){
+
+    refs.splashScreen.classList.add("hidden");
+
+    actualizarOnline();
+
+    window.addEventListener("online", actualizarOnline);
+    window.addEventListener("offline", actualizarOnline);
+
     idb = await openIDB();
 
-    actualizarOnline();
-    await actualizarResumen();
+    await prepararCatalogoAlAbrir();
 
-    bloquearLogin("Preparando catálogo...");
-    refs.loginMsg.textContent = "Preparando catálogo local. El acceso se habilita al terminar.";
-    prepararCatalogoAlAbrir().catch(()=>{});
+    refs.btnReloadCart?.addEventListener("click", renderCarrito);
 
-    refs.loginUsuario.focus();
-    setTimeout(()=>refs.splashScreen?.classList.add("hidden"), 450);
+    refs.btnFinalizar?.addEventListener("click", finalizarConteo);
+
+    document.querySelectorAll(".tab").forEach(btn=>{
+
+      btn.addEventListener("click", ()=>{
+
+        switchTab(btn.dataset.tab);
+      });
+    });
+
+    refs.btnGuardar?.addEventListener("click", async ()=>{
+
+      if(!currentProduct){
+
+        alert("No hay producto seleccionado.");
+        return;
+      }
+
+      const cantidad = normalizarCantidad(
+        refs.cantidadInput.value
+      );
+
+      if(!cantidad){
+
+        alert("Captura cantidad válida.");
+        return;
+      }
+
+      await agregarPartida(
+        currentProduct,
+        cantidad,
+        "MANUAL"
+      );
+    });
+
+    refs.btnCancelarCantidad?.addEventListener("click", ()=>{
+
+      salirModoCantidad();
+    });
+
+    refs.codigoInput?.addEventListener("keydown", async e => {
+
+      if(e.key !== "Enter") return;
+
+      const codigo = refs.codigoInput.value.trim();
+
+      if(!codigo) return;
+
+      await procesarCodigo(codigo);
+    });
+
+    refs.buscarInput?.addEventListener("input", async ()=>{
+
+      const term = refs.buscarInput.value.trim();
+
+      if(term.length < 2){
+
+        refs.resultados.innerHTML = "";
+        return;
+      }
+
+      const encontrados = await buscarProductosTexto(term);
+
+      refs.resultados.innerHTML = encontrados.map(p=>`
+
+        <div class="result-item">
+
+          <div class="result-title">
+            ${p.concepto}
+          </div>
+
+          <div class="result-code">
+            ${p.codigoBarra || p.id}
+          </div>
+
+        </div>
+
+      `).join("");
+    });
+
+    refs.btnCamara?.addEventListener("click", startStopCamara);
+
+    refs.btnCerrarCamara?.addEventListener("click", cerrarCamara);
+
+    refs.btnLogout?.addEventListener("click", cerrarSesionSeguro);
+
+    refs.btnSyncNow?.addEventListener("click", async ()=>{
+
+      await syncFirebase(true);
+    });
+
+    refs.btnSyncSession?.addEventListener("click", async ()=>{
+
+      await syncFirebase(true);
+    });
+
+    refs.cartList.addEventListener("click", async e => {
+
+      const btn = e.target.closest("[data-act]");
+
+      if(!btn) return;
+
+      const accion = btn.dataset.act;
+      const id = btn.dataset.id;
+
+      const p = await idbGet("partidas", id);
+
+      if(!p) return;
+
+      if(accion === "menos"){
+
+        p.cantidad = round3(
+          Math.max(0, Number(p.cantidad || 0) - 1)
+        );
+      }
+
+      if(accion === "mas"){
+
+        p.cantidad = round3(
+          Number(p.cantidad || 0) + 1
+        );
+      }
+
+      if(accion === "borrar"){
+
+        if(!confirm("¿Borrar esta entrada?")){
+          return;
+        }
+
+        p.eliminado = true;
+      }
+
+      p.sincronizado = false;
+
+      await idbPut("partidas", p);
+
+      await renderCarrito();
+    });
+
+    document.addEventListener("click", resetInactivity);
+    document.addEventListener("keydown", resetInactivity);
+
+    startTimers();
   }
 
-  refs.btnLogin.addEventListener("click", login);
-
-  refs.loginUsuario.addEventListener("keydown", e=>{
-    if(e.key === "Enter"){
-      refs.loginPassword.focus();
-    }
-  });
-
-  refs.loginPassword.addEventListener("keydown", e=>{
-    if(e.key === "Enter"){
-      refs.btnLogin.click();
-    }
-  });
-
-  refs.codigoInput.addEventListener("keydown", async e=>{
-    resetInactivity();
-
-    if(e.key === "Enter"){
-      e.preventDefault();
-      await procesarCodigo(refs.codigoInput.value.trim());
-    }
-  });
-
-  refs.btnCancelarCantidad.addEventListener("click", ()=>{
-    resetInactivity();
-    salirModoCantidad();
-  });
-
-  refs.btnGuardar.addEventListener("click", async ()=>{
-    resetInactivity();
-
-    if(!currentProduct) return alert("Primero selecciona producto.");
-
-    const cantidad = normalizarCantidad(refs.cantidadInput.value);
-
-    if(!cantidad || cantidad <= 0) return alert("Cantidad inválida.");
-
-    await agregarPartida(currentProduct, cantidad, currentProduct.__origen || "ESCANER");
-  });
-
-  refs.cantidadInput.addEventListener("keydown", async e=>{
-    resetInactivity();
-
-    if(e.key === "Enter"){
-      e.preventDefault();
-      refs.btnGuardar.click();
-    }
-  });
-
-  refs.btnCamara.addEventListener("click", startStopCamara);
-  refs.btnCerrarCamara.addEventListener("click", cerrarCamara);
-  refs.scannerModal.addEventListener("click", e=>{
-    if(e.target === refs.scannerModal){
-      cerrarCamara();
-    }
-  });
-  document.addEventListener("keydown", e=>{
-    if(e.key === "Escape" && refs.scannerModal.classList.contains("show")){
-      cerrarCamara();
-    }
-  });
-
-
-  refs.buscarInput.addEventListener("input", ()=>{
-    resetInactivity();
-
-    clearTimeout(buscarTimer);
-
-    const term = refs.buscarInput.value.trim();
-
-    if(!term){
-      refs.resultados.innerHTML = "";
-      return;
-    }
-
-    buscarTimer = setTimeout(()=>renderBusqueda(term), 250);
-  });
-
-  document.querySelectorAll(".tab").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      resetInactivity();
-      switchTab(btn.dataset.tab);
-    });
-  });
-
-  refs.cartList.addEventListener("click", async e=>{
-    const btn = e.target.closest("button[data-act][data-id]");
-    if(!btn) return;
-
-    resetInactivity();
-
-    await modificarPartida(btn.dataset.id, btn.dataset.act);
-  });
-
-  refs.btnReloadCart.addEventListener("click", renderCarrito);
-  refs.btnFinalizar.addEventListener("click", finalizarConteo);
-
-  refs.btnLogout.addEventListener("click", async ()=>{
-    await syncFirebase(false);
-    await logout();
-  });
-
-  refs.btnSyncNow.addEventListener("click", ()=>syncFirebase(true));
-  refs.btnSyncSession.addEventListener("click", ()=>syncFirebase(true));
-
-  window.addEventListener("online", async ()=>{
-    actualizarOnline();
-    await syncFirebase(false);
-  });
-
-  window.addEventListener("offline", actualizarOnline);
-
-  ["click","keydown","touchstart","mousemove"].forEach(ev=>{
-    window.addEventListener(ev, resetInactivity, { passive:true });
-  });
-
-  window.addEventListener("beforeunload", e=>{
-    if(currentUser){
-      e.preventDefault();
-      e.returnValue = "";
-    }
-  });
-
   init();
+
 </script>
 </body>
 </html>

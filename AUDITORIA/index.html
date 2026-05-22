@@ -122,6 +122,10 @@
       margin:4px 0 10px;
     }
 
+    body.app-logged-in .app-header{
+      display:none;
+    }
+
     .header-logo{
       width:min(260px,72vw);
       max-height:82px;
@@ -700,7 +704,6 @@
   <!-- LOGIN -->
   <section id="viewLogin" class="view active">
     <div class="card grid login-card">
-      <img class="brand-logo login-logo" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22720%22%20height%3D%22220%22%20viewBox%3D%220%200%20720%20220%22%3E%3Crect%20width%3D%22720%22%20height%3D%22220%22%20rx%3D%2228%22%20fill%3D%22white%22/%3E%3Ctext%20x%3D%22360%22%20y%3D%22105%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%22%20font-size%3D%2254%22%20font-weight%3D%22800%22%20fill%3D%22%23d71920%22%3EPROVEEDORA%3C/text%3E%3Ctext%20x%3D%22360%22%20y%3D%22155%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%22%20font-size%3D%2230%22%20font-weight%3D%22700%22%20fill%3D%22%23b45309%22%3EPROVSOFT%3C/text%3E%3C/svg%3E" alt="PROVEEDORA">
       <div>
         <div class="subtitle">Usuario</div>
         <input id="loginUsuario" type="text" placeholder="GERARDO" autocomplete="username">
@@ -873,7 +876,7 @@
   const CONTEO_ID = "ALLENDE_MAYO_2026";
   const CONTEO_NOMBRE = "Conteo Allende Mayo 2026";
   const DB_NAME = "PROVSOFT_CONTEO_ALLENDE_MAYO_2026";
-  const DB_VERSION = 2;
+  const DB_VERSION = 3;
   const SYNC_EVERY_ITEMS = 5;
   const SYNC_INTERVAL_MS = 30000;
   const AUTO_LOGOUT_MS = 5 * 60 * 1000;
@@ -981,6 +984,13 @@
     return `INV-${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
   }
 
+  function generarIdEntrada(){
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}-${String(d.getMilliseconds()).padStart(3,"0")}`;
+    const rnd = Math.random().toString(36).slice(2,8).toUpperCase();
+    return `ENT-${stamp}-${rnd}`;
+  }
+
   function openIDB(){
     return new Promise((resolve,reject)=>{
       const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -994,9 +1004,13 @@
           st.createIndex("texto","texto",{unique:false});
         }
 
-        if(!dbx.objectStoreNames.contains("partidas")){
-          dbx.createObjectStore("partidas", { keyPath:"codigo" });
+        if(dbx.objectStoreNames.contains("partidas")){
+          dbx.deleteObjectStore("partidas");
         }
+
+        const stPartidas = dbx.createObjectStore("partidas", { keyPath:"id" });
+        stPartidas.createIndex("codigoOriginal","codigoOriginal",{unique:false});
+        stPartidas.createIndex("epochMs","epochMs",{unique:false});
 
         if(!dbx.objectStoreNames.contains("meta")){
           dbx.createObjectStore("meta", { keyPath:"key" });
@@ -1596,22 +1610,16 @@
       return;
     }
 
-    const anterior = await idbGet("partidas", codigoOriginal);
-    const nuevaCantidad = round3(Number(anterior?.cantidad || 0) + cantidadNormalizada);
-    const codigosEscaneados = Array.from(new Set([
-      ...(Array.isArray(anterior?.codigosEscaneados) ? anterior.codigosEscaneados : []),
-      codigoEscaneado
-    ].filter(Boolean)));
-
     const partida = {
+      id: generarIdEntrada(),
       codigo: codigoOriginal,
       codigoOriginal,
       codigoEscaneadoUltimo: codigoEscaneado,
-      codigosEscaneados,
+      codigosEscaneados: [codigoEscaneado].filter(Boolean),
       productoId: producto.id,
       descripcion: producto.concepto || "SIN DESCRIPCIÓN",
       unidadMedidaSat: producto.unidadMedidaSat || "",
-      cantidad: nuevaCantidad,
+      cantidad: cantidadNormalizada,
 
       usuarioId: currentUser.id,
       usuario: currentUser.usuario,
@@ -1628,6 +1636,7 @@
 
       origen,
       origenCodigo: producto.__origenCodigo || "ORIGINAL",
+      tipoConteo: "ENTRADA_INDIVIDUAL",
       sincronizado: false,
       eliminado: false
     };
@@ -1637,7 +1646,7 @@
     pendingCounter++;
 
     refs.lastSaved.classList.remove("hidden");
-    refs.lastSaved.textContent = `Guardado local: ${partida.descripcion} | Cantidad acumulada: ${partida.cantidad}`;
+    refs.lastSaved.textContent = `Entrada guardada: ${partida.descripcion} | Cantidad: ${partida.cantidad}`;
 
     salirModoCantidad();
 
@@ -1700,7 +1709,7 @@
     if(refs.totalPartidas) refs.totalPartidas.textContent = activas.length;
     if(refs.totalPiezas) refs.totalPiezas.textContent = round3(piezas);
     refs.syncPill.textContent = `Pendiente: ${activas.filter(x => !x.sincronizado).length}`;
-    refs.cartSummary.textContent = `${activas.length} partidas | ${round3(piezas)} piezas/unidades`;
+    refs.cartSummary.textContent = `${activas.length} entradas | ${round3(piezas)} piezas/unidades`;
     renderUltimosEscaneados(activas);
   }
 
@@ -1712,7 +1721,7 @@
     await actualizarResumen();
 
     if(!partidas.length){
-      refs.cartList.innerHTML = `<div class="subtitle">No hay productos contados todavía.</div>`;
+      refs.cartList.innerHTML = `<div class="subtitle">No hay entradas de conteo todavía.</div>`;
       return;
     }
 
@@ -1732,10 +1741,10 @@
         </div>
 
         <div class="cart-actions">
-          <button class="btn-small btn2" data-act="menos" data-id="${p.codigo}">−1</button>
-          <button class="btn-small btn2" data-act="mas" data-id="${p.codigo}">+1</button>
-          <button class="btn-small btn2" data-act="editar" data-id="${p.codigo}">Editar</button>
-          <button class="btn-small btn-danger" data-act="borrar" data-id="${p.codigo}">Borrar</button>
+          <button class="btn-small btn2" data-act="menos" data-id="${p.id}">−1</button>
+          <button class="btn-small btn2" data-act="mas" data-id="${p.id}">+1</button>
+          <button class="btn-small btn2" data-act="editar" data-id="${p.id}">Editar entrada</button>
+          <button class="btn-small btn-danger" data-act="borrar" data-id="${p.id}">Borrar entrada</button>
         </div>
       `;
 
@@ -1743,8 +1752,8 @@
     }
   }
 
-  async function modificarPartida(codigo, accion){
-    const p = await idbGet("partidas", codigo);
+  async function modificarPartida(idEntrada, accion){
+    const p = await idbGet("partidas", idEntrada);
     if(!p) return;
 
     if(accion === "menos"){
@@ -1766,7 +1775,7 @@
     }
 
     if(accion === "borrar"){
-      if(!confirm("¿Borrar esta partida del conteo local?")) return;
+      if(!confirm("¿Borrar esta entrada del conteo local?")) return;
 
       p.eliminado = true;
       p.cantidad = 0;
@@ -1819,7 +1828,7 @@
         "USUARIOS",
         currentUser.id,
         "PARTIDAS",
-        p.codigo
+        p.id || p.codigo
       );
 
       await setDoc(partRef, {
@@ -1916,6 +1925,7 @@
       refs.folioTxt.textContent = folio;
       refs.sessionInfo.textContent = `${currentUser.nombre} | ${currentUser.usuario} | ${currentUser.rol || "SIN ROL"}`;
 
+      document.body.classList.add("app-logged-in");
       refs.viewLogin.classList.remove("active");
       refs.viewApp.classList.add("active");
 
@@ -1940,6 +1950,7 @@
     clearInterval(syncTimer);
     clearTimeout(inactivityTimer);
 
+    document.body.classList.remove("app-logged-in");
     refs.viewApp.classList.remove("active");
     refs.viewLogin.classList.add("active");
 

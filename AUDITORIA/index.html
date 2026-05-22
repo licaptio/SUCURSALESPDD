@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Conteo Allende Mayo 2026 - PROVSOFT</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    :root{
+      --azul:#00416A;
+      --azul2:#0c6cbd;
+      --fondo:#f4f7fb;
+      --card:#ffffff;
+      --ok:#1e8e3e;
+      --danger:#b42318;
+      --txt:#102033;
+      --muted:#64748b;
+    }
+
+    *{box-sizing:border-box;min-width:0}
+    html,body{margin:0;height:100%;min-height:100%;font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#00416A,#E4E5E6);color:var(--txt);overflow:hidden}
+    body{padding:10px}
+
+    .app{
+      max-width:820px;
+      margin:0 auto;
+      height:calc(100dvh - 20px);
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .card{
+      background:rgba(255,255,255,.96);
+      border-radius:20px;
+      padding:16px;
+      box-shadow:0 12px 30px rgba(0,0,0,.12);
+    }
+
+    .title{
+      color:white;
+      text-align:center;
+      font-weight:800;
+      font-size:clamp(24px,6vw,36px);
+      line-height:1.05;
+      margin:8px 0 14px;
+      text-shadow:0 2px 8px rgba(0,0,0,.25);
+    }
+
+    .subtitle{font-size:13px;color:var(--muted);font-weight:600}
+    .view{display:none}
+    .view.active{display:block}
+    #viewApp.active{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+    .tabView{min-height:0}
+    .tabView:not(.hidden){display:block;min-height:0}
+
+    input,button{
+      font-family:inherit;
+      font-size:16px;
+      border-radius:14px;
+      border:0;
+      padding:13px;
+    }
+
+    input{
+      width:100%;
+      background:#f8fafc;
+      border:1px solid #dbe3ee;
+      color:var(--txt);
+      text-transform:uppercase;
+    }
+
+    input[type="password"]{
+      text-transform:none;
+    }
+
+    button{
+      cursor:pointer;
+      font-weight:800;
+    }
+
+    .btn{
+      background:var(--azul2);
+      color:white;
+      width:100%;
+    }
+
+    .btn2{
+      background:#e8edf6;
+      color:#0c2a5e;
+      width:100%;
+    }
+
+    .btn-ok{background:var(--ok);color:white}
+    .btn-danger{background:#fee2e2;color:var(--danger)}
+    .btn-small{padding:8px 10px;font-size:14px;border-radius:10px}
+
+    .grid{display:grid;gap:10px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .mt{margin-top:12px}
+    .mb{margin-bottom:12px}
+
+    .statusbar{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      align-items:center;
+      font-size:12px;
+      color:white;
+      margin-bottom:8px;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      padding:5px 9px;
+      border-radius:999px;
+      background:rgba(255,255,255,.22);
+      color:white;
+      font-weight:700;
+      font-size:12px;
+    }
+
+    .tabs{
+      position:sticky;
+      bottom:0;
+      z-index:30;
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:8px;
+      margin-top:auto;
+      padding-top:10px;
+      background:linear-gradient(0deg,rgba(244,247,251,1),rgba(244,247,251,.55),rgba(244,247,251,0));
+    }
+
+    .tab{
+      background:white;
+      color:#0c2a5e;
+      border:1px solid #dbe3ee;
+      box-shadow:0 6px 16px rgba(0,0,0,.08);
+      padding:10px 5px;
+      font-size:12px;
+      border-radius:16px;
+    }
+
+    .tab.active{
+      background:var(--azul2);
+      color:white;
+    }
+
+    .product-card{
+      border:2px solid #dbe3ee;
+      border-radius:18px;
+      padding:14px;
+      background:white;
+    }
+
+    .product-name{
+      font-size:20px;
+      font-weight:800;
+      color:#0c2a5e;
+      line-height:1.12;
+    }
+
+    .product-code{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .qty-box{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .qty-box input{
+      font-size:26px;
+      font-weight:800;
+      text-align:center;
+      padding:16px;
+      text-transform:none;
+    }
+
+    .last-box{
+      background:#ecfdf3;
+      border:1px solid #bbf7d0;
+      color:#14532d;
+      padding:10px;
+      border-radius:14px;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .last-scanned-list{
+      display:grid;
+      gap:8px;
+    }
+
+    .last-scanned-card{
+      background:white;
+      border:2px solid #dbe3ee;
+      border-radius:18px;
+      padding:12px;
+    }
+
+    .last-scanned-label{
+      font-size:11px;
+      color:var(--muted);
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.02em;
+    }
+
+    .last-scanned-name{
+      margin-top:4px;
+      font-size:15px;
+      font-weight:900;
+      color:#0c2a5e;
+      line-height:1.18;
+    }
+
+    .last-scanned-meta{
+      margin-top:5px;
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+    }
+
+    .scanner-box{
+      display:none;
+      background:white;
+      padding:10px;
+      border-radius:16px;
+      margin-top:12px;
+    }
+
+    .search-results{
+      display:grid;
+      gap:8px;
+      max-height:55vh;
+      overflow:auto;
+      margin-top:10px;
+    }
+
+    .result-item{
+      background:white;
+      border:1px solid #dbe3ee;
+      border-radius:14px;
+      padding:10px;
+    }
+
+    .result-title{font-weight:800;color:#0c2a5e}
+    .result-code{font-size:12px;color:var(--muted);font-weight:700}
+
+    .cart-panel{
+      height:calc(100dvh - 190px);
+      min-height:0;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .cart-list{
+      display:grid;
+      gap:8px;
+      flex:1;
+      min-height:0;
+      max-height:none;
+      overflow:auto;
+      padding-right:2px;
+      overscroll-behavior:contain;
+    }
+
+    .cart-item{
+      background:white;
+      border:1px solid #dbe3ee;
+      border-radius:16px;
+      padding:10px;
+    }
+
+    .cart-top{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      align-items:start;
+    }
+
+    .cart-name{font-weight:800;color:#0c2a5e;font-size:14px}
+    .cart-code{font-size:11px;color:var(--muted);font-weight:700}
+    .cart-qty{font-size:22px;font-weight:900;color:#111827}
+
+    .cart-actions{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:6px;
+      margin-top:8px;
+    }
+
+    .info-line{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .hidden{display:none!important}
+
+    @media(max-width:719px){
+      .title{font-size:22px;margin:4px 0 8px}
+      .card{padding:12px;border-radius:18px}
+      .capture-layout{display:grid;grid-template-rows:auto auto;gap:10px;min-height:0;overflow:auto;overscroll-behavior:contain;padding-bottom:6px}
+      #tabCaptura{flex:1;min-height:0;overflow:hidden}
+      .tabs{padding-top:8px}
+      .tab{padding:8px 4px;font-size:11px}
+      .cart-panel{height:calc(100dvh - 178px)}
+    }
+
+    @media(min-width:720px){
+      body{padding:18px}
+      .app{height:calc(100dvh - 36px);min-height:0}
+      .capture-layout{
+        display:grid;
+        grid-template-columns:1.1fr .9fr;
+        gap:14px;
+        align-items:start;
+      }
+      .tabs{position:static;background:transparent}
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <h1 class="title">CONTEO ALLENDE<br>MAYO 2026</h1>
+
+  <div class="statusbar">
+    <div class="pill" id="onlinePill">🔄 Revisando conexión</div>
+    <div class="pill" id="syncPill">Pendiente: 0</div>
+  </div>
+
+  <!-- LOGIN -->
+  <section id="viewLogin" class="view active">
+    <div class="card grid">
+      <div>
+        <div class="subtitle">Usuario</div>
+        <input id="loginUsuario" type="text" placeholder="GERARDO" autocomplete="username">
+      </div>
+
+      <div>
+        <div class="subtitle">Contraseña</div>
+        <input id="loginPassword" type="password" inputmode="numeric" placeholder="Contraseña" autocomplete="current-password">
+      </div>
+
+      <button class="btn" id="btnLogin">Entrar al conteo</button>
+
+      <div class="subtitle" id="loginMsg">
+        El acceso se valida desde Firebase en la colección usuarios_ruta.
+      </div>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <section id="viewApp" class="view">
+    <div class="card mb">
+      <div class="info-line">
+        <div>Usuario: <span id="userName">---</span></div>
+        <div>Folio: <span id="folioTxt">---</span></div>
+      </div>
+    </div>
+
+    <!-- CAPTURA -->
+    <section id="tabCaptura" class="tabView active">
+      <div class="capture-layout">
+        <div class="card grid">
+          <div class="subtitle">Escanear con pistola o escribir código</div>
+          <input id="codigoInput" type="text" placeholder="Código de barras..." autocomplete="off" inputmode="numeric">
+
+          <button class="btn2" id="btnCamara">📷 Abrir cámara</button>
+          <div id="lector" class="scanner-box"></div>
+
+          <div id="productoBox" class="product-card hidden">
+            <div class="product-name" id="prodNombre">Producto</div>
+            <div class="product-code" id="prodCodigo">Código</div>
+
+            <div class="qty-box">
+              <input id="cantidadInput" type="number" step="0.001" min="0.001" placeholder="Cantidad">
+              <button class="btn btn-ok" id="btnGuardar">Guardar conteo</button>
+            </div>
+          </div>
+
+          <div id="lastSaved" class="last-box hidden"></div>
+        </div>
+
+        <div class="card grid">
+          <div class="subtitle">Últimos artículos escaneados</div>
+          <div id="ultimosEscaneados" class="last-scanned-list">
+            <div class="last-scanned-card">
+              <div class="last-scanned-label">Sin escaneos todavía</div>
+              <div class="last-scanned-name">Aquí aparecerán los últimos dos artículos guardados.</div>
+              <div class="last-scanned-meta">
+                <span>---</span>
+                <span>---</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn2" id="btnSyncNow">Sincronizar ahora</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUSCAR -->
+    <section id="tabBuscar" class="tabView hidden">
+      <div class="card">
+        <div class="subtitle">Buscar producto local</div>
+        <input id="buscarInput" type="text" placeholder="Nombre, marca, código, palabras...">
+        <div id="resultados" class="search-results"></div>
+      </div>
+    </section>
+
+    <!-- CARRITO -->
+    <section id="tabCarrito" class="tabView hidden">
+      <div class="card grid cart-panel">
+        <div class="row">
+          <button class="btn2" id="btnReloadCart">Actualizar carrito</button>
+          <button class="btn2" id="btnFinalizar">Finalizar mi conteo</button>
+        </div>
+        <div class="subtitle" id="cartSummary">Sin partidas.</div>
+        <div id="cartList" class="cart-list"></div>
+      </div>
+    </section>
+
+    <!-- SESION -->
+    <section id="tabSesion" class="tabView hidden">
+      <div class="card grid">
+        <div class="product-card">
+          <div class="cart-code">Sesión activa</div>
+          <div class="product-name" id="sessionInfo">---</div>
+        </div>
+        <button class="btn" id="btnSyncSession">Guardar / sincronizar sesión</button>
+        <button class="btn-danger" id="btnLogout">Cerrar sesión</button>
+      </div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="Captura">📦<br>Captura</button>
+      <button class="tab" data-tab="Buscar">🔎<br>Buscar</button>
+      <button class="tab" data-tab="Carrito">🧺<br>Conteo</button>
+      <button class="tab" data-tab="Sesion">⚙️<br>Sesión</button>
+    </nav>
+  </section>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    query,
+    where,
+    limit,
+    doc,
+    setDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+    authDomain: "inventariopv-643f1.firebaseapp.com",
+    projectId: "inventariopv-643f1",
+    storageBucket: "inventariopv-643f1.appspot.com",
+    messagingSenderId: "96242533231",
+    appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const CONTEO_ID = "ALLENDE_MAYO_2026";
+  const CONTEO_NOMBRE = "Conteo Allende Mayo 2026";
+  const DB_NAME = "PROVSOFT_CONTEO_ALLENDE_MAYO_2026";
+  const DB_VERSION = 1;
+  const SYNC_EVERY_ITEMS = 5;
+  const SYNC_INTERVAL_MS = 30000;
+  const AUTO_LOGOUT_MS = 5 * 60 * 1000;
+
+  const $ = id => document.getElementById(id);
+  const pad2 = n => String(n).padStart(2,"0");
+
+  const nowDate = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  };
+
+  const nowTime = () => {
+    const d = new Date();
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  };
+
+  const nowLocal = () => `${nowDate()} ${nowTime()}`;
+  const round3 = n => Math.round((Number(n) + Number.EPSILON) * 1000) / 1000;
+
+  let idb = null;
+  let currentUser = null;
+  let currentProduct = null;
+  let lector = null;
+  let pendingCounter = 0;
+  let inactivityTimer = null;
+  let syncTimer = null;
+
+  const refs = {
+    viewLogin: $("viewLogin"),
+    viewApp: $("viewApp"),
+    loginUsuario: $("loginUsuario"),
+    loginPassword: $("loginPassword"),
+    loginMsg: $("loginMsg"),
+    btnLogin: $("btnLogin"),
+    userName: $("userName"),
+    folioTxt: $("folioTxt"),
+    onlinePill: $("onlinePill"),
+    syncPill: $("syncPill"),
+    codigoInput: $("codigoInput"),
+    productoBox: $("productoBox"),
+    prodNombre: $("prodNombre"),
+    prodCodigo: $("prodCodigo"),
+    cantidadInput: $("cantidadInput"),
+    btnGuardar: $("btnGuardar"),
+    btnCamara: $("btnCamara"),
+    lector: $("lector"),
+    lastSaved: $("lastSaved"),
+    buscarInput: $("buscarInput"),
+    resultados: $("resultados"),
+    cartList: $("cartList"),
+    cartSummary: $("cartSummary"),
+    totalPartidas: $("totalPartidas"),
+    totalPiezas: $("totalPiezas"),
+    ultimosEscaneados: $("ultimosEscaneados"),
+    btnReloadCart: $("btnReloadCart"),
+    btnFinalizar: $("btnFinalizar"),
+    btnLogout: $("btnLogout"),
+    btnSyncNow: $("btnSyncNow"),
+    btnSyncSession: $("btnSyncSession"),
+    sessionInfo: $("sessionInfo")
+  };
+
+  function beep(ms=90, freq=880){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.frequency.value = freq;
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(.16, ctx.currentTime);
+      o.start();
+      setTimeout(()=>{o.stop();ctx.close();}, ms);
+    }catch{}
+  }
+
+  function generarFolio(){
+    const d = new Date();
+    return `INV-${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  }
+
+  function openIDB(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+      req.onupgradeneeded = e => {
+        const dbx = e.target.result;
+
+        if(!dbx.objectStoreNames.contains("productos")){
+          const st = dbx.createObjectStore("productos", { keyPath:"id" });
+          st.createIndex("codigoBarra","codigoBarra",{unique:false});
+          st.createIndex("texto","texto",{unique:false});
+        }
+
+        if(!dbx.objectStoreNames.contains("partidas")){
+          dbx.createObjectStore("partidas", { keyPath:"codigo" });
+        }
+
+        if(!dbx.objectStoreNames.contains("meta")){
+          dbx.createObjectStore("meta", { keyPath:"key" });
+        }
+      };
+
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function tx(store, mode="readonly"){
+    return idb.transaction(store, mode).objectStore(store);
+  }
+
+  function idbPut(store, value){
+    return new Promise((resolve,reject)=>{
+      const req = tx(store,"readwrite").put(value);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function idbGet(store, key){
+    return new Promise((resolve,reject)=>{
+      const req = tx(store).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function idbGetAll(store){
+    return new Promise((resolve,reject)=>{
+      const req = tx(store).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function setMeta(key, value){
+    await idbPut("meta", { key, value });
+  }
+
+  async function getMeta(key){
+    const r = await idbGet("meta", key);
+    return r?.value ?? null;
+  }
+
+  function normalizar(txt){
+    return String(txt || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^a-z0-9]+/g," ")
+      .trim();
+  }
+
+  function textoProducto(p){
+    return normalizar([
+      p.id,
+      p.codigoBarra,
+      p.concepto,
+      p.descripcion,
+      p.marca,
+      p.departamento,
+      Array.isArray(p.codigosEquivalentes) ? p.codigosEquivalentes.join(" ") : ""
+    ].join(" "));
+  }
+
+  async function loginFirebase(){
+    const usuarioInput = refs.loginUsuario.value.trim().toUpperCase();
+    const passwordInput = refs.loginPassword.value.trim();
+
+    if(!usuarioInput) throw new Error("Captura usuario.");
+    if(!passwordInput) throw new Error("Captura contraseña.");
+
+    refs.loginMsg.textContent = "Validando usuario...";
+
+    const q = query(
+      collection(db, "usuarios_ruta"),
+      where("usuario", "==", usuarioInput),
+      limit(1)
+    );
+
+    const snap = await getDocs(q);
+
+    if(snap.empty){
+      throw new Error("Usuario no encontrado.");
+    }
+
+    const userDoc = snap.docs[0];
+    const data = userDoc.data();
+
+    if(data.activo !== true){
+      throw new Error("Usuario inactivo.");
+    }
+
+    if(String(data.password || "") !== passwordInput){
+      throw new Error("Contraseña incorrecta.");
+    }
+
+    return {
+      id: userDoc.id,
+      usuario: String(data.usuario || usuarioInput).toUpperCase(),
+      nombre: data.nombre || data.usuario || usuarioInput,
+      rol: data.rol || "",
+      rutaId: data.rutaId || ""
+    };
+  }
+
+  async function descargarCatalogo(){
+    refs.loginMsg.textContent = "Descargando catálogo activo...";
+
+    const snap = await getDocs(query(collection(db,"productos"), where("activo","==",true)));
+    let total = 0;
+
+    for(const d of snap.docs){
+      const data = d.data();
+
+      const p = {
+        id: d.id,
+        codigoBarra: String(data.codigoBarra || d.id || "").trim(),
+        concepto: data.concepto || data.descripcion || "SIN DESCRIPCIÓN",
+        marca: data.marca || "",
+        departamento: data.departamento || "",
+        codigosEquivalentes: Array.isArray(data.codigosEquivalentes) ? data.codigosEquivalentes.map(String) : [],
+        activo: data.activo === true,
+        texto: ""
+      };
+
+      p.texto = textoProducto(p);
+      await idbPut("productos", p);
+      total++;
+    }
+
+    await setMeta("catalogoDescargadoEn", nowLocal());
+    await setMeta("catalogoTotal", total);
+
+    refs.loginMsg.textContent = `Catálogo local listo: ${total} productos.`;
+  }
+
+  async function asegurarCatalogo(){
+    const total = await getMeta("catalogoTotal");
+
+    if(!total || Number(total) <= 0){
+      await descargarCatalogo();
+    }else{
+      refs.loginMsg.textContent = `Catálogo local cargado: ${total} productos.`;
+    }
+  }
+
+  async function buscarProductoPorCodigo(codigo){
+    const code = String(codigo || "").trim();
+    if(!code) return null;
+
+    const productos = await idbGetAll("productos");
+
+    let p = productos.find(x => String(x.codigoBarra) === code || String(x.id) === code);
+    if(p) return p;
+
+    p = productos.find(x => Array.isArray(x.codigosEquivalentes) && x.codigosEquivalentes.map(String).includes(code));
+    if(p) return p;
+
+    const peso = detectarCodigoPeso(code);
+    if(peso){
+      p = productos.find(x =>
+        String(x.codigoBarra) === peso.base ||
+        String(x.id) === peso.base ||
+        (Array.isArray(x.codigosEquivalentes) && x.codigosEquivalentes.map(String).includes(peso.base))
+      );
+
+      if(p){
+        p.__cantidadDetectada = peso.kg;
+        p.__origen = "BALANZA";
+        return p;
+      }
+    }
+
+    return null;
+  }
+
+  function detectarCodigoPeso(code){
+    if(/^\d{13}$/.test(code) && code.startsWith("20")){
+      const base = code.substring(0,7);
+      const kg = parseInt(code.substring(7,12),10) / 1000;
+      return { base, kg };
+    }
+
+    return null;
+  }
+
+  async function buscarProductosTexto(term){
+    const words = normalizar(term).split(/\s+/).filter(Boolean);
+    if(!words.length) return [];
+
+    const productos = await idbGetAll("productos");
+
+    return productos
+      .map(p => {
+        const score = words.reduce((acc,w)=> acc + (p.texto.includes(w) ? 1 : 0), 0);
+        return { ...p, score };
+      })
+      .filter(p => p.score === words.length)
+      .slice(0,50);
+  }
+
+  function mostrarProducto(p){
+    currentProduct = p;
+
+    refs.productoBox.classList.remove("hidden");
+    refs.prodNombre.textContent = p.concepto || "SIN DESCRIPCIÓN";
+    refs.prodCodigo.textContent = `Código: ${p.codigoBarra || p.id}`;
+
+    if(p.__cantidadDetectada){
+      refs.cantidadInput.value = p.__cantidadDetectada;
+    }else{
+      refs.cantidadInput.value = "";
+    }
+
+    setTimeout(()=>refs.cantidadInput.focus(),80);
+  }
+
+  async function agregarPartida(producto, cantidad, origen="MANUAL"){
+    const codigo = String(producto.codigoBarra || producto.id).trim();
+    const anterior = await idbGet("partidas", codigo);
+    const nuevaCantidad = round3(Number(anterior?.cantidad || 0) + Number(cantidad));
+
+    const partida = {
+      codigo,
+      productoId: producto.id,
+      descripcion: producto.concepto || "SIN DESCRIPCIÓN",
+      cantidad: nuevaCantidad,
+
+      usuarioId: currentUser.id,
+      usuario: currentUser.usuario,
+      usuarioNombre: currentUser.nombre,
+      rol: currentUser.rol,
+      rutaId: currentUser.rutaId,
+
+      conteoId: CONTEO_ID,
+      conteoNombre: CONTEO_NOMBRE,
+
+      fecha: nowDate(),
+      hora: nowTime(),
+      epochMs: Date.now(),
+
+      origen,
+      sincronizado: false,
+      eliminado: false
+    };
+
+    await idbPut("partidas", partida);
+
+    pendingCounter++;
+
+    refs.lastSaved.classList.remove("hidden");
+    refs.lastSaved.textContent = `Guardado local: ${partida.descripcion} | Cantidad acumulada: ${partida.cantidad}`;
+
+    currentProduct = null;
+    refs.productoBox.classList.add("hidden");
+    refs.codigoInput.value = "";
+    refs.cantidadInput.value = "";
+    refs.codigoInput.focus();
+
+    beep();
+
+    await actualizarResumen();
+
+    if(pendingCounter >= SYNC_EVERY_ITEMS){
+      await syncFirebase(false);
+    }
+  }
+
+  function escapeHtml(txt){
+    return String(txt ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  function renderUltimosEscaneados(partidasActivas=[]){
+    if(!refs.ultimosEscaneados) return;
+
+    const ultimos = [...partidasActivas]
+      .sort((a,b)=> (b.epochMs || 0) - (a.epochMs || 0))
+      .slice(0,2);
+
+    if(!ultimos.length){
+      refs.ultimosEscaneados.innerHTML = `
+        <div class="last-scanned-card">
+          <div class="last-scanned-label">Sin escaneos todavía</div>
+          <div class="last-scanned-name">Aquí aparecerán los últimos dos artículos guardados.</div>
+          <div class="last-scanned-meta">
+            <span>---</span>
+            <span>---</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    refs.ultimosEscaneados.innerHTML = ultimos.map((p,idx)=>`
+      <div class="last-scanned-card">
+        <div class="last-scanned-label">${idx === 0 ? "Último escaneado" : "Anterior escaneado"}</div>
+        <div class="last-scanned-name">${escapeHtml(p.descripcion)}</div>
+        <div class="last-scanned-meta">
+          <span>${escapeHtml(p.codigo)}</span>
+          <span>Cant: ${escapeHtml(p.cantidad)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function actualizarResumen(){
+    const partidas = await idbGetAll("partidas");
+    const activas = partidas.filter(x => !x.eliminado);
+    const piezas = activas.reduce((a,b)=> a + Number(b.cantidad || 0), 0);
+
+    if(refs.totalPartidas) refs.totalPartidas.textContent = activas.length;
+    if(refs.totalPiezas) refs.totalPiezas.textContent = round3(piezas);
+    refs.syncPill.textContent = `Pendiente: ${activas.filter(x => !x.sincronizado).length}`;
+    refs.cartSummary.textContent = `${activas.length} partidas | ${round3(piezas)} piezas/unidades`;
+    renderUltimosEscaneados(activas);
+  }
+
+  async function renderCarrito(){
+    const partidas = (await idbGetAll("partidas"))
+      .filter(x => !x.eliminado)
+      .sort((a,b)=> (b.epochMs || 0) - (a.epochMs || 0));
+
+    await actualizarResumen();
+
+    if(!partidas.length){
+      refs.cartList.innerHTML = `<div class="subtitle">No hay productos contados todavía.</div>`;
+      return;
+    }
+
+    refs.cartList.innerHTML = "";
+
+    for(const p of partidas){
+      const div = document.createElement("div");
+      div.className = "cart-item";
+
+      div.innerHTML = `
+        <div class="cart-top">
+          <div>
+            <div class="cart-name">${p.descripcion}</div>
+            <div class="cart-code">${p.codigo} | ${p.fecha} ${p.hora}</div>
+          </div>
+          <div class="cart-qty">${p.cantidad}</div>
+        </div>
+
+        <div class="cart-actions">
+          <button class="btn-small btn2" data-act="menos" data-id="${p.codigo}">−1</button>
+          <button class="btn-small btn2" data-act="mas" data-id="${p.codigo}">+1</button>
+          <button class="btn-small btn2" data-act="editar" data-id="${p.codigo}">Editar</button>
+          <button class="btn-small btn-danger" data-act="borrar" data-id="${p.codigo}">Borrar</button>
+        </div>
+      `;
+
+      refs.cartList.appendChild(div);
+    }
+  }
+
+  async function modificarPartida(codigo, accion){
+    const p = await idbGet("partidas", codigo);
+    if(!p) return;
+
+    if(accion === "menos"){
+      p.cantidad = round3(Math.max(0, Number(p.cantidad || 0) - 1));
+    }
+
+    if(accion === "mas"){
+      p.cantidad = round3(Number(p.cantidad || 0) + 1);
+    }
+
+    if(accion === "editar"){
+      const nuevo = prompt("Nueva cantidad:", p.cantidad);
+      if(nuevo === null) return;
+
+      const n = round3(Number(nuevo));
+      if(isNaN(n) || n < 0) return alert("Cantidad inválida.");
+
+      p.cantidad = n;
+    }
+
+    if(accion === "borrar"){
+      if(!confirm("¿Borrar esta partida del conteo local?")) return;
+
+      p.eliminado = true;
+      p.cantidad = 0;
+    }
+
+    p.sincronizado = false;
+    p.fecha = nowDate();
+    p.hora = nowTime();
+    p.epochMs = Date.now();
+
+    await idbPut("partidas", p);
+    await renderCarrito();
+  }
+
+  async function syncFirebase(showAlert=true){
+    if(!currentUser) return;
+
+    if(!navigator.onLine){
+      actualizarOnline();
+      if(showAlert) alert("Sin internet. Se queda guardado local.");
+      return;
+    }
+
+    const partidas = await idbGetAll("partidas");
+    const pendientes = partidas.filter(x => !x.sincronizado);
+
+    const userRef = doc(db, "CONTEOS_INVENTARIO", CONTEO_ID, "USUARIOS", currentUser.id);
+
+    await setDoc(userRef, {
+      usuarioId: currentUser.id,
+      usuario: currentUser.usuario,
+      usuarioNombre: currentUser.nombre,
+      rol: currentUser.rol,
+      rutaId: currentUser.rutaId,
+
+      conteoId: CONTEO_ID,
+      conteoNombre: CONTEO_NOMBRE,
+
+      estado: "EN_PROCESO",
+      ultimaSyncLocal: nowLocal(),
+      ultimaSyncServer: serverTimestamp(),
+      totalPartidas: partidas.filter(x=>!x.eliminado).length
+    }, { merge:true });
+
+    for(const p of pendientes){
+      const partRef = doc(
+        db,
+        "CONTEOS_INVENTARIO",
+        CONTEO_ID,
+        "USUARIOS",
+        currentUser.id,
+        "PARTIDAS",
+        p.codigo
+      );
+
+      await setDoc(partRef, {
+        ...p,
+        sincronizado: true,
+        syncServer: serverTimestamp()
+      }, { merge:true });
+
+      p.sincronizado = true;
+      await idbPut("partidas", p);
+    }
+
+    pendingCounter = 0;
+    await actualizarResumen();
+
+    if(showAlert) alert("Sincronización completa.");
+  }
+
+  async function finalizarConteo(){
+    if(!confirm("¿Finalizar tu conteo? Después quedará marcado como FINALIZADO.")) return;
+
+    await syncFirebase(false);
+
+    const userRef = doc(db, "CONTEOS_INVENTARIO", CONTEO_ID, "USUARIOS", currentUser.id);
+
+    await setDoc(userRef, {
+      estado: "FINALIZADO",
+      finalizadoLocal: nowLocal(),
+      finalizadoServer: serverTimestamp()
+    }, { merge:true });
+
+    alert("Conteo finalizado y sincronizado.");
+    await logout();
+  }
+
+  function switchTab(name){
+    document.querySelectorAll(".tabView").forEach(x=>x.classList.add("hidden"));
+    $("tab" + name).classList.remove("hidden");
+
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelector(`.tab[data-tab="${name}"]`)?.classList.add("active");
+
+    if(name === "Carrito") renderCarrito();
+    if(name === "Captura") setTimeout(()=>refs.codigoInput.focus(),80);
+  }
+
+  function actualizarOnline(){
+    refs.onlinePill.textContent = navigator.onLine ? "🟢 Online" : "🔴 Offline";
+  }
+
+  function resetInactivity(){
+    clearTimeout(inactivityTimer);
+
+    inactivityTimer = setTimeout(async ()=>{
+      if(currentUser){
+        await syncFirebase(false);
+        alert("Sesión cerrada por inactividad. Se sincronizó lo pendiente.");
+        await logout();
+      }
+    }, AUTO_LOGOUT_MS);
+  }
+
+  async function login(){
+    try{
+      const user = await loginFirebase();
+      currentUser = user;
+
+      localStorage.setItem("conteoUser", JSON.stringify(currentUser));
+
+      let folio = await getMeta("folioSesion");
+      if(!folio){
+        folio = generarFolio();
+        await setMeta("folioSesion", folio);
+      }
+
+      refs.userName.textContent = currentUser.nombre;
+      refs.folioTxt.textContent = folio;
+      refs.sessionInfo.textContent = `${currentUser.nombre} | ${currentUser.usuario} | ${currentUser.rol || "SIN ROL"}`;
+
+      await asegurarCatalogo();
+
+      refs.viewLogin.classList.remove("active");
+      refs.viewApp.classList.add("active");
+
+      await actualizarResumen();
+
+      switchTab("Captura");
+      startTimers();
+
+    }catch(e){
+      refs.loginMsg.textContent = e.message || "Error al iniciar sesión.";
+      alert(e.message || "Error al iniciar sesión.");
+    }
+  }
+
+  async function logout(){
+    try{
+      if(lector){
+        await lector.stop();
+      }
+    }catch{}
+
+    lector = null;
+    refs.lector.style.display = "none";
+
+    currentUser = null;
+    localStorage.removeItem("conteoUser");
+
+    clearInterval(syncTimer);
+    clearTimeout(inactivityTimer);
+
+    refs.viewApp.classList.remove("active");
+    refs.viewLogin.classList.add("active");
+
+    refs.loginPassword.value = "";
+    refs.codigoInput.value = "";
+    refs.buscarInput.value = "";
+    refs.resultados.innerHTML = "";
+  }
+
+  function startTimers(){
+    clearInterval(syncTimer);
+    syncTimer = setInterval(()=>syncFirebase(false), SYNC_INTERVAL_MS);
+    resetInactivity();
+  }
+
+  async function startStopCamara(){
+    if(lector){
+      try{
+        await lector.stop();
+      }catch{}
+
+      lector = null;
+      refs.lector.style.display = "none";
+      return;
+    }
+
+    refs.lector.style.display = "block";
+    lector = new Html5Qrcode("lector");
+
+    try{
+      const box = Math.floor(Math.min(window.innerWidth * .75, 320));
+
+      await lector.start(
+        { facingMode:"environment" },
+        { fps:10, qrbox:box },
+        async codigo => {
+          try{
+            await lector.stop();
+          }catch{}
+
+          lector = null;
+          refs.lector.style.display = "none";
+          refs.codigoInput.value = codigo;
+
+          await procesarCodigo(codigo);
+        },
+        () => {}
+      );
+
+    }catch(e){
+      alert("No se pudo abrir la cámara.");
+    }
+  }
+
+  async function procesarCodigo(codigo){
+    const p = await buscarProductoPorCodigo(codigo);
+
+    if(!p){
+      beep(160,300);
+      alert("Producto no encontrado en catálogo local.");
+      return;
+    }
+
+    mostrarProducto(p);
+  }
+
+  let buscarTimer = null;
+
+  async function renderBusqueda(term){
+    refs.resultados.innerHTML = "Buscando...";
+
+    const rows = await buscarProductosTexto(term);
+
+    if(!rows.length){
+      refs.resultados.innerHTML = `<div class="subtitle">Sin resultados.</div>`;
+      return;
+    }
+
+    refs.resultados.innerHTML = "";
+
+    for(const p of rows){
+      const div = document.createElement("div");
+      div.className = "result-item";
+
+      div.innerHTML = `
+        <div class="result-title">${p.concepto}</div>
+        <div class="result-code">${p.codigoBarra || p.id}</div>
+        <button class="btn-small btn-ok mt" data-id="${p.id}">Usar producto</button>
+      `;
+
+      div.querySelector("button").addEventListener("click", ()=>{
+        mostrarProducto(p);
+        switchTab("Captura");
+      });
+
+      refs.resultados.appendChild(div);
+    }
+  }
+
+  async function init(){
+    idb = await openIDB();
+
+    actualizarOnline();
+    await actualizarResumen();
+
+    refs.loginUsuario.focus();
+  }
+
+  refs.btnLogin.addEventListener("click", login);
+
+  refs.loginUsuario.addEventListener("keydown", e=>{
+    if(e.key === "Enter"){
+      refs.loginPassword.focus();
+    }
+  });
+
+  refs.loginPassword.addEventListener("keydown", e=>{
+    if(e.key === "Enter"){
+      refs.btnLogin.click();
+    }
+  });
+
+  refs.codigoInput.addEventListener("keydown", async e=>{
+    resetInactivity();
+
+    if(e.key === "Enter"){
+      e.preventDefault();
+      await procesarCodigo(refs.codigoInput.value.trim());
+    }
+  });
+
+  refs.btnGuardar.addEventListener("click", async ()=>{
+    resetInactivity();
+
+    if(!currentProduct) return alert("Primero selecciona producto.");
+
+    const cantidad = round3(Number(refs.cantidadInput.value));
+
+    if(!cantidad || cantidad <= 0) return alert("Cantidad inválida.");
+
+    await agregarPartida(currentProduct, cantidad, currentProduct.__origen || "ESCANER");
+  });
+
+  refs.cantidadInput.addEventListener("keydown", async e=>{
+    resetInactivity();
+
+    if(e.key === "Enter"){
+      e.preventDefault();
+      refs.btnGuardar.click();
+    }
+  });
+
+  refs.btnCamara.addEventListener("click", startStopCamara);
+
+  refs.buscarInput.addEventListener("input", ()=>{
+    resetInactivity();
+
+    clearTimeout(buscarTimer);
+
+    const term = refs.buscarInput.value.trim();
+
+    if(!term){
+      refs.resultados.innerHTML = "";
+      return;
+    }
+
+    buscarTimer = setTimeout(()=>renderBusqueda(term), 250);
+  });
+
+  document.querySelectorAll(".tab").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      resetInactivity();
+      switchTab(btn.dataset.tab);
+    });
+  });
+
+  refs.cartList.addEventListener("click", async e=>{
+    const btn = e.target.closest("button[data-act][data-id]");
+    if(!btn) return;
+
+    resetInactivity();
+
+    await modificarPartida(btn.dataset.id, btn.dataset.act);
+  });
+
+  refs.btnReloadCart.addEventListener("click", renderCarrito);
+  refs.btnFinalizar.addEventListener("click", finalizarConteo);
+
+  refs.btnLogout.addEventListener("click", async ()=>{
+    await syncFirebase(false);
+    await logout();
+  });
+
+  refs.btnSyncNow.addEventListener("click", ()=>syncFirebase(true));
+  refs.btnSyncSession.addEventListener("click", ()=>syncFirebase(true));
+
+  window.addEventListener("online", async ()=>{
+    actualizarOnline();
+    await syncFirebase(false);
+  });
+
+  window.addEventListener("offline", actualizarOnline);
+
+  ["click","keydown","touchstart","mousemove"].forEach(ev=>{
+    window.addEventListener(ev, resetInactivity, { passive:true });
+  });
+
+  window.addEventListener("beforeunload", e=>{
+    if(currentUser){
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+
+  init();
+</script>
+</body>
+</html>

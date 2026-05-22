@@ -613,7 +613,7 @@
   const CONTEO_ID = "ALLENDE_MAYO_2026";
   const CONTEO_NOMBRE = "Conteo Allende Mayo 2026";
   const DB_NAME = "PROVSOFT_CONTEO_ALLENDE_MAYO_2026";
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   const SYNC_EVERY_ITEMS = 5;
   const SYNC_INTERVAL_MS = 30000;
   const AUTO_LOGOUT_MS = 5 * 60 * 1000;
@@ -633,6 +633,17 @@
 
   const nowLocal = () => `${nowDate()} ${nowTime()}`;
   const round3 = n => Math.round((Number(n) + Number.EPSILON) * 1000) / 1000;
+
+  function normalizarCantidad(valor){
+    const txt = String(valor ?? "")
+      .trim()
+      .replace(",", ".");
+
+    if(!txt) return 0;
+
+    const n = Number(txt);
+    return Number.isFinite(n) && n > 0 ? round3(n) : 0;
+  }
 
   let idb = null;
   let currentUser = null;
@@ -752,6 +763,14 @@
     });
   }
 
+  function idbClear(store){
+    return new Promise((resolve,reject)=>{
+      const req = tx(store,"readwrite").clear();
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
   async function setMeta(key, value){
     await idbPut("meta", { key, value });
   }
@@ -775,9 +794,7 @@
       p.id,
       p.codigoBarra,
       p.concepto,
-      p.descripcion,
-      p.marca,
-      p.departamento,
+      p.unidadMedidaSat,
       Array.isArray(p.codigosEquivalentes) ? p.codigosEquivalentes.join(" ") : ""
     ].join(" "));
   }
@@ -824,22 +841,29 @@
   }
 
   async function descargarCatalogo(){
-    refs.loginMsg.textContent = "Descargando catálogo activo...";
+    refs.loginMsg.textContent = "Descargando catálogo completo...";
 
-    const snap = await getDocs(query(collection(db,"productos"), where("activo","==",true)));
+    const snap = await getDocs(collection(db,"productos"));
     let total = 0;
+
+    await idbClear("productos");
 
     for(const d of snap.docs){
       const data = d.data();
 
+      const codigoBarra = String(data.codigoBarra || d.id || "").trim();
+      const codigosEquivalentes = Array.isArray(data.codigosEquivalentes)
+        ? data.codigosEquivalentes
+            .map(x => String(x || "").trim())
+            .filter(Boolean)
+        : [];
+
       const p = {
         id: d.id,
-        codigoBarra: String(data.codigoBarra || d.id || "").trim(),
+        codigoBarra,
+        codigosEquivalentes,
         concepto: data.concepto || data.descripcion || "SIN DESCRIPCIÓN",
-        marca: data.marca || "",
-        departamento: data.departamento || "",
-        codigosEquivalentes: Array.isArray(data.codigosEquivalentes) ? data.codigosEquivalentes.map(String) : [],
-        activo: data.activo === true,
+        unidadMedidaSat: data.unidadMedidaSat || "",
         texto: ""
       };
 
@@ -851,7 +875,7 @@
     await setMeta("catalogoDescargadoEn", nowLocal());
     await setMeta("catalogoTotal", total);
 
-    refs.loginMsg.textContent = `Catálogo local listo: ${total} productos.`;
+    refs.loginMsg.textContent = `Catálogo completo local listo: ${total} productos.`;
   }
 
   async function asegurarCatalogo(){
@@ -870,35 +894,26 @@
 
     const productos = await idbGetAll("productos");
 
-    let p = productos.find(x => String(x.codigoBarra) === code || String(x.id) === code);
-    if(p) return p;
+    let p = productos.find(x =>
+      String(x.codigoBarra || "").trim() === code ||
+      String(x.id || "").trim() === code
+    );
 
-    p = productos.find(x => Array.isArray(x.codigosEquivalentes) && x.codigosEquivalentes.map(String).includes(code));
-    if(p) return p;
-
-    const peso = detectarCodigoPeso(code);
-    if(peso){
-      p = productos.find(x =>
-        String(x.codigoBarra) === peso.base ||
-        String(x.id) === peso.base ||
-        (Array.isArray(x.codigosEquivalentes) && x.codigosEquivalentes.map(String).includes(peso.base))
-      );
-
-      if(p){
-        p.__cantidadDetectada = peso.kg;
-        p.__origen = "BALANZA";
-        return p;
-      }
+    if(p){
+      p.__codigoEscaneado = code;
+      p.__origenCodigo = "ORIGINAL";
+      return p;
     }
 
-    return null;
-  }
+    p = productos.find(x =>
+      Array.isArray(x.codigosEquivalentes) &&
+      x.codigosEquivalentes.map(eq => String(eq || "").trim()).includes(code)
+    );
 
-  function detectarCodigoPeso(code){
-    if(/^\d{13}$/.test(code) && code.startsWith("20")){
-      const base = code.substring(0,7);
-      const kg = parseInt(code.substring(7,12),10) / 1000;
-      return { base, kg };
+    if(p){
+      p.__codigoEscaneado = code;
+      p.__origenCodigo = "EQUIVALENTE";
+      return p;
     }
 
     return null;
@@ -924,7 +939,12 @@
 
     refs.productoBox.classList.remove("hidden");
     refs.prodNombre.textContent = p.concepto || "SIN DESCRIPCIÓN";
-    refs.prodCodigo.textContent = `Código: ${p.codigoBarra || p.id}`;
+    const equivs = Array.isArray(p.codigosEquivalentes) && p.codigosEquivalentes.length
+      ? ` | Equiv: ${p.codigosEquivalentes.join(", ")}`
+      : "";
+    const escaneado = p.__codigoEscaneado ? ` | Escaneado: ${p.__codigoEscaneado}` : "";
+    const unidad = p.unidadMedidaSat ? ` | Unidad: ${p.unidadMedidaSat}` : "";
+    refs.prodCodigo.textContent = `Código original: ${p.codigoBarra || p.id}${equivs}${unidad}${escaneado}`;
 
     if(p.__cantidadDetectada){
       refs.cantidadInput.value = p.__cantidadDetectada;
@@ -936,14 +956,30 @@
   }
 
   async function agregarPartida(producto, cantidad, origen="MANUAL"){
-    const codigo = String(producto.codigoBarra || producto.id).trim();
-    const anterior = await idbGet("partidas", codigo);
-    const nuevaCantidad = round3(Number(anterior?.cantidad || 0) + Number(cantidad));
+    const codigoOriginal = String(producto.codigoBarra || producto.id).trim();
+    const codigoEscaneado = String(producto.__codigoEscaneado || codigoOriginal).trim();
+    const cantidadNormalizada = normalizarCantidad(cantidad);
+
+    if(!cantidadNormalizada || cantidadNormalizada <= 0){
+      alert("Cantidad inválida.");
+      return;
+    }
+
+    const anterior = await idbGet("partidas", codigoOriginal);
+    const nuevaCantidad = round3(Number(anterior?.cantidad || 0) + cantidadNormalizada);
+    const codigosEscaneados = Array.from(new Set([
+      ...(Array.isArray(anterior?.codigosEscaneados) ? anterior.codigosEscaneados : []),
+      codigoEscaneado
+    ].filter(Boolean)));
 
     const partida = {
-      codigo,
+      codigo: codigoOriginal,
+      codigoOriginal,
+      codigoEscaneadoUltimo: codigoEscaneado,
+      codigosEscaneados,
       productoId: producto.id,
       descripcion: producto.concepto || "SIN DESCRIPCIÓN",
+      unidadMedidaSat: producto.unidadMedidaSat || "",
       cantidad: nuevaCantidad,
 
       usuarioId: currentUser.id,
@@ -960,6 +996,7 @@
       epochMs: Date.now(),
 
       origen,
+      origenCodigo: producto.__origenCodigo || "ORIGINAL",
       sincronizado: false,
       eliminado: false
     };
@@ -1021,8 +1058,8 @@
         <div class="last-scanned-label">${idx === 0 ? "Último escaneado" : "Anterior escaneado"}</div>
         <div class="last-scanned-name">${escapeHtml(p.descripcion)}</div>
         <div class="last-scanned-meta">
-          <span>${escapeHtml(p.codigo)}</span>
-          <span>Cant: ${escapeHtml(p.cantidad)}</span>
+          <span>${escapeHtml(p.codigoOriginal || p.codigo)}${p.codigoEscaneadoUltimo && p.codigoEscaneadoUltimo !== (p.codigoOriginal || p.codigo) ? " / EQ " + escapeHtml(p.codigoEscaneadoUltimo) : ""}</span>
+          <span>Cant: ${escapeHtml(p.cantidad)} ${escapeHtml(p.unidadMedidaSat || "")}</span>
         </div>
       </div>
     `).join("");
@@ -1062,9 +1099,9 @@
         <div class="cart-top">
           <div>
             <div class="cart-name">${p.descripcion}</div>
-            <div class="cart-code">${p.codigo} | ${p.fecha} ${p.hora}</div>
+            <div class="cart-code">Original: ${p.codigoOriginal || p.codigo}${p.codigoEscaneadoUltimo && p.codigoEscaneadoUltimo !== (p.codigoOriginal || p.codigo) ? " | Último escaneo: " + p.codigoEscaneadoUltimo : ""} | ${p.fecha} ${p.hora}</div>
           </div>
-          <div class="cart-qty">${p.cantidad}</div>
+          <div class="cart-qty">${p.cantidad}${p.unidadMedidaSat ? " " + p.unidadMedidaSat : ""}</div>
         </div>
 
         <div class="cart-actions">
@@ -1095,8 +1132,8 @@
       const nuevo = prompt("Nueva cantidad:", p.cantidad);
       if(nuevo === null) return;
 
-      const n = round3(Number(nuevo));
-      if(isNaN(n) || n < 0) return alert("Cantidad inválida.");
+      const n = normalizarCantidad(nuevo);
+      if(!n || n <= 0) return alert("Cantidad inválida.");
 
       p.cantidad = n;
     }
@@ -1353,7 +1390,7 @@
 
       div.innerHTML = `
         <div class="result-title">${p.concepto}</div>
-        <div class="result-code">${p.codigoBarra || p.id}</div>
+        <div class="result-code">Original: ${p.codigoBarra || p.id}${p.codigosEquivalentes?.length ? " | Equiv: " + p.codigosEquivalentes.join(", ") : ""}${p.unidadMedidaSat ? " | Unidad: " + p.unidadMedidaSat : ""}</div>
         <button class="btn-small btn-ok mt" data-id="${p.id}">Usar producto</button>
       `;
 
@@ -1404,7 +1441,7 @@
 
     if(!currentProduct) return alert("Primero selecciona producto.");
 
-    const cantidad = round3(Number(refs.cantidadInput.value));
+    const cantidad = normalizarCantidad(refs.cantidadInput.value);
 
     if(!cantidad || cantidad <= 0) return alert("Cantidad inválida.");
 

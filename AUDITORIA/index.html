@@ -882,6 +882,92 @@
     ].join(" "));
   }
 
+
+  function soloDigitos(valor){
+    return String(valor || "").replace(/\D/g, "").trim();
+  }
+
+  function sinCerosIzquierda(valor){
+    const limpio = soloDigitos(valor);
+    const reducido = limpio.replace(/^0+/, "");
+    return reducido || limpio;
+  }
+
+  function parsearCodigoBascula(codigo){
+    const limpio = soloDigitos(codigo);
+
+    // Formato EAN13 variable usado por básculas:
+    // 20 + SKU interno 5 dígitos + peso 5 dígitos + checksum
+    // Ejemplo: 2000044000408 = SKU 00044 / 0.040 kg
+    if(limpio.length !== 13 || !limpio.startsWith("20")) return null;
+
+    const sku5 = limpio.substring(2, 7);
+    const pesoRaw = limpio.substring(7, 12);
+    const pesoEntero = parseInt(pesoRaw, 10);
+
+    if(!Number.isFinite(pesoEntero) || pesoEntero <= 0) return null;
+
+    const pesoKg = round3(pesoEntero / 1000);
+
+    return {
+      esBascula: true,
+      codigoCompleto: limpio,
+      sku5,
+      sku: sinCerosIzquierda(sku5),
+      codigoPrefijoSku: `20${sku5}`,
+      pesoRaw,
+      pesoKg,
+      gramos: Math.round(pesoKg * 1000)
+    };
+  }
+
+  function variantesCodigoBusqueda(codigo){
+    const limpio = soloDigitos(codigo);
+    const variantes = new Set();
+
+    if(limpio){
+      variantes.add(limpio);
+      variantes.add(sinCerosIzquierda(limpio));
+    }
+
+    const bascula = parsearCodigoBascula(limpio);
+    if(bascula){
+      variantes.add(bascula.sku);
+      variantes.add(bascula.sku5);
+      variantes.add(bascula.codigoPrefijoSku);
+    }
+
+    return {
+      codigoLimpio: limpio,
+      bascula,
+      variantes: Array.from(variantes).filter(Boolean)
+    };
+  }
+
+  function variantesProducto(p){
+    const variantes = new Set();
+
+    [p.id, p.codigoBarra].forEach(valor => {
+      const limpio = soloDigitos(valor);
+      if(limpio){
+        variantes.add(limpio);
+        variantes.add(sinCerosIzquierda(limpio));
+      }
+    });
+
+    if(Array.isArray(p.codigosEquivalentes)){
+      p.codigosEquivalentes.forEach(valor => {
+        const limpio = soloDigitos(valor);
+        if(limpio){
+          variantes.add(limpio);
+          variantes.add(sinCerosIzquierda(limpio));
+        }
+      });
+    }
+
+    return Array.from(variantes).filter(Boolean);
+  }
+
   async function loginFirebase(){
     const usuarioInput = refs.loginUsuario.value.trim().toUpperCase();
     const passwordInput = refs.loginPassword.value.trim();
@@ -1106,30 +1192,49 @@
   }
 
   async function buscarProductoPorCodigo(codigo){
-    const code = String(codigo || "").trim();
-    if(!code) return null;
+    const info = variantesCodigoBusqueda(codigo);
+    if(!info.codigoLimpio) return null;
 
     const productos = await idbGetAll("productos");
+    const variantesEntrada = info.variantes;
 
-    let p = productos.find(x =>
-      String(x.codigoBarra || "").trim() === code ||
-      String(x.id || "").trim() === code
-    );
+    let p = productos.find(x => {
+      const codigosProducto = variantesProducto({
+        id: x.id,
+        codigoBarra: x.codigoBarra,
+        codigosEquivalentes: []
+      });
+      return codigosProducto.some(c => variantesEntrada.includes(c));
+    });
 
     if(p){
-      p.__codigoEscaneado = code;
-      p.__origenCodigo = "ORIGINAL";
+      p.__codigoEscaneado = info.codigoLimpio;
+      p.__origenCodigo = info.bascula ? "BASCULA_ORIGINAL" : "ORIGINAL";
+      if(info.bascula){
+        p.__codigoBascula = info.bascula;
+        p.__cantidadDetectada = info.bascula.pesoKg;
+        p.__origen = "BASCULA";
+      }
       return p;
     }
 
-    p = productos.find(x =>
-      Array.isArray(x.codigosEquivalentes) &&
-      x.codigosEquivalentes.map(eq => String(eq || "").trim()).includes(code)
-    );
+    p = productos.find(x => {
+      const codigosProducto = variantesProducto({
+        id: "",
+        codigoBarra: "",
+        codigosEquivalentes: x.codigosEquivalentes
+      });
+      return codigosProducto.some(c => variantesEntrada.includes(c));
+    });
 
     if(p){
-      p.__codigoEscaneado = code;
-      p.__origenCodigo = "EQUIVALENTE";
+      p.__codigoEscaneado = info.codigoLimpio;
+      p.__origenCodigo = info.bascula ? "BASCULA_EQUIVALENTE" : "EQUIVALENTE";
+      if(info.bascula){
+        p.__codigoBascula = info.bascula;
+        p.__cantidadDetectada = info.bascula.pesoKg;
+        p.__origen = "BASCULA";
+      }
       return p;
     }
 
@@ -1161,7 +1266,8 @@
       : "";
     const escaneado = p.__codigoEscaneado ? ` | Escaneado: ${p.__codigoEscaneado}` : "";
     const unidad = p.unidadMedidaSat ? ` | Unidad: ${p.unidadMedidaSat}` : "";
-    refs.prodCodigo.textContent = `Código original: ${p.codigoBarra || p.id}${equivs}${unidad}${escaneado}`;
+    const bascula = p.__codigoBascula ? ` | Báscula SKU: ${p.__codigoBascula.sku} | Peso: ${p.__codigoBascula.pesoKg} kg` : "";
+    refs.prodCodigo.textContent = `Código original: ${p.codigoBarra || p.id}${equivs}${unidad}${escaneado}${bascula}`;
 
     if(p.__cantidadDetectada){
       refs.cantidadInput.value = p.__cantidadDetectada;
@@ -1596,7 +1702,17 @@
 
     if(!p){
       beep(160,300);
-      alert("Producto no encontrado en catálogo local.");
+      const info = variantesCodigoBusqueda(codigo);
+      const extra = info.bascula
+        ? `\n\nCódigo báscula detectado. SKU extraído: ${info.bascula.sku} / ${info.bascula.sku5}. Peso: ${info.bascula.pesoKg} kg.\nRevisa que ese SKU esté en codigoBarra o codigosEquivalentes del producto.`
+        : "";
+      alert(`Producto no encontrado en catálogo local.${extra}`);
+      return;
+    }
+
+    // Si viene de báscula, ya trae cantidad/peso. Entra directo al conteo.
+    if(p.__codigoBascula && p.__cantidadDetectada){
+      await agregarPartida(p, p.__cantidadDetectada, "BASCULA");
       return;
     }
 

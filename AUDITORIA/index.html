@@ -194,6 +194,12 @@
       color:#3a2600;
       width:100%;
     }
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:grayscale(.15);
+    }
+
 
     .btn2{
       background:#fff3bf;
@@ -542,7 +548,7 @@
         <input id="loginPassword" type="password" inputmode="numeric" placeholder="Contraseña" autocomplete="current-password">
       </div>
 
-      <button class="btn" id="btnLogin">Entrar al conteo</button>
+      <button class="btn" id="btnLogin" disabled>Preparando catálogo...</button>
 
       <div class="subtitle" id="loginMsg">
         El acceso se valida desde Firebase en la colección usuarios_ruta.
@@ -721,6 +727,9 @@
   let pendingCounter = 0;
   let inactivityTimer = null;
   let syncTimer = null;
+  let catalogoListo = false;
+  let catalogoPreparando = false;
+  let catalogoPromise = null;
 
   const refs = {
     viewLogin: $("viewLogin"),
@@ -943,8 +952,72 @@
     return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   }
 
+  function bloquearLogin(mensajeBoton="Preparando catálogo..."){
+    if(refs.btnLogin){
+      refs.btnLogin.disabled = true;
+      refs.btnLogin.textContent = mensajeBoton;
+    }
+  }
+
+  function habilitarLogin(){
+    if(refs.btnLogin){
+      refs.btnLogin.disabled = false;
+      refs.btnLogin.textContent = "Entrar al conteo";
+    }
+  }
+
+  async function prepararCatalogoAlAbrir(){
+    if(catalogoPromise) return catalogoPromise;
+
+    catalogoPromise = (async()=>{
+      catalogoPreparando = true;
+      catalogoListo = false;
+      bloquearLogin("Preparando catálogo...");
+
+      try{
+        const totalLocal = Number(await getMeta("catalogoTotal") || 0);
+        const fechaLocal = await getMeta("catalogoDescargadoEn");
+
+        if(totalLocal > 0){
+          catalogoListo = true;
+          catalogoPreparando = false;
+
+          refs.loginMsg.textContent = `Catálogo local listo: ${totalLocal} productos. Ya puedes iniciar sesión.`;
+          mostrarProgresoCatalogo({
+            titulo:"Catálogo listo",
+            porcentaje:100,
+            detalle:`${totalLocal} productos cargados desde IndexedDB${fechaLocal ? " | " + fechaLocal : ""}`
+          });
+          habilitarLogin();
+          return totalLocal;
+        }
+
+        const totalDescargado = await descargarCatalogo();
+        catalogoListo = true;
+        catalogoPreparando = false;
+        habilitarLogin();
+        return totalDescargado;
+
+      }catch(e){
+        catalogoListo = false;
+        catalogoPreparando = false;
+        bloquearLogin("Catálogo no listo");
+
+        refs.loginMsg.textContent = e.message || "No se pudo preparar el catálogo.";
+        mostrarProgresoCatalogo({
+          titulo:"Error de catálogo",
+          porcentaje:0,
+          detalle:e.message || "Revisa internet y vuelve a cargar la página"
+        });
+        throw e;
+      }
+    })();
+
+    return catalogoPromise;
+  }
+
   async function descargarCatalogo(){
-    refs.loginMsg.textContent = "Conectando con Firebase para descargar catálogo...";
+    refs.loginMsg.textContent = "Preparando catálogo antes del login...";
 
     mostrarProgresoCatalogo({
       titulo:"Descargando catálogo",
@@ -957,7 +1030,11 @@
     const snap = await getDocs(collection(db,"productos"));
     const totalDocs = snap.size || snap.docs.length || 0;
 
-    refs.loginMsg.textContent = `Catálogo recibido. Guardando ${totalDocs} productos en este equipo...`;
+    if(!totalDocs){
+      throw new Error("Firebase no regresó productos en /productos.");
+    }
+
+    refs.loginMsg.textContent = `Catálogo recibido. Guardando ${totalDocs} productos en este celular...`;
 
     mostrarProgresoCatalogo({
       titulo:"Guardando catálogo local",
@@ -966,11 +1043,12 @@
     });
 
     await esperarPintado();
-    await idbClear("productos");
 
     let total = 0;
     let ultimoPaint = 0;
 
+    // No se borra el índice anterior antes de descargar.
+    // Si existía catálogo usable, no se pierde por una descarga interrumpida.
     for(const d of snap.docs){
       const data = d.data();
 
@@ -1014,25 +1092,17 @@
     mostrarProgresoCatalogo({
       titulo:"Catálogo listo",
       porcentaje:100,
-      detalle:`${total} productos disponibles para escanear por código original o equivalente`
+      detalle:`${total} productos disponibles. Ya puedes iniciar sesión.`
     });
 
-    refs.loginMsg.textContent = `Catálogo completo local listo: ${total} productos.`;
+    refs.loginMsg.textContent = `Catálogo listo: ${total} productos. Ya puedes iniciar sesión.`;
+    return total;
   }
 
   async function asegurarCatalogo(){
-    const total = await getMeta("catalogoTotal");
-
-    if(!total || Number(total) <= 0){
-      await descargarCatalogo();
-    }else{
-      refs.loginMsg.textContent = `Catálogo local cargado: ${total} productos.`;
-      mostrarProgresoCatalogo({
-        titulo:"Catálogo local listo",
-        porcentaje:100,
-        detalle:`${total} productos cargados desde IndexedDB`
-      });
-    }
+    if(catalogoListo) return true;
+    await prepararCatalogoAlAbrir();
+    return catalogoListo;
   }
 
   async function buscarProductoPorCodigo(codigo){
@@ -1404,6 +1474,22 @@
 
   async function login(){
     try{
+      if(!catalogoListo){
+        bloquearLogin("Preparando catálogo...");
+        refs.loginMsg.textContent = catalogoPreparando
+          ? "Espera: el catálogo todavía se está preparando."
+          : "El catálogo todavía no está listo.";
+
+        await prepararCatalogoAlAbrir();
+      }
+
+      if(!catalogoListo){
+        throw new Error("Catálogo no listo. No se puede entrar todavía.");
+      }
+
+      refs.btnLogin.disabled = true;
+      refs.btnLogin.textContent = "Validando usuario...";
+
       const user = await loginFirebase();
       currentUser = user;
 
@@ -1419,8 +1505,6 @@
       refs.folioTxt.textContent = folio;
       refs.sessionInfo.textContent = `${currentUser.nombre} | ${currentUser.usuario} | ${currentUser.rol || "SIN ROL"}`;
 
-      await asegurarCatalogo();
-
       refs.viewLogin.classList.remove("active");
       refs.viewApp.classList.add("active");
 
@@ -1432,6 +1516,7 @@
     }catch(e){
       refs.loginMsg.textContent = e.message || "Error al iniciar sesión.";
       alert(e.message || "Error al iniciar sesión.");
+      if(catalogoListo) habilitarLogin();
     }
   }
 
@@ -1458,6 +1543,7 @@
     refs.codigoInput.value = "";
     refs.buscarInput.value = "";
     refs.resultados.innerHTML = "";
+    if(catalogoListo) habilitarLogin();
   }
 
   function startTimers(){
@@ -1555,6 +1641,10 @@
 
     actualizarOnline();
     await actualizarResumen();
+
+    bloquearLogin("Preparando catálogo...");
+    refs.loginMsg.textContent = "Preparando catálogo local. El acceso se habilita al terminar.";
+    prepararCatalogoAlAbrir().catch(()=>{});
 
     refs.loginUsuario.focus();
     setTimeout(()=>refs.splashScreen?.classList.add("hidden"), 450);

@@ -1827,6 +1827,79 @@
     refs.syncPill.textContent = `Pendiente: ${pendientes}`;
   }
 
+  async function renderCarrito(){
+
+  const partidas = (await idbGetAll("partidas"))
+    .filter(x => !x.eliminado)
+    .sort((a,b)=> (b.epochMs || 0) - (a.epochMs || 0));
+
+  await actualizarResumen();
+
+  if(!partidas.length){
+
+    refs.cartList.innerHTML = `
+      <div class="last-scanned-card">
+        <div class="last-scanned-label">
+          Sin partidas
+        </div>
+
+        <div class="last-scanned-name">
+          Todavía no hay artículos contados.
+        </div>
+      </div>
+    `;
+
+    return;
+  }
+
+  refs.cartList.innerHTML = partidas.map(p=>`
+
+    <div class="cart-item">
+
+      <div class="cart-row-compact">
+
+        <div class="cart-code-compact">
+          ${p.codigoOriginal || p.codigo}
+        </div>
+
+        <div class="cart-name-compact">
+          ${p.descripcion}
+        </div>
+
+        <div class="cart-qty-control">
+
+          <button
+            data-act="menos"
+            data-id="${p.id}"
+            type="button"
+          >−</button>
+
+          <div class="cart-qty-number">
+            ${p.cantidad}
+          </div>
+
+          <button
+            data-act="mas"
+            data-id="${p.id}"
+            type="button"
+          >+</button>
+
+        </div>
+
+        <button
+          class="cart-delete-btn"
+          data-act="borrar"
+          data-id="${p.id}"
+          type="button"
+        >🗑</button>
+
+      </div>
+
+    </div>
+
+  `).join("");
+}
+  
   async function syncFirebase(mostrarMensaje=true){
 
     if(!navigator.onLine){

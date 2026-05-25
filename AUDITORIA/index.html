@@ -1026,8 +1026,15 @@
 
   const CONTEO_ID = "ALLENDE_MAYO_2026";
   const CONTEO_NOMBRE = "Conteo Allende Mayo 2026";
+  const TIENDA_ID = "ALLENDE 1";
+  const CATALOG_SOURCE_VERSION = "ALLENDE1_OPERATIVO_V1";
+  const FUENTES_CATALOGO_OPERATIVO = [
+    { nombre:"SURTIDOTRANS", segmentos:["TIENDAS", TIENDA_ID, "SURTIDOTRANS"] },
+    { nombre:"VENTAS", segmentos:["TIENDAS", TIENDA_ID, "ventas"] },
+    { nombre:"INVENTARIO_INICIAL", segmentos:["TIENDAS", TIENDA_ID, "inventario1"] }
+  ];
   const DB_NAME = "PROVSOFT_CONTEO_ALLENDE_MAYO_2026";
-  const DB_VERSION = 3;
+  const DB_VERSION = 4;
   const SYNC_EVERY_ITEMS = 5;
   const SYNC_INTERVAL_MS = 30000;
   const AUTO_LOGOUT_MS = 5 * 60 * 1000;
@@ -1196,6 +1203,14 @@
     return new Promise((resolve,reject)=>{
       const req = tx(store).getAll();
       req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function idbClear(store){
+    return new Promise((resolve,reject)=>{
+      const req = tx(store,"readwrite").clear();
+      req.onsuccess = () => resolve(true);
       req.onerror = () => reject(req.error);
     });
   }
@@ -1425,19 +1440,24 @@
       try{
         const totalLocal = Number(await getMeta("catalogoTotal") || 0);
         const fechaLocal = await getMeta("catalogoDescargadoEn");
+        const versionLocal = await getMeta("catalogoSourceVersion");
 
-        if(totalLocal > 0){
+        if(totalLocal > 0 && versionLocal === CATALOG_SOURCE_VERSION){
           catalogoListo = true;
           catalogoPreparando = false;
 
-          refs.loginMsg.textContent = `Catálogo local listo: ${totalLocal} productos. Ya puedes iniciar sesión.`;
+          refs.loginMsg.textContent = `Catálogo operativo local listo: ${totalLocal} productos. Ya puedes iniciar sesión.`;
           mostrarProgresoCatalogo({
-            titulo:"Catálogo listo",
+            titulo:"Catálogo operativo listo",
             porcentaje:100,
-            detalle:`${totalLocal} productos cargados desde IndexedDB${fechaLocal ? " | " + fechaLocal : ""}`
+            detalle:`${totalLocal} productos desde ventas, surtido e inventario inicial${fechaLocal ? " | " + fechaLocal : ""}`
           });
           habilitarLogin();
           return totalLocal;
+        }
+
+        if(totalLocal > 0 && versionLocal !== CATALOG_SOURCE_VERSION){
+          refs.loginMsg.textContent = "Reconstruyendo catálogo operativo de Allende 1...";
         }
 
         const totalDescargado = await descargarCatalogo();
@@ -1464,65 +1484,272 @@
     return catalogoPromise;
   }
 
-  async function descargarCatalogo(){
-    refs.loginMsg.textContent = "Preparando catálogo antes del login...";
+  function getValorPorLlaves(obj, llaves=[]){
+    if(!obj || typeof obj !== "object") return "";
 
-    mostrarProgresoCatalogo({
-      titulo:"Descargando catálogo",
-      indeterminado:true,
-      detalle:"Solicitando productos desde /productos..."
-    });
-
-    await esperarPintado();
-
-    const snap = await getDocs(collection(db,"productos"));
-    const totalDocs = snap.size || snap.docs.length || 0;
-
-    if(!totalDocs){
-      throw new Error("Firebase no regresó productos en /productos.");
+    for(const k of llaves){
+      if(obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== ""){
+        return obj[k];
+      }
     }
 
-    refs.loginMsg.textContent = `Catálogo recibido. Guardando ${totalDocs} productos en este celular...`;
+    return "";
+  }
 
+  function esObjetoPlano(valor){
+    return valor && typeof valor === "object" && !Array.isArray(valor);
+  }
+
+  function pareceArticuloOperativo(obj){
+    if(!esObjetoPlano(obj)) return false;
+
+    const codigo = getValorPorLlaves(obj, [
+      "codigoBarra", "codigo", "codigoProducto", "productoCodigo", "productoId",
+      "idProducto", "sku", "clave", "claveProducto", "barcode", "ean", "upc"
+    ]);
+
+    const nombre = getValorPorLlaves(obj, [
+      "concepto", "descripcion", "nombre", "producto", "productoNombre", "nombreProducto",
+      "detalle", "articulo", "descripcionProducto"
+    ]);
+
+    return !!(limpiarCodigoFlexible(codigo) || String(nombre || "").trim());
+  }
+
+  function recolectarArticulosDesdeObjeto(valor, salida=[]){
+    if(Array.isArray(valor)){
+      for(const item of valor){
+        recolectarArticulosDesdeObjeto(item, salida);
+      }
+      return salida;
+    }
+
+    if(!esObjetoPlano(valor)) return salida;
+
+    if(pareceArticuloOperativo(valor)){
+      salida.push(valor);
+    }
+
+    for(const [k,v] of Object.entries(valor)){
+      if(k === "firma" || k === "firmaEntrega" || k === "firmaRecibe" || k === "foto" || k === "fotos") continue;
+
+      if(Array.isArray(v)){
+        for(const item of v){
+          recolectarArticulosDesdeObjeto(item, salida);
+        }
+      }else if(esObjetoPlano(v)){
+        const claves = Object.keys(v);
+        const objetoChico = claves.length <= 14;
+
+        if(objetoChico && pareceArticuloOperativo(v)){
+          salida.push(v);
+        }else if(["articulos", "productos", "items", "detalle", "detalles", "partidas", "lineas", "conceptos"].includes(k)){
+          recolectarArticulosDesdeObjeto(v, salida);
+        }
+      }
+    }
+
+    return salida;
+  }
+
+  function normalizarArticuloOperativo(raw, fuente, docId){
+    const codigoRaw = getValorPorLlaves(raw, [
+      "codigoBarra", "codigo", "codigoProducto", "productoCodigo", "productoId",
+      "idProducto", "sku", "clave", "claveProducto", "barcode", "ean", "upc"
+    ]) || docId;
+
+    const codigoBarra = limpiarCodigoFlexible(codigoRaw || docId || "");
+
+    const concepto = String(getValorPorLlaves(raw, [
+      "concepto", "descripcion", "nombre", "producto", "productoNombre", "nombreProducto",
+      "detalle", "articulo", "descripcionProducto"
+    ]) || "SIN DESCRIPCIÓN").trim().toUpperCase();
+
+    const unidadMedidaSat = String(getValorPorLlaves(raw, [
+      "unidadMedidaSat", "unidad", "unidadMedida", "uom", "medida"
+    ]) || "").trim().toUpperCase();
+
+    const codigosEquivalentes = extraerCodigosEquivalentes({
+      codigosEquivalentes: getValorPorLlaves(raw, [
+        "codigosEquivalentes", "equivalentes", "codigos", "codigosExtra", "codigosAlternos"
+      ])
+    });
+
+    if(codigoBarra && !codigosEquivalentes.includes(codigoBarra)){
+      codigosEquivalentes.unshift(codigoBarra);
+    }
+
+    const cantidad = normalizarCantidad(getValorPorLlaves(raw, [
+      "cantidad", "piezas", "qty", "unidades", "existencia", "stock", "inventario", "conteo"
+    ]));
+
+    const idBase = codigoBarra || limpiarCodigoFlexible(docId) || normalizar(concepto).replace(/\s+/g,"_").slice(0,80);
+
+    if(!idBase || concepto === "SIN DESCRIPCIÓN"){
+      if(!codigoBarra) return null;
+    }
+
+    const p = {
+      id: idBase,
+      codigoBarra: codigoBarra || idBase,
+      codigosEquivalentes: Array.from(new Set(codigosEquivalentes.filter(Boolean))),
+      concepto,
+      unidadMedidaSat,
+      texto: "",
+      fuentes: [fuente],
+      origenCatalogo: "OPERATIVO_ALLENDE_1",
+      ocurrencias: 1,
+      cantidadReferencia: cantidad || 0,
+      ultimoDocumentoOrigen: docId || ""
+    };
+
+    p.texto = textoProducto(p);
+    return p;
+  }
+
+  function fusionarProductoOperativo(map, producto){
+    if(!producto) return;
+
+    const key = producto.codigoBarra || producto.id;
+
+    if(!map.has(key)){
+      map.set(key, producto);
+      return;
+    }
+
+    const actual = map.get(key);
+
+    actual.concepto = actual.concepto && actual.concepto !== "SIN DESCRIPCIÓN"
+      ? actual.concepto
+      : producto.concepto;
+
+    actual.unidadMedidaSat = actual.unidadMedidaSat || producto.unidadMedidaSat || "";
+    actual.codigosEquivalentes = Array.from(new Set([
+      ...(actual.codigosEquivalentes || []),
+      ...(producto.codigosEquivalentes || []),
+      actual.codigoBarra,
+      producto.codigoBarra
+    ].filter(Boolean)));
+
+    actual.fuentes = Array.from(new Set([...(actual.fuentes || []), ...(producto.fuentes || [])]));
+    actual.ocurrencias = Number(actual.ocurrencias || 0) + Number(producto.ocurrencias || 1);
+    actual.cantidadReferencia = round3(Number(actual.cantidadReferencia || 0) + Number(producto.cantidadReferencia || 0));
+    actual.ultimoDocumentoOrigen = producto.ultimoDocumentoOrigen || actual.ultimoDocumentoOrigen || "";
+    actual.texto = textoProducto(actual);
+  }
+
+  async function leerFuenteCatalogoOperativo(fuente, map, progresoBase, progresoRango){
     mostrarProgresoCatalogo({
-      titulo:"Guardando catálogo local",
-      porcentaje:0,
-      detalle:`0 / ${totalDocs} productos guardados en IndexedDB`
+      titulo:`Leyendo ${fuente.nombre}`,
+      porcentaje:progresoBase,
+      detalle:`Consultando /${fuente.segmentos.join("/")}...`
     });
 
     await esperarPintado();
+
+    const ref = collection(db, ...fuente.segmentos);
+    const snap = await getDocs(ref);
+    const docs = snap.docs || [];
+    const totalDocs = docs.length;
+    let procesados = 0;
+    let articulosDetectados = 0;
+    let ultimoPaint = 0;
+
+    for(const d of docs){
+      const data = d.data() || {};
+      const candidatos = recolectarArticulosDesdeObjeto({ ...data, idDocumentoFirebase:d.id });
+
+      if(pareceArticuloOperativo(data)){
+        candidatos.unshift(data);
+      }
+
+      for(const raw of candidatos){
+        const producto = normalizarArticuloOperativo(raw, fuente.nombre, d.id);
+        if(producto){
+          fusionarProductoOperativo(map, producto);
+          articulosDetectados++;
+        }
+      }
+
+      procesados++;
+      const avanceFuente = totalDocs ? (procesados / totalDocs) : 1;
+      const porcentaje = progresoBase + (avanceFuente * progresoRango);
+
+      if(procesados === totalDocs || procesados - ultimoPaint >= 15){
+        ultimoPaint = procesados;
+        mostrarProgresoCatalogo({
+          titulo:`Leyendo ${fuente.nombre}`,
+          porcentaje,
+          detalle:`${procesados} / ${totalDocs} documentos | ${articulosDetectados} artículos detectados | ${map.size} productos únicos`
+        });
+        await esperarPintado();
+      }
+    }
+
+    return { documentos: totalDocs, articulosDetectados };
+  }
+
+  async function descargarCatalogo(){
+    refs.loginMsg.textContent = "Preparando catálogo operativo de Allende 1...";
+
+    mostrarProgresoCatalogo({
+      titulo:"Catálogo operativo",
+      porcentaje:0,
+      detalle:"Se leerán ventas, transferencias surtidas e inventario inicial de Allende 1."
+    });
+
+    await esperarPintado();
+
+    const productosMap = new Map();
+    const resumenFuentes = [];
+    const rango = 75 / FUENTES_CATALOGO_OPERATIVO.length;
+
+    for(let i=0; i<FUENTES_CATALOGO_OPERATIVO.length; i++){
+      const fuente = FUENTES_CATALOGO_OPERATIVO[i];
+      const resumen = await leerFuenteCatalogoOperativo(fuente, productosMap, i * rango, rango);
+      resumenFuentes.push({ fuente:fuente.nombre, ...resumen });
+    }
+
+    if(!productosMap.size){
+      throw new Error("No se detectaron productos en ventas, SURTIDOTRANS ni inventario1 de Allende 1.");
+    }
+
+    mostrarProgresoCatalogo({
+      titulo:"Limpiando catálogo anterior",
+      porcentaje:78,
+      detalle:"Reemplazando catálogo local por catálogo operativo Allende 1..."
+    });
+
+    await esperarPintado();
+    await idbClear("productos");
+
+    const productos = Array.from(productosMap.values())
+      .map(p => {
+        p.codigosEquivalentes = Array.from(new Set((p.codigosEquivalentes || []).map(limpiarCodigoFlexible).filter(Boolean)));
+        if(p.codigoBarra && !p.codigosEquivalentes.includes(p.codigoBarra)){
+          p.codigosEquivalentes.unshift(p.codigoBarra);
+        }
+        p.texto = textoProducto(p);
+        return p;
+      })
+      .sort((a,b)=> String(a.concepto || "").localeCompare(String(b.concepto || ""), "es"));
 
     let total = 0;
     let ultimoPaint = 0;
 
-    for(const d of snap.docs){
-      const data = d.data();
-
-      const codigoBarra = limpiarCodigoFlexible(data.codigoBarra || d.id || "");
-      const codigosEquivalentes = extraerCodigosEquivalentes(data);
-
-      const p = {
-        id: d.id,
-        codigoBarra,
-        codigosEquivalentes,
-        concepto: data.concepto || data.descripcion || "SIN DESCRIPCIÓN",
-        unidadMedidaSat: data.unidadMedidaSat || "",
-        texto: ""
-      };
-
-      p.texto = textoProducto(p);
+    for(const p of productos){
       await idbPut("productos", p);
       total++;
 
-      const porcentaje = totalDocs ? Math.round((total / totalDocs) * 100) : 100;
+      const porcentaje = 78 + ((total / productos.length) * 22);
 
-      if(total === totalDocs || total - ultimoPaint >= 25){
+      if(total === productos.length || total - ultimoPaint >= 25){
         ultimoPaint = total;
-        refs.loginMsg.textContent = `Guardando catálogo local: ${porcentaje}%`;
+        refs.loginMsg.textContent = `Guardando catálogo operativo: ${Math.round(porcentaje)}%`;
         mostrarProgresoCatalogo({
-          titulo:"Guardando catálogo local",
+          titulo:"Guardando catálogo operativo",
           porcentaje,
-          detalle:`${total} / ${totalDocs} productos guardados en IndexedDB`
+          detalle:`${total} / ${productos.length} productos únicos guardados en IndexedDB`
         });
         await esperarPintado();
       }
@@ -1530,14 +1757,16 @@
 
     await setMeta("catalogoDescargadoEn", nowLocal());
     await setMeta("catalogoTotal", total);
+    await setMeta("catalogoSourceVersion", CATALOG_SOURCE_VERSION);
+    await setMeta("catalogoFuentes", resumenFuentes);
 
     mostrarProgresoCatalogo({
-      titulo:"Catálogo listo",
+      titulo:"Catálogo operativo listo",
       porcentaje:100,
-      detalle:`${total} productos disponibles. Ya puedes iniciar sesión.`
+      detalle:`${total} productos únicos desde ventas, surtido e inventario inicial. Ya puedes iniciar sesión.`
     });
 
-    refs.loginMsg.textContent = `Catálogo listo: ${total} productos. Ya puedes iniciar sesión.`;
+    refs.loginMsg.textContent = `Catálogo operativo listo: ${total} productos reales de Allende 1. Ya puedes iniciar sesión.`;
     return total;
   }
 
@@ -1631,18 +1860,44 @@
     return null;
   }
 
-    async function buscarProductosTexto(term){
-    const words = normalizar(term).split(/\s+/).filter(Boolean);
-    if(!words.length) return [];
+  async function buscarProductosTexto(term){
+    const limpio = normalizar(term);
+    const words = limpio.split(/\s+/).filter(Boolean);
+    const codigoTerm = limpiarCodigoFlexible(term);
+
+    if(!words.length && !codigoTerm) return [];
 
     const productos = await idbGetAll("productos");
 
     return productos
       .map(p => {
-        const score = words.reduce((acc,w)=> acc + (p.texto.includes(w) ? 1 : 0), 0);
-        return { ...p, score };
+        const texto = p.texto || textoProducto(p);
+        const codigo = limpiarCodigoFlexible(p.codigoBarra || p.id || "");
+        const equivalentes = Array.isArray(p.codigosEquivalentes) ? p.codigosEquivalentes.map(limpiarCodigoFlexible) : [];
+
+        let score = 0;
+        let faltantes = 0;
+
+        for(const w of words){
+          if(texto.includes(w)) score += 10;
+          else faltantes++;
+        }
+
+        if(codigoTerm){
+          if(codigo === codigoTerm) score += 100;
+          else if(equivalentes.includes(codigoTerm)) score += 90;
+          else if(codigo.includes(codigoTerm)) score += 40;
+          else if(equivalentes.some(eq => eq.includes(codigoTerm))) score += 35;
+        }
+
+        if(Array.isArray(p.fuentes) && p.fuentes.includes("INVENTARIO_INICIAL")) score += 3;
+        if(Array.isArray(p.fuentes) && p.fuentes.includes("VENTAS")) score += 2;
+        if(Array.isArray(p.fuentes) && p.fuentes.includes("SURTIDOTRANS")) score += 1;
+
+        return { ...p, score, faltantes };
       })
-      .filter(p => p.score === words.length)
+      .filter(p => p.score > 0 && p.faltantes === 0)
+      .sort((a,b)=> b.score - a.score || String(a.concepto || "").localeCompare(String(b.concepto || ""), "es"))
       .slice(0,50);
   }
 
@@ -2185,6 +2440,7 @@
         <div class="result-code">
           ${escapeHtml(p.codigoBarra || p.id)}
           ${Array.isArray(p.codigosEquivalentes) && p.codigosEquivalentes.length ? " | Equiv: " + escapeHtml(p.codigosEquivalentes.join(", ")) : ""}
+          ${Array.isArray(p.fuentes) && p.fuentes.length ? " | Fuente: " + escapeHtml(p.fuentes.join(" + ")) : ""}
         </div>
         <button class="btn2 btn-small mt" data-use-product="${escapeHtml(p.id)}">Usar producto</button>
       </div>
@@ -2288,4 +2544,3 @@
 </script>
 </body>
 </html>
-

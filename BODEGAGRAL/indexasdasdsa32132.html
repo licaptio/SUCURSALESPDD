@@ -1789,9 +1789,22 @@ function normalizarProductoCatalogo(data) {
 function crearLineaDesdeSolicitud(item) {
   const solicitado = Number(item.cantidad_solicitada ?? item.cantidad ?? 0);
   const surtido = solicitado;
+  const codigoReal = String(item.codigo || item.codigoBarra || '').trim();
+  const codigoCapturado = String(item.codigoCapturado || item.codigo_capturado || codigoReal).trim();
+  const equivalentes = normalizarEquivalentes(item.codigosEquivalentes);
 
   return {
-    codigo: String(item.codigo || item.codigoBarra || '').trim(),
+    codigo: codigoReal,
+    codigoCapturado,
+    codigoFueEquivalente:
+      item.codigoFueEquivalente === true ||
+      item.codigo_fue_equivalente === true ||
+      (
+        codigoCapturado &&
+        codigoReal &&
+        codigoCapturado !== codigoReal &&
+        equivalentes.map(x => String(x).trim()).includes(codigoCapturado)
+      ),
     nombre: String(item.nombre || item.concepto || '').trim(),
     cantidad_solicitada: solicitado,
     cantidad_surtida: surtido,
@@ -1800,9 +1813,7 @@ function crearLineaDesdeSolicitud(item) {
     precioPublico: Number(item.precioPublico ?? item.precio ?? 0),
     unidad: String(item.unidad || ''),
     origen_solicitud: String(item.origen || 'SOLICITUD'),
-    codigosEquivalentes: Array.isArray(item.codigosEquivalentes)
-      ? item.codigosEquivalentes
-      : []
+    codigosEquivalentes: equivalentes
   };
 }
 
@@ -2070,8 +2081,24 @@ async function cargarCatalogo() {
   }
 }
 
+function crearProductoResultadoBusqueda(producto, codigoCapturado = '', fueEquivalente = false) {
+  const codigoReal = String(producto.codigoBarra || '').trim();
+  const capturado = String(codigoCapturado || codigoReal).trim();
+
+  return {
+    ...producto,
+    codigoCapturado: capturado,
+    codigoFueEquivalente:
+      fueEquivalente === true &&
+      capturado &&
+      codigoReal &&
+      capturado !== codigoReal
+  };
+}
+
 function buscarEnCatalogo(term) {
-  const q = String(term || '').trim().toLowerCase();
+  const raw = String(term || '').trim();
+  const q = raw.toLowerCase();
 
   if (!q) return [];
 
@@ -2093,22 +2120,43 @@ function buscarEnCatalogo(term) {
     const texto = `${codigo} ${nombre} ${eqs.join(' ')}`;
 
     if (codigo === q) {
-      exactCodigo.push(p);
+      exactCodigo.push(
+        crearProductoResultadoBusqueda(p, p.codigoBarra, false)
+      );
       continue;
     }
 
     if (eqs.includes(q)) {
-      exactEq.push(p);
+      const equivalenteOriginal = p.codigosEquivalentes.find(x =>
+        String(x).toLowerCase() === q
+      );
+
+      exactEq.push(
+        crearProductoResultadoBusqueda(p, equivalenteOriginal || raw, true)
+      );
       continue;
     }
 
     if (nombre.startsWith(q)) {
-      nombreStarts.push(p);
+      nombreStarts.push(
+        crearProductoResultadoBusqueda(p, p.codigoBarra, false)
+      );
       continue;
     }
 
     if (tokens.every(t => texto.includes(t))) {
-      flexible.push(p);
+      const tokenEquivalente = p.codigosEquivalentes.find(eq => {
+        const eqText = String(eq).toLowerCase();
+        return tokens.some(t => eqText.includes(t));
+      });
+
+      flexible.push(
+        crearProductoResultadoBusqueda(
+          p,
+          tokenEquivalente || p.codigoBarra,
+          Boolean(tokenEquivalente)
+        )
+      );
     }
   }
 
@@ -2269,6 +2317,8 @@ async function cargarSolicitudPorClave(clave) {
       detalle = ordenarPorConcepto(
         detalleGuardado.map(x => ({
           codigo: String(x.codigo || '').trim(),
+          codigoCapturado: String(x.codigoCapturado || x.codigo_capturado || x.codigo || '').trim(),
+          codigoFueEquivalente: x.codigoFueEquivalente === true || x.codigo_fue_equivalente === true,
           nombre: String(x.nombre || '').trim(),
           cantidad_solicitada: Number(x.cantidad_solicitada || 0),
           cantidad_surtida: Number(x.cantidad_surtida || 0),
@@ -2277,7 +2327,7 @@ async function cargarSolicitudPorClave(clave) {
           precioPublico: Number(x.precioPublico || 0),
           unidad: String(x.unidad || ''),
           origen_solicitud: x.agregado_en_surtido ? 'AGREGADO_MANUAL' : 'SOLICITUD',
-          codigosEquivalentes: []
+          codigosEquivalentes: normalizarEquivalentes(x.codigosEquivalentes)
         }))
       );
     } else {
@@ -2440,13 +2490,32 @@ function agregarProductoExtra() {
     return;
   }
 
+  const codigoReal = String(productoSeleccionado.codigoBarra || '').trim();
+  const codigoCapturado = String(
+    productoSeleccionado.codigoCapturado || codigoReal
+  ).trim();
+  const equivalentes = normalizarEquivalentes(
+    productoSeleccionado.codigosEquivalentes
+  );
+
   const existente = detalle.find(x =>
-    x.codigo === productoSeleccionado.codigoBarra
+    x.codigo === codigoReal
   );
 
   if (existente) {
     existente.cantidad_surtida =
       Number(existente.cantidad_surtida || 0) + cantidad;
+
+    existente.codigosEquivalentes = normalizarEquivalentes(
+      existente.codigosEquivalentes?.length
+        ? existente.codigosEquivalentes
+        : equivalentes
+    );
+
+    if (productoSeleccionado.codigoFueEquivalente === true) {
+      existente.codigoCapturado = codigoCapturado;
+      existente.codigoFueEquivalente = true;
+    }
 
     if (existente.cantidad_solicitada === 0) {
       existente.agregado_en_surtido = true;
@@ -2454,7 +2523,10 @@ function agregarProductoExtra() {
 
   } else {
     detalle.push({
-      codigo: productoSeleccionado.codigoBarra,
+      codigo: codigoReal,
+      codigoCapturado,
+      codigoFueEquivalente:
+        productoSeleccionado.codigoFueEquivalente === true,
       nombre: productoSeleccionado.concepto,
       cantidad_solicitada: 0,
       cantidad_surtida: cantidad,
@@ -2465,8 +2537,7 @@ function agregarProductoExtra() {
       ),
       unidad: productoSeleccionado.unidad || '',
       origen_solicitud: 'AGREGADO_MANUAL',
-      codigosEquivalentes:
-        productoSeleccionado.codigosEquivalentes || []
+      codigosEquivalentes: equivalentes
     });
   }
 
@@ -2582,6 +2653,10 @@ function construirPayload(responsables = null, estatus = 'PENDIENTE') {
     detalle: detalle.map((x, i) => ({
       renglon: i + 1,
       codigo: x.codigo || '',
+      codigoCapturado:
+        x.codigoCapturado || x.codigo || '',
+      codigoFueEquivalente:
+        x.codigoFueEquivalente === true,
       nombre: x.nombre || '',
       cantidad_solicitada:
         Number(x.cantidad_solicitada || 0),
@@ -2599,7 +2674,10 @@ function construirPayload(responsables = null, estatus = 'PENDIENTE') {
         Number(x.precioPublico || 0),
 
       unidad:
-        x.unidad || ''
+        x.unidad || '',
+
+      codigosEquivalentes:
+        normalizarEquivalentes(x.codigosEquivalentes)
     }))
   };
 }
@@ -3176,78 +3254,247 @@ async function generarPDFProfesional(payload) {
 
   y += 34;
 
-  const rows = payload.detalle.map((item, idx) => [
-    idx + 1,
-    item.codigo || '',
-    item.nombre || '',
-    Number(item.cantidad_solicitada || 0),
-    Number(item.cantidad_surtida || 0),
-    Number(item.diferencia || 0),
-    item.agregado_en_surtido ? 'SI' : 'NO',
-    money(item.precioPublico || 0)
-  ]);
+  const detallePdf = Array.isArray(payload.detalle)
+    ? payload.detalle
+    : [];
 
-  pdf.autoTable({
-    startY:y,
+  const surtidos = detallePdf.filter(item =>
+    Number(item.cantidad_surtida || 0) > 0
+  );
 
-    head:[[
-      '#',
-      'Código',
-      'Concepto',
-      'Solicitado',
-      'Surtido',
-      'Dif.',
-      'Extra',
-      'Costo'
-    ]],
+  const noSurtidos = detallePdf.filter(item =>
+    Number(item.cantidad_solicitada || 0) > 0 &&
+    Number(item.cantidad_surtida || 0) === 0
+  );
 
-    body:rows,
+  const agregadosOCambiados = detallePdf.filter(item =>
+    item.agregado_en_surtido === true ||
+    Number(item.diferencia || 0) !== 0
+  );
 
-    theme:'grid',
+  const equivalentes = detallePdf.filter(item =>
+    item.codigoFueEquivalente === true ||
+    (
+      Array.isArray(item.codigosEquivalentes) &&
+      item.codigosEquivalentes.length > 0
+    )
+  );
 
-    headStyles:{
-      fillColor:[0,65,106]
-    },
-
-    styles:{
-      fontSize:7.5,
-      cellPadding:2
-    },
-
-    columnStyles:{
-      0:{cellWidth:8},
-      1:{cellWidth:24},
-      2:{cellWidth:75},
-      3:{cellWidth:18, halign:'center'},
-      4:{cellWidth:18, halign:'center'},
-      5:{cellWidth:14, halign:'center'},
-      6:{cellWidth:14, halign:'center'},
-      7:{cellWidth:25, halign:'right'}
-    },
-
-    margin:{
-      left:10,
-      right:10
+  function ensureSpace(required = 34) {
+    if (y + required > 250) {
+      pdf.addPage();
+      y = 16;
     }
-  });
-
-  y = pdf.lastAutoTable.finalY + 10;
-
-  if (y > 230) {
-    pdf.addPage();
-    y = 20;
   }
 
-  const totalSolicitado = payload.detalle.reduce((acc, x) => {
+  function tituloSeccion(titulo, nota = '') {
+    ensureSpace(18);
+
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(10);
+    pdf.setTextColor(0,65,106);
+    pdf.text(titulo, 10, y);
+
+    if (nota) {
+      y += 5;
+      pdf.setFont('helvetica','normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(80,80,80);
+      pdf.text(nota, 10, y, { maxWidth: pageWidth - 20 });
+    }
+
+    pdf.setTextColor(0,0,0);
+    y += 4;
+  }
+
+  function estadoLinea(item) {
+    if (item.agregado_en_surtido === true) return 'AGREGADO';
+
+    const dif = Number(item.diferencia || 0);
+
+    if (dif === 0) return 'NORMAL';
+    if (Number(item.cantidad_surtida || 0) === 0) return 'NO SURTIDO';
+    if (dif > 0) return 'SURTIDO DE MÁS';
+
+    return 'SURTIDO PARCIAL';
+  }
+
+  function imprimirTablaDetalle(titulo, nota, lista) {
+    tituloSeccion(titulo, nota);
+
+    if (!lista.length) {
+      pdf.setFont('helvetica','italic');
+      pdf.setFontSize(8);
+      pdf.text('Sin partidas para esta sección.', 10, y + 4);
+      y += 12;
+      return;
+    }
+
+    const rows = lista.map((item, idx) => [
+      idx + 1,
+      item.codigo || '',
+      item.nombre || '',
+      Number(item.cantidad_solicitada || 0),
+      Number(item.cantidad_surtida || 0),
+      Number(item.diferencia || 0),
+      estadoLinea(item),
+      money(item.precioPublico || 0)
+    ]);
+
+    pdf.autoTable({
+      startY:y,
+
+      head:[[
+        '#',
+        'Código',
+        'Concepto',
+        'Solic.',
+        'Surt.',
+        'Dif.',
+        'Estado',
+        'Precio público'
+      ]],
+
+      body:rows,
+
+      theme:'grid',
+
+      headStyles:{
+        fillColor:[0,65,106]
+      },
+
+      styles:{
+        fontSize:7.2,
+        cellPadding:1.8,
+        overflow:'linebreak'
+      },
+
+      columnStyles:{
+        0:{cellWidth:8},
+        1:{cellWidth:22},
+        2:{cellWidth:67},
+        3:{cellWidth:15, halign:'center'},
+        4:{cellWidth:15, halign:'center'},
+        5:{cellWidth:13, halign:'center'},
+        6:{cellWidth:25, halign:'center'},
+        7:{cellWidth:28, halign:'right'}
+      },
+
+      margin:{
+        left:10,
+        right:10
+      }
+    });
+
+    y = pdf.lastAutoTable.finalY + 9;
+  }
+
+  function imprimirTablaEquivalentes() {
+    tituloSeccion(
+      '4. CÓDIGOS EQUIVALENTES / SOLO INFORMATIVO',
+      'Muestra productos encontrados o respaldados con códigos equivalentes. El código correcto para inventario es el código actual.'
+    );
+
+    if (!equivalentes.length) {
+      pdf.setFont('helvetica','italic');
+      pdf.setFontSize(8);
+      pdf.text('Sin códigos equivalentes detectados.', 10, y + 4);
+      y += 12;
+      return;
+    }
+
+    const rows = equivalentes.map((item, idx) => {
+      const listaEq = normalizarEquivalentes(item.codigosEquivalentes);
+      const capturado = String(item.codigoCapturado || item.codigo || '').trim();
+      const codigoReal = String(item.codigo || '').trim();
+
+      return [
+        idx + 1,
+        capturado || codigoReal,
+        codigoReal,
+        item.nombre || '',
+        listaEq.length ? listaEq.join(', ') : '-',
+        item.codigoFueEquivalente === true ? 'CAPTURADO COMO EQUIVALENTE' : 'CATÁLOGO CON EQUIVALENTES'
+      ];
+    });
+
+    pdf.autoTable({
+      startY:y,
+
+      head:[[
+        '#',
+        'Código capturado',
+        'Código actual',
+        'Producto',
+        'Equivalentes',
+        'Nota'
+      ]],
+
+      body:rows,
+
+      theme:'grid',
+
+      headStyles:{
+        fillColor:[249,115,22]
+      },
+
+      styles:{
+        fontSize:7.1,
+        cellPadding:1.8,
+        overflow:'linebreak'
+      },
+
+      columnStyles:{
+        0:{cellWidth:8},
+        1:{cellWidth:28},
+        2:{cellWidth:28},
+        3:{cellWidth:58},
+        4:{cellWidth:42},
+        5:{cellWidth:31}
+      },
+
+      margin:{
+        left:10,
+        right:10
+      }
+    });
+
+    y = pdf.lastAutoTable.finalY + 9;
+  }
+
+  imprimirTablaDetalle(
+    '1. ARTÍCULOS SURTIDOS PARA REVISIÓN',
+    'Esta es la sección operativa principal: todo lo que sí se entrega, incluyendo normales, parciales, modificados y agregados.',
+    surtidos
+  );
+
+  imprimirTablaDetalle(
+    '2. ARTÍCULOS NO SURTIDOS / SOLO INFORMATIVO',
+    'Partidas solicitadas que quedaron en cero surtido. No se usan para revisar entrega física, solo para aclaración.',
+    noSurtidos
+  );
+
+  imprimirTablaDetalle(
+    '3. AGREGADOS, MODIFICADOS O CAMBIADOS / SOLO INFORMATIVO',
+    'Resumen de diferencias: artículos agregados manualmente, surtidos parciales o cantidades cambiadas contra la solicitud.',
+    agregadosOCambiados
+  );
+
+  imprimirTablaEquivalentes();
+
+  ensureSpace(52);
+
+  const totalSolicitado = detallePdf.reduce((acc, x) => {
     return acc + Number(x.cantidad_solicitada || 0) * Number(x.precioPublico || 0);
   }, 0);
 
-  const totalSurtido = payload.detalle.reduce((acc, x) => {
+  const totalSurtido = detallePdf.reduce((acc, x) => {
     return acc + Number(x.cantidad_surtida || 0) * Number(x.precioPublico || 0);
   }, 0);
 
   pdf.setFont('helvetica','bold');
   pdf.setFontSize(10);
+  pdf.setTextColor(0,0,0);
   pdf.text(`Importe solicitado: ${money(totalSolicitado)}`, 10, y);
   pdf.text(`Importe surtido: ${money(totalSurtido)}`, 110, y);
 

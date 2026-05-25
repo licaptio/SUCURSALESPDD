@@ -815,23 +815,323 @@
     }
 
     @media(min-width:720px){
-      body{padding:18px}
+      body{
+        padding:18px;
+        background:
+          radial-gradient(circle at top left, rgba(255,255,255,.85), transparent 34%),
+          linear-gradient(135deg,#fffdf4 0%,#fff2a8 42%,#f7c948 100%);
+      }
 
       .app{
+        max-width:1480px;
         height:calc(100dvh - 36px);
         min-height:0;
       }
 
-      .capture-layout{
+      .app-header{
+        grid-template-columns:auto 1fr;
+        justify-items:start;
+        align-items:center;
+        gap:18px;
+        margin:0 0 12px;
+        padding:0 4px;
+      }
+
+      .header-logo{
+        width:210px;
+        max-height:76px;
+      }
+
+      .title{
+        text-align:left;
+        font-size:34px;
+        margin:0;
+      }
+
+      .statusbar{
+        grid-template-columns:auto auto 1fr;
+        justify-content:start;
+        margin-bottom:12px;
+      }
+
+      .pill{
+        min-height:34px;
+        padding:7px 12px;
+        background:rgba(255,255,255,.82);
+        border:1px solid rgba(217,154,0,.18);
+      }
+
+      #viewLogin.active{
+        max-width:520px;
+        width:100%;
+        margin:34px auto 0;
+      }
+
+      .login-card{
+        padding:24px;
+        border-radius:26px;
+      }
+
+      #viewApp.active{
         display:grid;
-        grid-template-columns:1.1fr .9fr;
+        grid-template-columns:190px minmax(0,1fr);
+        grid-template-rows:auto minmax(0,1fr);
         gap:14px;
-        align-items:start;
+        flex:1;
+        min-height:0;
+        overflow:hidden;
+      }
+
+      #viewApp > .card.mb{
+        grid-column:1 / -1;
+        margin-bottom:0;
+        padding:13px 16px;
+        border-radius:18px;
+      }
+
+      .info-line{
+        grid-template-columns:repeat(2, minmax(260px, max-content));
+        justify-content:start;
+        gap:24px;
+        font-size:13px;
       }
 
       .tabs{
+        grid-column:1;
+        grid-row:2;
         position:static;
-        background:transparent;
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        margin:0;
+        padding:12px;
+        background:rgba(255,255,255,.65);
+        border:1px solid rgba(217,154,0,.22);
+        border-radius:22px;
+        box-shadow:0 12px 30px rgba(118,80,0,.12);
+        align-self:stretch;
+        min-height:0;
+      }
+
+      .tab{
+        width:100%;
+        min-height:74px;
+        padding:12px 10px;
+        font-size:13px;
+        text-align:left;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        line-height:1.18;
+      }
+
+      .tab.active{
+        box-shadow:inset 0 0 0 2px rgba(122,46,0,.12);
+      }
+
+      .tabView:not(.hidden){
+        grid-column:2;
+        grid-row:2;
+        display:block;
+        min-height:0;
+        overflow:hidden;
+      }
+
+      #tabCaptura:not(.hidden),
+      #tabBuscar:not(.hidden),
+      #tabCarrito:not(.hidden),
+      #tabSesion:not(.hidden){
+        height:100%;
+      }
+
+      .capture-layout{
+        height:100%;
+        display:grid;
+        grid-template-columns:minmax(430px,.9fr) minmax(420px,1.1fr);
+        gap:14px;
+        align-items:stretch;
+      }
+
+      .capture-layout > .card{
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+      }
+
+      .capture-layout > .card:first-child{
+        justify-content:flex-start;
+      }
+
+      .capture-layout > .card:last-child{
+        overflow:hidden;
+      }
+
+      #capturaScannerBox{
+        gap:12px;
+      }
+
+      #codigoInput,
+      #buscarInput{
+        min-height:54px;
+        font-size:20px;
+        font-weight:800;
+        letter-spacing:.02em;
+      }
+
+      #productoBox{
+        min-height:280px;
+      }
+
+      .product-name{
+        font-size:28px;
+        line-height:1.08;
+      }
+
+      .product-code{
+        font-size:14px;
+      }
+
+      .qty-box{
+        grid-template-columns:1fr 190px 170px;
+        align-items:center;
+        margin-top:18px;
+      }
+
+      .qty-box input{
+        font-size:34px;
+        min-height:72px;
+      }
+
+      .qty-box button{
+        min-height:72px;
+      }
+
+      .last-scanned-list{
+        flex:1;
+        min-height:0;
+        overflow:auto;
+        align-content:start;
+      }
+
+      .last-scanned-card{
+        padding:16px;
+      }
+
+      .last-scanned-name{
+        font-size:20px;
+      }
+
+      .last-scanned-meta{
+        font-size:13px;
+      }
+
+      #btnSyncNow{
+        margin-top:auto;
+      }
+
+      #tabBuscar .card{
+        height:100%;
+        display:flex;
+        flex-direction:column;
+        padding:18px;
+      }
+
+      .search-results{
+        flex:1;
+        max-height:none;
+        min-height:0;
+        grid-template-columns:repeat(auto-fill, minmax(310px, 1fr));
+        align-content:start;
+        overflow:auto;
+        padding-right:4px;
+      }
+
+      .result-item{
+        padding:14px;
+        border-radius:16px;
+      }
+
+      .result-title{
+        font-size:15px;
+        line-height:1.2;
+      }
+
+      .result-code{
+        margin-top:5px;
+      }
+
+      .cart-panel{
+        height:100%;
+        padding:16px;
+      }
+
+      .cart-panel > .row{
+        display:grid;
+        grid-template-columns:220px 220px 1fr;
+      }
+
+      .cart-list{
+        grid-template-columns:repeat(auto-fill, minmax(480px, 1fr));
+        align-content:start;
+        gap:10px;
+      }
+
+      .cart-item{
+        padding:10px 12px;
+      }
+
+      .cart-row-compact{
+        grid-template-columns:120px minmax(0,1fr) auto auto;
+      }
+
+      .cart-code-compact{
+        font-size:12px;
+      }
+
+      .cart-name-compact{
+        font-size:15px;
+      }
+
+      #tabSesion .card{
+        max-width:720px;
+        margin:0 auto;
+        padding:22px;
+      }
+
+      .scanner-modal-card{
+        width:min(880px,92vw);
+      }
+
+      .scanner-viewport{
+        min-height:min(70dvh,620px);
+      }
+
+      #lector{
+        min-height:min(70dvh,620px);
+      }
+    }
+
+    @media(min-width:1180px){
+      #viewApp.active{
+        grid-template-columns:210px minmax(0,1fr);
+      }
+
+      .capture-layout{
+        grid-template-columns:minmax(500px,.95fr) minmax(520px,1.05fr);
+      }
+
+      .card{
+        border-radius:22px;
+      }
+    }
+
+    @media(min-width:1500px){
+      .app{
+        max-width:1600px;
+      }
+
+      .capture-layout{
+        grid-template-columns:minmax(560px,.9fr) minmax(620px,1.1fr);
       }
     }
   </style>

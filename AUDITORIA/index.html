@@ -815,323 +815,23 @@
     }
 
     @media(min-width:720px){
-      body{
-        padding:18px;
-        background:
-          radial-gradient(circle at top left, rgba(255,255,255,.85), transparent 34%),
-          linear-gradient(135deg,#fffdf4 0%,#fff2a8 42%,#f7c948 100%);
-      }
+      body{padding:18px}
 
       .app{
-        max-width:1480px;
         height:calc(100dvh - 36px);
         min-height:0;
       }
 
-      .app-header{
-        grid-template-columns:auto 1fr;
-        justify-items:start;
-        align-items:center;
-        gap:18px;
-        margin:0 0 12px;
-        padding:0 4px;
-      }
-
-      .header-logo{
-        width:210px;
-        max-height:76px;
-      }
-
-      .title{
-        text-align:left;
-        font-size:34px;
-        margin:0;
-      }
-
-      .statusbar{
-        grid-template-columns:auto auto 1fr;
-        justify-content:start;
-        margin-bottom:12px;
-      }
-
-      .pill{
-        min-height:34px;
-        padding:7px 12px;
-        background:rgba(255,255,255,.82);
-        border:1px solid rgba(217,154,0,.18);
-      }
-
-      #viewLogin.active{
-        max-width:520px;
-        width:100%;
-        margin:34px auto 0;
-      }
-
-      .login-card{
-        padding:24px;
-        border-radius:26px;
-      }
-
-      #viewApp.active{
+      .capture-layout{
         display:grid;
-        grid-template-columns:190px minmax(0,1fr);
-        grid-template-rows:auto minmax(0,1fr);
+        grid-template-columns:1.1fr .9fr;
         gap:14px;
-        flex:1;
-        min-height:0;
-        overflow:hidden;
-      }
-
-      #viewApp > .card.mb{
-        grid-column:1 / -1;
-        margin-bottom:0;
-        padding:13px 16px;
-        border-radius:18px;
-      }
-
-      .info-line{
-        grid-template-columns:repeat(2, minmax(260px, max-content));
-        justify-content:start;
-        gap:24px;
-        font-size:13px;
+        align-items:start;
       }
 
       .tabs{
-        grid-column:1;
-        grid-row:2;
         position:static;
-        display:flex;
-        flex-direction:column;
-        gap:10px;
-        margin:0;
-        padding:12px;
-        background:rgba(255,255,255,.65);
-        border:1px solid rgba(217,154,0,.22);
-        border-radius:22px;
-        box-shadow:0 12px 30px rgba(118,80,0,.12);
-        align-self:stretch;
-        min-height:0;
-      }
-
-      .tab{
-        width:100%;
-        min-height:74px;
-        padding:12px 10px;
-        font-size:13px;
-        text-align:left;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        line-height:1.18;
-      }
-
-      .tab.active{
-        box-shadow:inset 0 0 0 2px rgba(122,46,0,.12);
-      }
-
-      .tabView:not(.hidden){
-        grid-column:2;
-        grid-row:2;
-        display:block;
-        min-height:0;
-        overflow:hidden;
-      }
-
-      #tabCaptura:not(.hidden),
-      #tabBuscar:not(.hidden),
-      #tabCarrito:not(.hidden),
-      #tabSesion:not(.hidden){
-        height:100%;
-      }
-
-      .capture-layout{
-        height:100%;
-        display:grid;
-        grid-template-columns:minmax(430px,.9fr) minmax(420px,1.1fr);
-        gap:14px;
-        align-items:stretch;
-      }
-
-      .capture-layout > .card{
-        min-height:0;
-        display:flex;
-        flex-direction:column;
-      }
-
-      .capture-layout > .card:first-child{
-        justify-content:flex-start;
-      }
-
-      .capture-layout > .card:last-child{
-        overflow:hidden;
-      }
-
-      #capturaScannerBox{
-        gap:12px;
-      }
-
-      #codigoInput,
-      #buscarInput{
-        min-height:54px;
-        font-size:20px;
-        font-weight:800;
-        letter-spacing:.02em;
-      }
-
-      #productoBox{
-        min-height:280px;
-      }
-
-      .product-name{
-        font-size:28px;
-        line-height:1.08;
-      }
-
-      .product-code{
-        font-size:14px;
-      }
-
-      .qty-box{
-        grid-template-columns:1fr 190px 170px;
-        align-items:center;
-        margin-top:18px;
-      }
-
-      .qty-box input{
-        font-size:34px;
-        min-height:72px;
-      }
-
-      .qty-box button{
-        min-height:72px;
-      }
-
-      .last-scanned-list{
-        flex:1;
-        min-height:0;
-        overflow:auto;
-        align-content:start;
-      }
-
-      .last-scanned-card{
-        padding:16px;
-      }
-
-      .last-scanned-name{
-        font-size:20px;
-      }
-
-      .last-scanned-meta{
-        font-size:13px;
-      }
-
-      #btnSyncNow{
-        margin-top:auto;
-      }
-
-      #tabBuscar .card{
-        height:100%;
-        display:flex;
-        flex-direction:column;
-        padding:18px;
-      }
-
-      .search-results{
-        flex:1;
-        max-height:none;
-        min-height:0;
-        grid-template-columns:repeat(auto-fill, minmax(310px, 1fr));
-        align-content:start;
-        overflow:auto;
-        padding-right:4px;
-      }
-
-      .result-item{
-        padding:14px;
-        border-radius:16px;
-      }
-
-      .result-title{
-        font-size:15px;
-        line-height:1.2;
-      }
-
-      .result-code{
-        margin-top:5px;
-      }
-
-      .cart-panel{
-        height:100%;
-        padding:16px;
-      }
-
-      .cart-panel > .row{
-        display:grid;
-        grid-template-columns:220px 220px 1fr;
-      }
-
-      .cart-list{
-        grid-template-columns:repeat(auto-fill, minmax(480px, 1fr));
-        align-content:start;
-        gap:10px;
-      }
-
-      .cart-item{
-        padding:10px 12px;
-      }
-
-      .cart-row-compact{
-        grid-template-columns:120px minmax(0,1fr) auto auto;
-      }
-
-      .cart-code-compact{
-        font-size:12px;
-      }
-
-      .cart-name-compact{
-        font-size:15px;
-      }
-
-      #tabSesion .card{
-        max-width:720px;
-        margin:0 auto;
-        padding:22px;
-      }
-
-      .scanner-modal-card{
-        width:min(880px,92vw);
-      }
-
-      .scanner-viewport{
-        min-height:min(70dvh,620px);
-      }
-
-      #lector{
-        min-height:min(70dvh,620px);
-      }
-    }
-
-    @media(min-width:1180px){
-      #viewApp.active{
-        grid-template-columns:210px minmax(0,1fr);
-      }
-
-      .capture-layout{
-        grid-template-columns:minmax(500px,.95fr) minmax(520px,1.05fr);
-      }
-
-      .card{
-        border-radius:22px;
-      }
-    }
-
-    @media(min-width:1500px){
-      .app{
-        max-width:1600px;
-      }
-
-      .capture-layout{
-        grid-template-columns:minmax(560px,.9fr) minmax(620px,1.1fr);
+        background:transparent;
       }
     }
   </style>
@@ -1326,15 +1026,8 @@
 
   const CONTEO_ID = "ALLENDE_MAYO_2026";
   const CONTEO_NOMBRE = "Conteo Allende Mayo 2026";
-  const TIENDA_ID = "ALLENDE 1";
-  const CATALOG_SOURCE_VERSION = "ALLENDE1_OPERATIVO_V1";
-  const FUENTES_CATALOGO_OPERATIVO = [
-    { nombre:"SURTIDOTRANS", segmentos:["TIENDAS", TIENDA_ID, "SURTIDOTRANS"] },
-    { nombre:"VENTAS", segmentos:["TIENDAS", TIENDA_ID, "ventas"] },
-    { nombre:"INVENTARIO_INICIAL", segmentos:["TIENDAS", TIENDA_ID, "inventario1"] }
-  ];
   const DB_NAME = "PROVSOFT_CONTEO_ALLENDE_MAYO_2026";
-  const DB_VERSION = 4;
+  const DB_VERSION = 3;
   const SYNC_EVERY_ITEMS = 5;
   const SYNC_INTERVAL_MS = 30000;
   const AUTO_LOGOUT_MS = 5 * 60 * 1000;
@@ -1503,14 +1196,6 @@
     return new Promise((resolve,reject)=>{
       const req = tx(store).getAll();
       req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  function idbClear(store){
-    return new Promise((resolve,reject)=>{
-      const req = tx(store,"readwrite").clear();
-      req.onsuccess = () => resolve(true);
       req.onerror = () => reject(req.error);
     });
   }
@@ -1740,24 +1425,19 @@
       try{
         const totalLocal = Number(await getMeta("catalogoTotal") || 0);
         const fechaLocal = await getMeta("catalogoDescargadoEn");
-        const versionLocal = await getMeta("catalogoSourceVersion");
 
-        if(totalLocal > 0 && versionLocal === CATALOG_SOURCE_VERSION){
+        if(totalLocal > 0){
           catalogoListo = true;
           catalogoPreparando = false;
 
-          refs.loginMsg.textContent = `Catálogo operativo local listo: ${totalLocal} productos. Ya puedes iniciar sesión.`;
+          refs.loginMsg.textContent = `Catálogo local listo: ${totalLocal} productos. Ya puedes iniciar sesión.`;
           mostrarProgresoCatalogo({
-            titulo:"Catálogo operativo listo",
+            titulo:"Catálogo listo",
             porcentaje:100,
-            detalle:`${totalLocal} productos desde ventas, surtido e inventario inicial${fechaLocal ? " | " + fechaLocal : ""}`
+            detalle:`${totalLocal} productos cargados desde IndexedDB${fechaLocal ? " | " + fechaLocal : ""}`
           });
           habilitarLogin();
           return totalLocal;
-        }
-
-        if(totalLocal > 0 && versionLocal !== CATALOG_SOURCE_VERSION){
-          refs.loginMsg.textContent = "Reconstruyendo catálogo operativo de Allende 1...";
         }
 
         const totalDescargado = await descargarCatalogo();
@@ -1784,272 +1464,65 @@
     return catalogoPromise;
   }
 
-  function getValorPorLlaves(obj, llaves=[]){
-    if(!obj || typeof obj !== "object") return "";
-
-    for(const k of llaves){
-      if(obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== ""){
-        return obj[k];
-      }
-    }
-
-    return "";
-  }
-
-  function esObjetoPlano(valor){
-    return valor && typeof valor === "object" && !Array.isArray(valor);
-  }
-
-  function pareceArticuloOperativo(obj){
-    if(!esObjetoPlano(obj)) return false;
-
-    const codigo = getValorPorLlaves(obj, [
-      "codigoBarra", "codigo", "codigoProducto", "productoCodigo", "productoId",
-      "idProducto", "sku", "clave", "claveProducto", "barcode", "ean", "upc"
-    ]);
-
-    const nombre = getValorPorLlaves(obj, [
-      "concepto", "descripcion", "nombre", "producto", "productoNombre", "nombreProducto",
-      "detalle", "articulo", "descripcionProducto"
-    ]);
-
-    return !!(limpiarCodigoFlexible(codigo) || String(nombre || "").trim());
-  }
-
-  function recolectarArticulosDesdeObjeto(valor, salida=[]){
-    if(Array.isArray(valor)){
-      for(const item of valor){
-        recolectarArticulosDesdeObjeto(item, salida);
-      }
-      return salida;
-    }
-
-    if(!esObjetoPlano(valor)) return salida;
-
-    if(pareceArticuloOperativo(valor)){
-      salida.push(valor);
-    }
-
-    for(const [k,v] of Object.entries(valor)){
-      if(k === "firma" || k === "firmaEntrega" || k === "firmaRecibe" || k === "foto" || k === "fotos") continue;
-
-      if(Array.isArray(v)){
-        for(const item of v){
-          recolectarArticulosDesdeObjeto(item, salida);
-        }
-      }else if(esObjetoPlano(v)){
-        const claves = Object.keys(v);
-        const objetoChico = claves.length <= 14;
-
-        if(objetoChico && pareceArticuloOperativo(v)){
-          salida.push(v);
-        }else if(["articulos", "productos", "items", "detalle", "detalles", "partidas", "lineas", "conceptos"].includes(k)){
-          recolectarArticulosDesdeObjeto(v, salida);
-        }
-      }
-    }
-
-    return salida;
-  }
-
-  function normalizarArticuloOperativo(raw, fuente, docId){
-    const codigoRaw = getValorPorLlaves(raw, [
-      "codigoBarra", "codigo", "codigoProducto", "productoCodigo", "productoId",
-      "idProducto", "sku", "clave", "claveProducto", "barcode", "ean", "upc"
-    ]) || docId;
-
-    const codigoBarra = limpiarCodigoFlexible(codigoRaw || docId || "");
-
-    const concepto = String(getValorPorLlaves(raw, [
-      "concepto", "descripcion", "nombre", "producto", "productoNombre", "nombreProducto",
-      "detalle", "articulo", "descripcionProducto"
-    ]) || "SIN DESCRIPCIÓN").trim().toUpperCase();
-
-    const unidadMedidaSat = String(getValorPorLlaves(raw, [
-      "unidadMedidaSat", "unidad", "unidadMedida", "uom", "medida"
-    ]) || "").trim().toUpperCase();
-
-    const codigosEquivalentes = extraerCodigosEquivalentes({
-      codigosEquivalentes: getValorPorLlaves(raw, [
-        "codigosEquivalentes", "equivalentes", "codigos", "codigosExtra", "codigosAlternos"
-      ])
-    });
-
-    if(codigoBarra && !codigosEquivalentes.includes(codigoBarra)){
-      codigosEquivalentes.unshift(codigoBarra);
-    }
-
-    const cantidad = normalizarCantidad(getValorPorLlaves(raw, [
-      "cantidad", "piezas", "qty", "unidades", "existencia", "stock", "inventario", "conteo"
-    ]));
-
-    const idBase = codigoBarra || limpiarCodigoFlexible(docId) || normalizar(concepto).replace(/\s+/g,"_").slice(0,80);
-
-    if(!idBase || concepto === "SIN DESCRIPCIÓN"){
-      if(!codigoBarra) return null;
-    }
-
-    const p = {
-      id: idBase,
-      codigoBarra: codigoBarra || idBase,
-      codigosEquivalentes: Array.from(new Set(codigosEquivalentes.filter(Boolean))),
-      concepto,
-      unidadMedidaSat,
-      texto: "",
-      fuentes: [fuente],
-      origenCatalogo: "OPERATIVO_ALLENDE_1",
-      ocurrencias: 1,
-      cantidadReferencia: cantidad || 0,
-      ultimoDocumentoOrigen: docId || ""
-    };
-
-    p.texto = textoProducto(p);
-    return p;
-  }
-
-  function fusionarProductoOperativo(map, producto){
-    if(!producto) return;
-
-    const key = producto.codigoBarra || producto.id;
-
-    if(!map.has(key)){
-      map.set(key, producto);
-      return;
-    }
-
-    const actual = map.get(key);
-
-    actual.concepto = actual.concepto && actual.concepto !== "SIN DESCRIPCIÓN"
-      ? actual.concepto
-      : producto.concepto;
-
-    actual.unidadMedidaSat = actual.unidadMedidaSat || producto.unidadMedidaSat || "";
-    actual.codigosEquivalentes = Array.from(new Set([
-      ...(actual.codigosEquivalentes || []),
-      ...(producto.codigosEquivalentes || []),
-      actual.codigoBarra,
-      producto.codigoBarra
-    ].filter(Boolean)));
-
-    actual.fuentes = Array.from(new Set([...(actual.fuentes || []), ...(producto.fuentes || [])]));
-    actual.ocurrencias = Number(actual.ocurrencias || 0) + Number(producto.ocurrencias || 1);
-    actual.cantidadReferencia = round3(Number(actual.cantidadReferencia || 0) + Number(producto.cantidadReferencia || 0));
-    actual.ultimoDocumentoOrigen = producto.ultimoDocumentoOrigen || actual.ultimoDocumentoOrigen || "";
-    actual.texto = textoProducto(actual);
-  }
-
-  async function leerFuenteCatalogoOperativo(fuente, map, progresoBase, progresoRango){
-    mostrarProgresoCatalogo({
-      titulo:`Leyendo ${fuente.nombre}`,
-      porcentaje:progresoBase,
-      detalle:`Consultando /${fuente.segmentos.join("/")}...`
-    });
-
-    await esperarPintado();
-
-    const ref = collection(db, ...fuente.segmentos);
-    const snap = await getDocs(ref);
-    const docs = snap.docs || [];
-    const totalDocs = docs.length;
-    let procesados = 0;
-    let articulosDetectados = 0;
-    let ultimoPaint = 0;
-
-    for(const d of docs){
-      const data = d.data() || {};
-      const candidatos = recolectarArticulosDesdeObjeto({ ...data, idDocumentoFirebase:d.id });
-
-      if(pareceArticuloOperativo(data)){
-        candidatos.unshift(data);
-      }
-
-      for(const raw of candidatos){
-        const producto = normalizarArticuloOperativo(raw, fuente.nombre, d.id);
-        if(producto){
-          fusionarProductoOperativo(map, producto);
-          articulosDetectados++;
-        }
-      }
-
-      procesados++;
-      const avanceFuente = totalDocs ? (procesados / totalDocs) : 1;
-      const porcentaje = progresoBase + (avanceFuente * progresoRango);
-
-      if(procesados === totalDocs || procesados - ultimoPaint >= 15){
-        ultimoPaint = procesados;
-        mostrarProgresoCatalogo({
-          titulo:`Leyendo ${fuente.nombre}`,
-          porcentaje,
-          detalle:`${procesados} / ${totalDocs} documentos | ${articulosDetectados} artículos detectados | ${map.size} productos únicos`
-        });
-        await esperarPintado();
-      }
-    }
-
-    return { documentos: totalDocs, articulosDetectados };
-  }
-
   async function descargarCatalogo(){
-    refs.loginMsg.textContent = "Preparando catálogo operativo de Allende 1...";
+    refs.loginMsg.textContent = "Preparando catálogo antes del login...";
 
     mostrarProgresoCatalogo({
-      titulo:"Catálogo operativo",
+      titulo:"Descargando catálogo",
+      indeterminado:true,
+      detalle:"Solicitando productos desde /productos..."
+    });
+
+    await esperarPintado();
+
+    const snap = await getDocs(collection(db,"productos"));
+    const totalDocs = snap.size || snap.docs.length || 0;
+
+    if(!totalDocs){
+      throw new Error("Firebase no regresó productos en /productos.");
+    }
+
+    refs.loginMsg.textContent = `Catálogo recibido. Guardando ${totalDocs} productos en este celular...`;
+
+    mostrarProgresoCatalogo({
+      titulo:"Guardando catálogo local",
       porcentaje:0,
-      detalle:"Se leerán ventas, transferencias surtidas e inventario inicial de Allende 1."
+      detalle:`0 / ${totalDocs} productos guardados en IndexedDB`
     });
 
     await esperarPintado();
-
-    const productosMap = new Map();
-    const resumenFuentes = [];
-    const rango = 75 / FUENTES_CATALOGO_OPERATIVO.length;
-
-    for(let i=0; i<FUENTES_CATALOGO_OPERATIVO.length; i++){
-      const fuente = FUENTES_CATALOGO_OPERATIVO[i];
-      const resumen = await leerFuenteCatalogoOperativo(fuente, productosMap, i * rango, rango);
-      resumenFuentes.push({ fuente:fuente.nombre, ...resumen });
-    }
-
-    if(!productosMap.size){
-      throw new Error("No se detectaron productos en ventas, SURTIDOTRANS ni inventario1 de Allende 1.");
-    }
-
-    mostrarProgresoCatalogo({
-      titulo:"Limpiando catálogo anterior",
-      porcentaje:78,
-      detalle:"Reemplazando catálogo local por catálogo operativo Allende 1..."
-    });
-
-    await esperarPintado();
-    await idbClear("productos");
-
-    const productos = Array.from(productosMap.values())
-      .map(p => {
-        p.codigosEquivalentes = Array.from(new Set((p.codigosEquivalentes || []).map(limpiarCodigoFlexible).filter(Boolean)));
-        if(p.codigoBarra && !p.codigosEquivalentes.includes(p.codigoBarra)){
-          p.codigosEquivalentes.unshift(p.codigoBarra);
-        }
-        p.texto = textoProducto(p);
-        return p;
-      })
-      .sort((a,b)=> String(a.concepto || "").localeCompare(String(b.concepto || ""), "es"));
 
     let total = 0;
     let ultimoPaint = 0;
 
-    for(const p of productos){
+    for(const d of snap.docs){
+      const data = d.data();
+
+      const codigoBarra = limpiarCodigoFlexible(data.codigoBarra || d.id || "");
+      const codigosEquivalentes = extraerCodigosEquivalentes(data);
+
+      const p = {
+        id: d.id,
+        codigoBarra,
+        codigosEquivalentes,
+        concepto: data.concepto || data.descripcion || "SIN DESCRIPCIÓN",
+        unidadMedidaSat: data.unidadMedidaSat || "",
+        texto: ""
+      };
+
+      p.texto = textoProducto(p);
       await idbPut("productos", p);
       total++;
 
-      const porcentaje = 78 + ((total / productos.length) * 22);
+      const porcentaje = totalDocs ? Math.round((total / totalDocs) * 100) : 100;
 
-      if(total === productos.length || total - ultimoPaint >= 25){
+      if(total === totalDocs || total - ultimoPaint >= 25){
         ultimoPaint = total;
-        refs.loginMsg.textContent = `Guardando catálogo operativo: ${Math.round(porcentaje)}%`;
+        refs.loginMsg.textContent = `Guardando catálogo local: ${porcentaje}%`;
         mostrarProgresoCatalogo({
-          titulo:"Guardando catálogo operativo",
+          titulo:"Guardando catálogo local",
           porcentaje,
-          detalle:`${total} / ${productos.length} productos únicos guardados en IndexedDB`
+          detalle:`${total} / ${totalDocs} productos guardados en IndexedDB`
         });
         await esperarPintado();
       }
@@ -2057,16 +1530,14 @@
 
     await setMeta("catalogoDescargadoEn", nowLocal());
     await setMeta("catalogoTotal", total);
-    await setMeta("catalogoSourceVersion", CATALOG_SOURCE_VERSION);
-    await setMeta("catalogoFuentes", resumenFuentes);
 
     mostrarProgresoCatalogo({
-      titulo:"Catálogo operativo listo",
+      titulo:"Catálogo listo",
       porcentaje:100,
-      detalle:`${total} productos únicos desde ventas, surtido e inventario inicial. Ya puedes iniciar sesión.`
+      detalle:`${total} productos disponibles. Ya puedes iniciar sesión.`
     });
 
-    refs.loginMsg.textContent = `Catálogo operativo listo: ${total} productos reales de Allende 1. Ya puedes iniciar sesión.`;
+    refs.loginMsg.textContent = `Catálogo listo: ${total} productos. Ya puedes iniciar sesión.`;
     return total;
   }
 
@@ -2160,44 +1631,18 @@
     return null;
   }
 
-  async function buscarProductosTexto(term){
-    const limpio = normalizar(term);
-    const words = limpio.split(/\s+/).filter(Boolean);
-    const codigoTerm = limpiarCodigoFlexible(term);
-
-    if(!words.length && !codigoTerm) return [];
+    async function buscarProductosTexto(term){
+    const words = normalizar(term).split(/\s+/).filter(Boolean);
+    if(!words.length) return [];
 
     const productos = await idbGetAll("productos");
 
     return productos
       .map(p => {
-        const texto = p.texto || textoProducto(p);
-        const codigo = limpiarCodigoFlexible(p.codigoBarra || p.id || "");
-        const equivalentes = Array.isArray(p.codigosEquivalentes) ? p.codigosEquivalentes.map(limpiarCodigoFlexible) : [];
-
-        let score = 0;
-        let faltantes = 0;
-
-        for(const w of words){
-          if(texto.includes(w)) score += 10;
-          else faltantes++;
-        }
-
-        if(codigoTerm){
-          if(codigo === codigoTerm) score += 100;
-          else if(equivalentes.includes(codigoTerm)) score += 90;
-          else if(codigo.includes(codigoTerm)) score += 40;
-          else if(equivalentes.some(eq => eq.includes(codigoTerm))) score += 35;
-        }
-
-        if(Array.isArray(p.fuentes) && p.fuentes.includes("INVENTARIO_INICIAL")) score += 3;
-        if(Array.isArray(p.fuentes) && p.fuentes.includes("VENTAS")) score += 2;
-        if(Array.isArray(p.fuentes) && p.fuentes.includes("SURTIDOTRANS")) score += 1;
-
-        return { ...p, score, faltantes };
+        const score = words.reduce((acc,w)=> acc + (p.texto.includes(w) ? 1 : 0), 0);
+        return { ...p, score };
       })
-      .filter(p => p.score > 0 && p.faltantes === 0)
-      .sort((a,b)=> b.score - a.score || String(a.concepto || "").localeCompare(String(b.concepto || ""), "es"))
+      .filter(p => p.score === words.length)
       .slice(0,50);
   }
 
@@ -2740,7 +2185,6 @@
         <div class="result-code">
           ${escapeHtml(p.codigoBarra || p.id)}
           ${Array.isArray(p.codigosEquivalentes) && p.codigosEquivalentes.length ? " | Equiv: " + escapeHtml(p.codigosEquivalentes.join(", ")) : ""}
-          ${Array.isArray(p.fuentes) && p.fuentes.length ? " | Fuente: " + escapeHtml(p.fuentes.join(" + ")) : ""}
         </div>
         <button class="btn2 btn-small mt" data-use-product="${escapeHtml(p.id)}">Usar producto</button>
       </div>

@@ -2858,30 +2858,29 @@ function mostrarDialogoOpcion() {
       ">
 
         <h2 style="
-          margin:0 0 16px;
+          margin:0 0 12px;
           color:#00416A;
-          text-align:center;
         ">
-          Finalizar surtido
+          Responsables del surtido
         </h2>
 
         <div class="field">
-          <label>Quién captura</label>
+          <label>Quién capturó</label>
           <select id="dlgCaptura">
             ${opcionesCaptura}
           </select>
         </div>
 
         <div class="field">
-          <label>Quién surte</label>
+          <label>Quién surtió</label>
           <select id="dlgSurte">
             ${opcionesSurtido}
           </select>
         </div>
 
         <div class="field">
-          <label>Chofer</label>
-          <select id="dlgChofer">
+          <label>Quién lleva</label>
+          <select id="dlgLleva">
             ${opcionesChofer}
           </select>
         </div>
@@ -2889,16 +2888,14 @@ function mostrarDialogoOpcion() {
         <div style="
           display:flex;
           gap:10px;
-          margin-top:18px;
+          margin-top:16px;
         ">
-          <button id="dlgAceptar"
-            class="btn-success">
-            SURTIDO
+          <button id="dlgCancelar" class="btn-secondary">
+            Cancelar
           </button>
 
-          <button id="dlgCancelar"
-            class="btn-secondary">
-            Cancelar
+          <button id="dlgAceptar" class="btn-success">
+            Confirmar surtido
           </button>
         </div>
       </div>
@@ -2912,29 +2909,25 @@ function mostrarDialogoOpcion() {
     };
 
     modal.querySelector('#dlgAceptar').onclick = () => {
+      const data = {
+        quienCaptura:
+          modal.querySelector('#dlgCaptura').value,
 
-      const quienCaptura =
-        modal.querySelector('#dlgCaptura').value;
+        quienSurte:
+          modal.querySelector('#dlgSurte').value,
 
-      const quienSurte =
-        modal.querySelector('#dlgSurte').value;
-
-      const quienLleva =
-        modal.querySelector('#dlgChofer').value;
+        quienLleva:
+          modal.querySelector('#dlgLleva').value
+      };
 
       modal.remove();
 
-      resolve({
-        accion:'SURTIR',
-        quienCaptura,
-        quienSurte,
-        quienLleva
-      });
+      resolve(data);
     };
   });
 }
 
-async function cargarImagenComoDataURL(url) {
+function cargarImagenComoDataURL(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
 
@@ -2946,22 +2939,20 @@ async function cargarImagenComoDataURL(url) {
       canvas.width = img.width;
       canvas.height = img.height;
 
-      canvas.getContext('2d')
-        .drawImage(img,0,0);
+      const ctx = canvas.getContext('2d');
 
-      resolve(
-        canvas.toDataURL('image/png')
-      );
+      ctx.drawImage(img, 0, 0);
+
+      resolve(canvas.toDataURL('image/png'));
     };
 
     img.onerror = reject;
+
     img.src = url;
   });
 }
 
-
 async function generarPDFHojaCheck(payload) {
-
   const { jsPDF } = window.jspdf;
 
   const pdf = new jsPDF(
@@ -2974,37 +2965,31 @@ async function generarPDFHojaCheck(payload) {
     pdf.internal.pageSize.getWidth();
 
   let y = 10;
+
   let logo = null;
 
   try {
     logo = await cargarImagenComoDataURL(LOGO_URL);
   } catch(e){
-    console.warn(e);
+    console.warn('No se pudo cargar logo:', e);
   }
-
-  const partidasBase = ordenarPorConcepto(
-    payload.detalle.filter(x =>
-      x.agregado_en_surtido !== true &&
-      Number(x.cantidad_solicitada || 0) > 0
-    )
-  );
 
   if (logo) {
     pdf.addImage(
       logo,
       'PNG',
       10,
-      6,
-      55,
-      20
+      7,
+      52,
+      18
     );
   }
 
   pdf.setFont('helvetica','bold');
-  pdf.setFontSize(18);
+  pdf.setFontSize(17);
 
   pdf.text(
-    'HOJA DE CHECK DE SURTIDO',
+    'HOJA DE REVISIÓN DE TRANSFERENCIA',
     pageWidth - 10,
     15,
     { align:'right' }
@@ -3014,53 +2999,54 @@ async function generarPDFHojaCheck(payload) {
   pdf.setFont('helvetica','normal');
 
   pdf.text(
-    'Documento operativo para revisar y marcar mercancía. No representa cierre de surtido ni transferencia definitiva.',
+    'PROVSOFT | Documento previo al surtido',
     pageWidth - 10,
     22,
     { align:'right' }
   );
 
+  pdf.setDrawColor(0,65,106);
+  pdf.setLineWidth(.8);
+  pdf.line(10,30,pageWidth-10,30);
+
+  y = 38;
+
   pdf.setFontSize(10);
+  pdf.setFont('helvetica','bold');
+  pdf.text('Datos de solicitud',10,y);
 
-  pdf.text(
-    `Folio solicitud: ${payload.folio_solicitud}`,
-    10,
-    34
-  );
+  y += 6;
+  pdf.setFont('helvetica','normal');
 
-  pdf.text(
-    `Folio surtido provisional: ${payload.folio_surtido}`,
-    10,
-    40
-  );
+  const datos = [
+    ['Folio solicitud', payload.folio_solicitud],
+    ['Sucursal destino', payload.sucursal_destino],
+    ['Almacén origen', payload.almacen_origen],
+    ['Fecha impresión', fechaMx(nowISO())]
+  ];
 
-  pdf.text(
-    `Sucursal destino: ${payload.sucursal_destino}`,
-    10,
-    46
-  );
+  datos.forEach((d, i) => {
+    const x = i % 2 === 0 ? 10 : 110;
+    const yy = y + Math.floor(i / 2) * 6;
 
-  pdf.text(
-    `Almacén origen: ${payload.almacen_origen}`,
-    10,
-    52
-  );
+    pdf.setFont('helvetica','bold');
+    pdf.text(`${d[0]}:`, x, yy);
 
-  pdf.text(
-    `Fecha impresión: ${fechaMx(nowISO())}`,
-    110,
-    34
-  );
+    pdf.setFont('helvetica','normal');
+    pdf.text(String(d[1] || '-'), x + 32, yy);
+  });
 
-  y = 62;
+  y += 22;
 
-  const rows = partidasBase.map((item, idx) => [
+  const detallePdf = Array.isArray(payload.detalle)
+    ? payload.detalle
+    : [];
+
+  const rows = detallePdf.map((item, idx) => [
     idx + 1,
     item.codigo || '',
     item.nombre || '',
     Number(item.cantidad_solicitada || 0),
-    '',
-    '',
     ''
   ]);
 
@@ -3072,9 +3058,7 @@ async function generarPDFHojaCheck(payload) {
       'Código',
       'Concepto',
       'Solicitado',
-      'Check',
-      'Surtido físico',
-      'Observación'
+      'Revisado'
     ]],
 
     body:rows,
@@ -3088,17 +3072,15 @@ async function generarPDFHojaCheck(payload) {
     styles:{
       fontSize:8,
       cellPadding:2,
-      minCellHeight:8
+      overflow:'linebreak'
     },
 
     columnStyles:{
-      0:{cellWidth:9},
+      0:{cellWidth:8},
       1:{cellWidth:28},
-      2:{cellWidth:78},
-      3:{cellWidth:20, halign:'center'},
-      4:{cellWidth:16},
-      5:{cellWidth:23},
-      6:{cellWidth:31}
+      2:{cellWidth:106},
+      3:{cellWidth:24, halign:'center'},
+      4:{cellWidth:28, halign:'center'}
     },
 
     margin:{
@@ -3107,55 +3089,8 @@ async function generarPDFHojaCheck(payload) {
     }
   });
 
-  y = pdf.lastAutoTable.finalY + 12;
-
-  if (y > 230) {
-    pdf.addPage();
-    y = 20;
-  }
-
-  pdf.setFont('helvetica','bold');
-  pdf.setFontSize(10);
-  pdf.text('Control operativo', 10, y);
-
-  y += 14;
-
-  const boxW = 58;
-
-  function firmaBox(x,titulo) {
-
-    pdf.roundedRect(
-      x,
-      y,
-      boxW,
-      26,
-      2,
-      2
-    );
-
-    pdf.line(
-      x + 4,
-      y + 17,
-      x + boxW - 4,
-      y + 17
-    );
-
-    pdf.setFontSize(8);
-
-    pdf.text(
-      titulo,
-      x + boxW/2,
-      y + 22,
-      { align:'center' }
-    );
-  }
-
-  firmaBox(10, 'SURTE');
-  firmaBox(74, 'REVISA');
-  firmaBox(138, 'ENTREGA');
-
   pdf.save(
-    `${payload.folio_surtido}_HOJA_CHECK_${payload.sucursal_destino}.pdf`
+    `HOJA_REVISION_${payload.folio_solicitud || payload.folio_surtido}.pdf`
   );
 }
 
@@ -3319,6 +3254,76 @@ async function generarPDFProfesional(payload) {
     return 'SURTIDO PARCIAL';
   }
 
+  function imprimirTablaSurtidosCompacta(titulo, nota, lista) {
+    tituloSeccion(titulo, nota);
+
+    if (!lista.length) {
+      pdf.setFont('helvetica','italic');
+      pdf.setFontSize(8);
+      pdf.text('Sin partidas surtidas para revisar.', 10, y + 4);
+      y += 12;
+      return;
+    }
+
+    const rows = lista.map((item, idx) => {
+      const cantidadSurtida = Number(item.cantidad_surtida || 0);
+      const precioPublico = Number(item.precioPublico || 0);
+      const totalLinea = cantidadSurtida * precioPublico;
+
+      return [
+        idx + 1,
+        item.codigo || '',
+        item.nombre || '',
+        cantidadSurtida,
+        money(precioPublico),
+        money(totalLinea)
+      ];
+    });
+
+    pdf.autoTable({
+      startY:y,
+
+      head:[[
+        '#',
+        'Código barras',
+        'Concepto',
+        'Cantidad surtida',
+        'Precio público',
+        'Total'
+      ]],
+
+      body:rows,
+
+      theme:'grid',
+
+      headStyles:{
+        fillColor:[0,65,106]
+      },
+
+      styles:{
+        fontSize:7.6,
+        cellPadding:1.8,
+        overflow:'linebreak'
+      },
+
+      columnStyles:{
+        0:{cellWidth:8},
+        1:{cellWidth:28},
+        2:{cellWidth:83},
+        3:{cellWidth:25, halign:'center'},
+        4:{cellWidth:26, halign:'right'},
+        5:{cellWidth:27, halign:'right'}
+      },
+
+      margin:{
+        left:10,
+        right:10
+      }
+    });
+
+    y = pdf.lastAutoTable.finalY + 9;
+  }
+
   function imprimirTablaDetalle(titulo, nota, lista) {
     tituloSeccion(titulo, nota);
 
@@ -3462,9 +3467,9 @@ async function generarPDFProfesional(payload) {
     y = pdf.lastAutoTable.finalY + 9;
   }
 
-  imprimirTablaDetalle(
+  imprimirTablaSurtidosCompacta(
     '1. ARTÍCULOS SURTIDOS PARA REVISIÓN',
-    'Esta es la sección operativa principal: todo lo que sí se entrega, incluyendo normales, parciales, modificados y agregados.',
+    'Sección operativa principal para revisión física: código de barras, concepto, cantidad surtida, precio público y total.',
     surtidos
   );
 
@@ -3605,104 +3610,90 @@ function bindEvents() {
     showView('viewSucursal');
   };
 
-  document.querySelectorAll('.sucursal-card-btn')
-    .forEach(btn => {
-      btn.onclick = async () => {
-        const key = btn.dataset.sucursal;
+  document.querySelectorAll('.sucursal-card-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const clave = btn.dataset.sucursal;
 
-        sucursalActual = SUCURSALES[key];
+      sucursalActual = SUCURSALES[clave];
 
-        if (!sucursalActual) {
-          alert('Sucursal no configurada.');
-          return;
-        }
+      if (!sucursalActual) {
+        alert('Sucursal inválida.');
+        return;
+      }
 
-        showView('viewLoading');
+      $('subSucursal').textContent =
+        `PROVSOFT | ${sucursalActual.nombre}`;
 
-        setLoading(
-          `Cargando ${sucursalActual.nombre}...`
-        );
+      showView('viewApp');
 
-        if (!sistemaCargado) {
-          await cargarOperadores();
-          await cargarCatalogo();
-          sistemaCargado = true;
-        }
+      await limpiarPantalla(false);
 
-        $('subSucursal').textContent =
-          `PROVSOFT | ${sucursalActual.nombre}`;
-
-        await limpiarPantalla(false);
-
-        showView('viewApp');
-
-        abrirModalInicioOperacion();
-      };
-    });
+      abrirModalInicioOperacion();
+    };
+  });
 
   $('btnCargarSolicitud').onclick = cargarSolicitud;
 
-  $('folioSolicitud').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      cargarSolicitud();
-    }
-  });
-
   $('btnNuevaOperacion').onclick = async () => {
     await limpiarPantalla();
+
     cerrarModalInicioOperacion();
   };
+
+  $('folioSolicitud').addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await cargarSolicitud();
+    }
+  });
 
   $('btnCerrarModalSolicitudes').onclick = () => {
     $('modalSolicitudes').style.display = 'none';
   };
 
-  $('buscarSolicitudModal').addEventListener('input', e => {
-    const q = e.target.value.trim().toLowerCase();
+  $('buscarSolicitudModal').addEventListener('input', () => {
+    const q = $('buscarSolicitudModal').value.trim().toLowerCase();
 
-    const lista = solicitudesDisponibles.filter(x => {
-      return String(x.folio || '').toLowerCase().includes(q);
-    });
+    const filtradas = solicitudesDisponibles.filter(item =>
+      String(item.folio || '').toLowerCase().includes(q) ||
+      String(item.id || '').toLowerCase().includes(q)
+    );
 
-    renderListaSolicitudesModal(lista);
+    renderListaSolicitudesModal(filtradas);
   });
 
-  $('busquedaProducto').addEventListener('input', e => {
+  $('busquedaProducto').addEventListener('input', (e) => {
     clearTimeout(timerBusqueda);
 
     timerBusqueda = setTimeout(() => {
-      productoSeleccionado = null;
       const lista = buscarEnCatalogo(e.target.value);
+
       renderResultadosBusqueda(lista);
-    }, 150);
+    }, 120);
   });
 
-  $('busquedaProducto').addEventListener('keydown', e => {
+  $('busquedaProducto').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
+      const lista = buscarEnCatalogo(e.target.value);
 
-      const lista = buscarEnCatalogo(
-        $('busquedaProducto').value
-      );
-
-      if (lista.length) {
+      if (lista.length === 1) {
         productoSeleccionado = lista[0];
 
         $('busquedaProducto').value =
-          productoSeleccionado.concepto +
-          ' | ' +
-          productoSeleccionado.codigoBarra;
+          productoSeleccionado.concepto + ' | ' + productoSeleccionado.codigoBarra;
 
         $('results').style.display = 'none';
 
         $('cantidadAgregar').focus();
         $('cantidadAgregar').select();
+
+      } else {
+        renderResultadosBusqueda(lista);
       }
     }
   });
 
-  $('cantidadAgregar').addEventListener('keydown', e => {
+  $('cantidadAgregar').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       agregarProductoExtra();
@@ -3716,76 +3707,65 @@ function bindEvents() {
   $('btnGuardarSurtido').onclick = guardarSurtido;
 
   $('btnImprimirSolicitud').onclick = imprimirSolicitudActual;
-
-  document.addEventListener('click', e => {
-    const box = $('results');
-
-    if (
-      box &&
-      e.target !== $('busquedaProducto') &&
-      !box.contains(e.target)
-    ){
-      box.style.display='none';
-    }
-  });
 }
 
-function init() {
+async function inicializarSistema() {
+  if (sistemaCargado) return;
 
-  bindEvents();
+  sistemaCargado = true;
+
+  showView('viewLoading');
+
+  setLoading('Cargando catálogo de productos...');
+
+  await cargarCatalogo();
+
+  setLoading('Cargando responsables...');
+
+  await cargarOperadores();
+
+  setLoading('Preparando pantalla...');
+
   instalarTabAtrapadoCarrito();
 
   renderDetalle();
   renderResumen();
-
-  onAuthStateChanged(auth, async(user)=>{
-
-    if(user){
-
-      showView('viewLoading');
-
-      setLoading(
-        'Preparando sistema...'
-      );
-
-      $('usuarioActivo').textContent =
-        `Sesión activa: ${user.email}`;
-
-      setTimeout(()=>{
-        showView('viewSucursal');
-      },600);
-
-    } else {
-
-      await liberarBloqueoSolicitud();
-
-      sucursalActual = null;
-      solicitudOriginal = null;
-      detalle = [];
-
-      cerrarModalInicioOperacion();
-
-      showView('viewLogin');
-    }
-  });
 }
 
-init();
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    sucursalActual = null;
+    solicitudOriginal = null;
+    detalle = [];
+    bloqueoActivoSolicitudId = null;
+
+    $('loginPassword').value = '';
+
+    showView('viewLogin');
+
+    return;
+  }
+
+  $('usuarioActivo').textContent =
+    `Sesión activa: ${user.email || 'usuario'}`;
+
+  try {
+    await inicializarSistema();
+
+    showView('viewSucursal');
+
+  } catch (error) {
+    console.error(error);
+
+    showView('viewLogin');
+
+    $('loginEstado').textContent =
+      'Error cargando sistema: ' + error.message;
+  }
+});
+
+bindEvents();
 
 </script>
-<script>
-if ("serviceWorker" in navigator) {
-
-  window.addEventListener("load", () => {
-
-    navigator.serviceWorker.register("./service-worker.js")
-      .then(() => console.log("SW OK"))
-      .catch(err => console.log("SW ERROR", err));
-
-  });
-
-}
-</script>
-
 </body>
 </html>

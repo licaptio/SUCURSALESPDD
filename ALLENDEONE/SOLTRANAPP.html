@@ -1181,9 +1181,15 @@ window.seleccionarProducto = function(id){
 
   `;
 
-  document.getElementById("inpCantidad").value = 1;
+  const inpCantidad = document.getElementById("inpCantidad");
+  inpCantidad.value = 1;
 
   abrirModal("modalCantidad");
+
+  setTimeout(()=>{
+    inpCantidad.focus();
+    inpCantidad.select();
+  },120);
 
 }
 

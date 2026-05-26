@@ -1134,6 +1134,7 @@ tr.diff-row td{background:#fff7ed;}
                   <th>Código</th>
                   <th>Producto</th>
                   <th>Solicitado</th>
+                  <th>Comentario</th>
                   <th>Surtido</th>
                   <th>Diferencia</th>
                   <th>Extra</th>
@@ -1787,15 +1788,31 @@ function normalizarProductoCatalogo(data) {
 }
 
 function crearLineaDesdeSolicitud(item) {
-  const solicitado = Number(item.cantidad_solicitada ?? item.cantidad ?? 0);
+
+  const solicitado =
+    Number(item.cantidad_solicitada ?? item.cantidad ?? 0);
+
   const surtido = solicitado;
-  const codigoReal = String(item.codigo || item.codigoBarra || '').trim();
-  const codigoCapturado = String(item.codigoCapturado || item.codigo_capturado || codigoReal).trim();
-  const equivalentes = normalizarEquivalentes(item.codigosEquivalentes);
+
+  const codigoReal =
+    String(item.codigo || item.codigoBarra || '').trim();
+
+  const codigoCapturado =
+    String(
+      item.codigoCapturado ||
+      item.codigo_capturado ||
+      codigoReal
+    ).trim();
+
+  const equivalentes =
+    normalizarEquivalentes(item.codigosEquivalentes);
 
   return {
+
     codigo: codigoReal,
+
     codigoCapturado,
+
     codigoFueEquivalente:
       item.codigoFueEquivalente === true ||
       item.codigo_fue_equivalente === true ||
@@ -1803,20 +1820,40 @@ function crearLineaDesdeSolicitud(item) {
         codigoCapturado &&
         codigoReal &&
         codigoCapturado !== codigoReal &&
-        equivalentes.map(x => String(x).trim()).includes(codigoCapturado)
+        equivalentes.map(x => String(x).trim())
+        .includes(codigoCapturado)
       ),
-    nombre: String(item.nombre || item.concepto || '').trim(),
-    cantidad_solicitada: solicitado,
-    cantidad_surtida: surtido,
-    diferencia: surtido - solicitado,
-    agregado_en_surtido: false,
-    precioPublico: Number(item.precioPublico ?? item.precio ?? 0),
-    unidad: String(item.unidad || ''),
-    origen_solicitud: String(item.origen || 'SOLICITUD'),
-    codigosEquivalentes: equivalentes
-  };
-}
 
+    nombre:
+      String(item.nombre || item.concepto || '').trim(),
+
+    comentario:
+      String(item.comentario || '').trim(),
+
+    cantidad_solicitada: solicitado,
+
+    cantidad_surtida: surtido,
+
+    diferencia: surtido - solicitado,
+
+    agregado_en_surtido: false,
+
+    precioPublico:
+      Number(item.precioPublico ?? item.precio ?? 0),
+
+    unidad:
+      String(item.unidad || ''),
+
+    origen_solicitud:
+      String(item.origen || 'SOLICITUD'),
+
+    codigosEquivalentes:
+      equivalentes
+
+  };
+
+}
+  
 function recalcularLinea(linea) {
   const solicitado = Number(linea.cantidad_solicitada || 0);
   const surtido = Number(linea.cantidad_surtida || 0);
@@ -1916,12 +1953,42 @@ function renderDetalle() {
           <div class="code">${escapeHtml(linea.codigo)}</div>
         </td>
 
-        <td>
-          <div><strong>${escapeHtml(linea.nombre)}</strong></div>
-          <div class="small muted">${escapeHtml(linea.unidad || '')}</div>
-        </td>
+<td>
 
-        <td>${Number(linea.cantidad_solicitada || 0)}</td>
+  <div>
+    <strong>${escapeHtml(linea.nombre)}</strong>
+  </div>
+
+  <div class="small muted">
+    ${escapeHtml(linea.unidad || '')}
+  </div>
+
+</td>
+
+<td>
+
+  ${
+    linea.comentario
+      ? `
+        <div style="
+          font-size:12px;
+          color:#92400e;
+          background:#fff7ed;
+          border:1px solid #fed7aa;
+          border-radius:10px;
+          padding:6px 8px;
+          max-width:220px;
+          white-space:normal;
+        ">
+          📝 ${escapeHtml(linea.comentario)}
+        </div>
+      `
+      : '-'
+  }
+
+</td>
+
+<td>${Number(linea.cantidad_solicitada || 0)}</td>
 
         <td>
           <input
@@ -2673,11 +2740,14 @@ function construirPayload(responsables = null, estatus = 'PENDIENTE') {
       precioPublico:
         Number(x.precioPublico || 0),
 
-      unidad:
-        x.unidad || '',
+unidad:
+  x.unidad || '',
 
-      codigosEquivalentes:
-        normalizarEquivalentes(x.codigosEquivalentes)
+comentario:
+  x.comentario || '',
+
+codigosEquivalentes:
+  normalizarEquivalentes(x.codigosEquivalentes)
     }))
   };
 }

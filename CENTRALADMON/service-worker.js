@@ -6,8 +6,7 @@ const APP_ASSETS = [
   "./manifest.json",
   "./pwa-register.js",
   "./CATALOGOCENTRA.html",
-  "./CONTESTAINV.html",
-  "./SOLTRANCEN.html",
+  "./solicitudmerca.html",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./logo.jfif"

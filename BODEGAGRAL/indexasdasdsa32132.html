@@ -1968,6 +1968,11 @@ function renderDetalle() {
 <td>
 
   ${
+<td>${Number(linea.cantidad_solicitada || 0)}</td>
+
+<td>
+
+  ${
     linea.comentario
       ? `
         <div style="
@@ -1988,9 +1993,7 @@ function renderDetalle() {
 
 </td>
 
-<td>${Number(linea.cantidad_solicitada || 0)}</td>
-
-        <td>
+       <td>
           <input
             type="number"
             min="0"

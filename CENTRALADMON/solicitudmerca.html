@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+<head>	
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<title>PDD Móvil Exacta CENTRAL - PROVSOFT</title>
+<title>Transferencia Solicitud - PROVSOFT</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -36,10 +36,6 @@ html,body{
   background:var(--gris);
   color:var(--texto);
 }
-
-/* =========================
-LOADING
-========================= */
 
 .loading{
   position:fixed;
@@ -99,12 +95,7 @@ LOADING
 #loadingText{
   font-size:13px;
   margin-top:8px;
-  min-height:34px;
 }
-
-/* =========================
-HEADER
-========================= */
 
 .titulo-app{
   background:var(--azul-oscuro);
@@ -113,7 +104,6 @@ HEADER
   padding:6px;
   font-size:13px;
   font-weight:900;
-  letter-spacing:.5px;
 }
 
 .top-header{
@@ -126,44 +116,8 @@ HEADER
   gap:10px;
 }
 
-.logo-area{
-  display:flex;
-  align-items:center;
-  max-width:45%;
-}
-
 .logo-area img{
   max-height:42px;
-  width:auto;
-  display:block;
-}
-
-.logo-placeholder{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  border:2px solid var(--rojo);
-  border-radius:20px;
-  padding:2px 8px;
-}
-
-.logo-placeholder .main-text{
-  color:var(--rojo);
-  font-size:12px;
-  font-weight:900;
-  text-transform:uppercase;
-  letter-spacing:1px;
-}
-
-.logo-placeholder .sub-text{
-  color:var(--rojo);
-  font-size:5px;
-  font-weight:700;
-  text-transform:uppercase;
-  border-top:1px solid var(--rojo);
-  width:100%;
-  text-align:center;
 }
 
 .sucursal-header{
@@ -194,10 +148,6 @@ HEADER
   font-weight:900;
 }
 
-/* =========================
-APP
-========================= */
-
 .app-container{
   height:calc(100vh - 88px);
   display:flex;
@@ -216,7 +166,6 @@ APP
   justify-content:space-between;
   align-items:center;
   gap:8px;
-  flex-shrink:0;
 }
 
 .resumen-left{
@@ -234,7 +183,6 @@ APP
 .stat-label{
   font-size:8px;
   font-weight:900;
-  color:#475569;
 }
 
 .stat-value{
@@ -265,7 +213,6 @@ APP
   border-radius:20px;
   border:1px solid var(--border);
   padding:15px;
-  flex-shrink:0;
 }
 
 .manual-title{
@@ -339,10 +286,6 @@ APP
   font-size:10px;
   font-weight:900;
 }
-
-/* =========================
-MODAL
-========================= */
 
 .modal-backdrop{
   position:fixed;
@@ -477,13 +420,12 @@ MODAL
   cursor:pointer;
 }
 
-.finalizar-btn:disabled,
-.btn-modal:disabled,
-.btn-agregar:disabled{
-  opacity:.6;
-  cursor:not-allowed;
+.comentario-preview{
+  margin-top:5px;
+  color:#475569;
+  font-size:11px;
+  line-height:1.3;
 }
-
 </style>
 </head>
 
@@ -492,10 +434,7 @@ MODAL
 <div class="loading" id="loading">
   <div class="loading-card">
     <div class="loading-title">PROVSOFT</div>
-
-    <div class="loading-sub">
-      Preparando solicitud CENTRAL...
-    </div>
+    <div class="loading-sub">Preparando solicitud...</div>
 
     <div id="loadingPct">0%</div>
 
@@ -503,9 +442,7 @@ MODAL
       <div id="loadingBar" class="progress-bar"></div>
     </div>
 
-    <div id="loadingText">
-      Iniciando...
-    </div>
+    <div id="loadingText">Iniciando...</div>
   </div>
 </div>
 
@@ -514,26 +451,18 @@ MODAL
 </div>
 
 <header class="top-header">
-
   <div class="logo-area">
-    <img id="mainLogo" src="logo-proveedora.png" alt="La Proveedora"
-      onerror="this.style.display='none'; document.getElementById('backupLogo').style.display='flex';">
-
-    <div id="backupLogo" class="logo-placeholder" style="display:none;">
-      <span class="main-text">PROVEEDORA</span>
-      <span class="sub-text">DULCES - DESECHABLES</span>
-    </div>
+    <img src="logo.jfif">
   </div>
 
   <div class="sucursal-header">
-    CENTRAL
+    SUCURSAL CENTRAL 
   </div>
 
   <div class="folio-header">
     <small>FOLIO</small>
     <div id="folioText">...</div>
   </div>
-
 </header>
 
 <div class="app-container">
@@ -541,7 +470,6 @@ MODAL
   <div class="resumen-barra">
 
     <div class="resumen-left">
-
       <div class="stat-item">
         <div class="stat-label">ITEMS</div>
         <div class="stat-value" id="countPartidas">0</div>
@@ -551,7 +479,6 @@ MODAL
         <div class="stat-label">PZS</div>
         <div class="stat-value" id="countPiezas">0</div>
       </div>
-
     </div>
 
     <div id="totalEfectivo" class="total-box">
@@ -567,19 +494,17 @@ MODAL
   <div class="main-work-area">
 
     <div class="captura-card">
-
       <div class="manual-title">
         Captura manual guiada
       </div>
 
       <div class="manual-sub">
-        CENTRAL agrega artículos por código o nombre usando modales controlados.
+        El usuario agrega artículos por código o nombre usando modales controlados.
       </div>
 
       <button class="btn-agregar" id="btnAbrirAgregar">
         ➕ AGREGAR ARTÍCULO
       </button>
-
     </div>
 
     <div class="lista-container">
@@ -595,7 +520,6 @@ MODAL MENU
 ========================= -->
 
 <div class="modal-backdrop" id="modalMenu">
-
   <div class="modal-card">
 
     <div class="modal-header">
@@ -609,7 +533,6 @@ MODAL MENU
     </div>
 
     <div class="modal-body">
-
       <button class="btn-agregar" onclick="abrirCodigo()">
         🔢 BUSCAR POR CÓDIGO
       </button>
@@ -617,11 +540,9 @@ MODAL MENU
       <button class="btn-agregar" style="margin-top:10px;" onclick="abrirNombre()">
         🔍 BUSCAR POR NOMBRE
       </button>
-
     </div>
 
   </div>
-
 </div>
 
 <!-- =========================
@@ -629,11 +550,9 @@ MODAL CODIGO
 ========================= -->
 
 <div class="modal-backdrop" id="modalCodigo">
-
   <div class="modal-card">
 
     <div class="modal-header">
-
       <div class="modal-title">
         Buscar por código
       </div>
@@ -641,27 +560,21 @@ MODAL CODIGO
       <button class="modal-close" onclick="cerrarModal('modalCodigo')">
         ×
       </button>
-
     </div>
 
     <div class="modal-body">
-
       <div class="buscar-grid">
-
-        <input id="inpCodigo" class="input" placeholder="Código..." autocomplete="off">
+        <input id="inpCodigo" class="input" placeholder="Código...">
 
         <button class="btn-modal btn-primary" onclick="buscarCodigo()">
           Buscar
         </button>
-
       </div>
 
       <div id="resCodigo" class="resultados"></div>
-
     </div>
 
   </div>
-
 </div>
 
 <!-- =========================
@@ -669,11 +582,9 @@ MODAL NOMBRE
 ========================= -->
 
 <div class="modal-backdrop" id="modalNombre">
-
   <div class="modal-card">
 
     <div class="modal-header">
-
       <div class="modal-title">
         Buscar por nombre
       </div>
@@ -681,19 +592,15 @@ MODAL NOMBRE
       <button class="modal-close" onclick="cerrarModal('modalNombre')">
         ×
       </button>
-
     </div>
 
     <div class="modal-body">
-
-      <input id="inpNombre" class="input" placeholder="Nombre..." autocomplete="off">
+      <input id="inpNombre" class="input" placeholder="Nombre...">
 
       <div id="resNombre" class="resultados"></div>
-
     </div>
 
   </div>
-
 </div>
 
 <!-- =========================
@@ -701,11 +608,9 @@ MODAL CANTIDAD
 ========================= -->
 
 <div class="modal-backdrop" id="modalCantidad">
-
   <div class="modal-card">
 
     <div class="modal-header">
-
       <div class="modal-title">
         Cantidad
       </div>
@@ -713,15 +618,12 @@ MODAL CANTIDAD
       <button class="modal-close" onclick="cerrarModal('modalCantidad')">
         ×
       </button>
-
     </div>
 
     <div class="modal-body">
-
       <div id="prodCantidadNombre"></div>
 
       <div class="cantidad-wrap">
-
         <input
           id="inpCantidad"
           class="input"
@@ -729,27 +631,69 @@ MODAL CANTIDAD
           value="1"
           min="0.001"
           step="0.001"
-          inputmode="decimal"
         >
-
       </div>
-
     </div>
 
     <div class="modal-footer">
-
       <button class="btn-modal btn-secondary" onclick="cerrarModal('modalCantidad')">
         Cancelar
       </button>
 
       <button class="btn-modal btn-primary" onclick="confirmarCantidad()">
-        Agregar
+        Siguiente
       </button>
-
     </div>
 
   </div>
+</div>
 
+<!-- =========================
+MODAL COMENTARIO
+========================= -->
+
+<div class="modal-backdrop" id="modalComentario">
+  <div class="modal-card">
+
+    <div class="modal-header">
+      <div class="modal-title">
+        Comentario opcional
+      </div>
+
+      <button class="modal-close" onclick="cerrarModal('modalComentario')">
+        ×
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <div id="prodComentarioNombre" style="margin-bottom:12px;"></div>
+
+      <textarea
+        id="inpComentario"
+        class="input"
+        rows="4"
+        placeholder="Colocar comentario o Enter para avanzar"
+        style="resize:none;"
+      ></textarea>
+
+      <div style="font-size:11px; color:#64748b; margin-top:8px;">
+        Si no hay comentario, presiona Enter para agregar el artículo.
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal btn-secondary" onclick="cerrarModal('modalComentario')">
+        Cancelar
+      </button>
+
+      <button class="btn-modal btn-primary" onclick="confirmarComentario()">
+        Agregar
+      </button>
+    </div>
+
+  </div>
 </div>
 
 <script type="module">
@@ -771,29 +715,20 @@ import {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* =========================
-CONFIG CENTRAL
-========================= */
-
-const SUCURSAL_LABEL = "SUCURSAL CENTRAL";
-const TIENDA_FIREBASE = "CENTRAL";
+const SUCURSAL = "CENTRAL";
 const RUTA_TRANSFERENCIAS = "SOLTRAN";
-const COLECCION_PRODUCTOS = "productos";
-
-const DB_NAME = "PROVSOFT_PDD_MOVIL_CENTRAL";
-const DB_VERSION = 3;
+  
+const DB_NAME = "PROVSOFT_PDD_MOVIL";
+const DB_VERSION = 2;
 const STORE_PRODUCTOS = "catalogo_productos_completo";
 const STORE_META = "metadata";
-const STORE_BORRADOR = "borrador_transferencia";
 
 const CLAVE_ULTIMA_DESCARGA = "ultima_descarga_catalogo";
-const CLAVE_BORRADOR = "borrador_actual";
-const HORAS_ENTRE_DESCARGAS = 48;
 
 let catalogo = [];
 let carrito = [];
 let productoTemporal = null;
-
+let cantidadTemporal = 1;
 /* =========================
 LOADING
 ========================= */
@@ -802,13 +737,11 @@ function setLoading(txt,pct){
 
   document.getElementById("loadingText").innerText = txt;
 
-  const p = Math.max(0, Math.min(100, Number(pct || 0)));
-
   document.getElementById("loadingPct").innerText =
-    `${p}%`;
+    `${pct}%`;
 
   document.getElementById("loadingBar").style.width =
-    `${p}%`;
+    `${pct}%`;
 
 }
 
@@ -817,7 +750,6 @@ function ocultarLoading(){
   const el = document.getElementById("loading");
 
   el.style.opacity = "0";
-  el.style.transition = ".35s";
 
   setTimeout(()=>{
     el.style.display = "none";
@@ -847,89 +779,10 @@ function abrirDB(){
         dbi.createObjectStore(STORE_META,{ keyPath:"key" });
       }
 
-      if(!dbi.objectStoreNames.contains(STORE_BORRADOR)){
-        dbi.createObjectStore(STORE_BORRADOR,{ keyPath:"key" });
-      }
-
     };
 
     req.onsuccess = ()=> resolve(req.result);
     req.onerror = ()=> reject(req.error);
-
-  });
-
-}
-
-async function putStore(storeName,value){
-
-  const dbi = await abrirDB();
-
-  return new Promise((resolve,reject)=>{
-
-    const tx = dbi.transaction(storeName,"readwrite");
-    const store = tx.objectStore(storeName);
-
-    store.put(value);
-
-    tx.oncomplete = ()=>{
-      dbi.close();
-      resolve();
-    };
-
-    tx.onerror = ()=>{
-      dbi.close();
-      reject(tx.error);
-    };
-
-  });
-
-}
-
-async function getStore(storeName,key){
-
-  const dbi = await abrirDB();
-
-  return new Promise((resolve,reject)=>{
-
-    const tx = dbi.transaction(storeName,"readonly");
-    const store = tx.objectStore(storeName);
-
-    const req = store.get(key);
-
-    req.onsuccess = ()=>{
-      dbi.close();
-      resolve(req.result || null);
-    };
-
-    req.onerror = ()=>{
-      dbi.close();
-      reject(req.error);
-    };
-
-  });
-
-}
-
-async function deleteStore(storeName,key){
-
-  const dbi = await abrirDB();
-
-  return new Promise((resolve,reject)=>{
-
-    const tx = dbi.transaction(storeName,"readwrite");
-    const store = tx.objectStore(storeName);
-
-    store.delete(key);
-
-    tx.oncomplete = ()=>{
-      dbi.close();
-      resolve();
-    };
-
-    tx.onerror = ()=>{
-      dbi.close();
-      reject(tx.error);
-    };
 
   });
 
@@ -989,18 +842,52 @@ async function leerCatalogo(){
 
 async function guardarMeta(key,value){
 
-  await putStore(STORE_META,{
-    key,
-    value
+  const dbi = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbi.transaction(STORE_META,"readwrite");
+
+    tx.objectStore(STORE_META).put({
+      key,
+      value
+    });
+
+    tx.oncomplete = ()=>{
+      dbi.close();
+      resolve();
+    };
+
+    tx.onerror = ()=>{
+      dbi.close();
+      reject(tx.error);
+    };
+
   });
 
 }
 
 async function leerMeta(key){
 
-  const r = await getStore(STORE_META,key);
+  const dbi = await abrirDB();
 
-  return r ? r.value : null;
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbi.transaction(STORE_META,"readonly");
+
+    const req = tx.objectStore(STORE_META).get(key);
+
+    req.onsuccess = ()=>{
+      dbi.close();
+      resolve(req.result?.value || null);
+    };
+
+    req.onerror = ()=>{
+      dbi.close();
+      reject(req.error);
+    };
+
+  });
 
 }
 
@@ -1032,121 +919,34 @@ function escapeHtml(str){
 
 }
 
-function formatearCantidad(cant){
-
-  const n = Number(cant || 0);
-
-  if(Number.isInteger(n)){
-    return String(n);
-  }
-
-  return n.toLocaleString("es-MX",{
-    minimumFractionDigits:0,
-    maximumFractionDigits:3
-  });
-
-}
-
-function formatearDinero(n){
-
-  return Number(n || 0).toLocaleString("es-MX",{
-    style:"currency",
-    currency:"MXN",
-    minimumFractionDigits:2,
-    maximumFractionDigits:2
-  });
-
-}
-
 function nuevoFolio(){
 
   const d = new Date();
 
-  const fol = `SOL-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`;
+  const fol =
+    `SOL-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`;
 
   document.getElementById("folioText").innerText = fol;
 
 }
 
 function abrirModal(id){
-
   document.getElementById(id).style.display = "flex";
-
 }
 
 window.cerrarModal = function(id){
-
   document.getElementById(id).style.display = "none";
-
-}
-
-function limpiarBusquedas(){
-
-  document.getElementById("inpCodigo").value = "";
-  document.getElementById("resCodigo").innerHTML = "";
-
-  document.getElementById("inpNombre").value = "";
-  document.getElementById("resNombre").innerHTML = "";
-
 }
 
 /* =========================
 CATALOGO
 ========================= */
 
-function prepararProducto(data,id){
-
-  const codigo = String(data.codigoBarra || "").trim();
-  const concepto = String(data.concepto || "").trim();
-  const marca = String(data.marca || "").trim();
-  const departamento = String(data.departamento || "").trim();
-
-  const equivalentes = Array.isArray(data.codigosEquivalentes)
-    ? data.codigosEquivalentes.map(x=>String(x || "").trim()).filter(Boolean)
-    : [];
-
-  const texto = [
-    codigo,
-    concepto,
-    marca,
-    departamento,
-    ...equivalentes
-  ].join(" ");
-
-  return {
-    id,
-    ...data,
-    codigoBarra:codigo,
-    concepto,
-    marca,
-    departamento,
-    codigosEquivalentes:equivalentes,
-    activo:data.activo === true,
-    precioPublico:Number(data.precioPublico || 0),
-    _search:normalizar(texto)
-  };
-
-}
-
-function debeActualizarCatalogo(ultima){
-
-  if(!ultima){
-    return true;
-  }
-
-  const horas =
-    (Date.now() - new Date(ultima).getTime())
-    / 1000 / 60 / 60;
-
-  return horas >= HORAS_ENTRE_DESCARGAS;
-
-}
-
 async function cargarCatalogo(){
 
   try{
 
-    setLoading("Leyendo catálogo local CENTRAL...",20);
+    setLoading("Leyendo catálogo local...",20);
 
     const local = await leerCatalogo();
 
@@ -1154,29 +954,56 @@ async function cargarCatalogo(){
 
       catalogo = local;
 
-      setLoading(`Catálogo local: ${catalogo.length}`,45);
+      setLoading(`Catálogo local: ${catalogo.length}`,50);
 
     }
 
     const ultima = await leerMeta(CLAVE_ULTIMA_DESCARGA);
 
-    if(!debeActualizarCatalogo(ultima) && catalogo.length){
+    let actualizar = true;
 
-      setLoading("Usando catálogo local vigente.",100);
+    if(ultima){
+
+      const horas =
+        (Date.now() - new Date(ultima).getTime())
+        /1000/60/60;
+
+      actualizar = horas >= 48;
+
+    }
+
+    if(!actualizar && catalogo.length){
+
+      setLoading("Usando catálogo local.",100);
 
       return;
 
     }
 
-    setLoading("Descargando catálogo desde Firebase...",65);
+    setLoading("Descargando catálogo...",70);
 
     const snap = await getDocs(
-      collection(db,COLECCION_PRODUCTOS)
+      collection(db,"productos")
     );
 
-    catalogo = snap.docs.map(d=>prepararProducto(d.data(),d.id));
+    catalogo = snap.docs.map(d=>{
 
-    setLoading(`Guardando catálogo local: ${catalogo.length}`,85);
+      const data = d.data();
+
+      const texto = [
+        data.codigoBarra || "",
+        data.concepto || "",
+        data.marca || "",
+        data.departamento || ""
+      ].join(" ");
+
+      return {
+        id:d.id,
+        ...data,
+        _search:normalizar(texto)
+      };
+
+    });
 
     await guardarCatalogo(catalogo);
 
@@ -1189,76 +1016,11 @@ async function cargarCatalogo(){
 
   }catch(e){
 
-    console.error("Error cargando catálogo:",e);
+    console.error(e);
 
-    const local = await leerCatalogo();
-
-    if(local.length){
-
-      catalogo = local;
-
-      setLoading(`Modo offline: ${catalogo.length} productos locales`,100);
-
-      alert("⚠️ Modo offline: usando catálogo guardado.");
-
-    }else{
-
-      setLoading("Error: sin catálogo local y sin conexión.",0);
-
-      alert("❌ Sin conexión y sin catálogo local.");
-
-    }
+    alert("Error cargando catálogo.");
 
   }
-
-}
-
-/* =========================
-BORRADOR LOCAL
-========================= */
-
-async function guardarBorrador(){
-
-  await putStore(STORE_BORRADOR,{
-    key:CLAVE_BORRADOR,
-    carrito,
-    folio:document.getElementById("folioText").innerText || "",
-    guardado_en:new Date().toISOString()
-  });
-
-}
-
-async function recuperarBorrador(){
-
-  const r = await getStore(STORE_BORRADOR,CLAVE_BORRADOR);
-
-  if(!r || !Array.isArray(r.carrito) || !r.carrito.length){
-    return;
-  }
-
-  const restaurar = confirm(
-    `Se encontró una solicitud CENTRAL sin finalizar.\n\nPartidas: ${r.carrito.length}\nGuardado: ${new Date(r.guardado_en).toLocaleString("es-MX")}\n\n¿Deseas restaurarla?`
-  );
-
-  if(!restaurar){
-
-    await deleteStore(STORE_BORRADOR,CLAVE_BORRADOR);
-
-    return;
-
-  }
-
-  carrito = r.carrito || [];
-
-  if(r.folio){
-    document.getElementById("folioText").innerText = r.folio;
-  }
-
-}
-
-async function limpiarBorrador(){
-
-  await deleteStore(STORE_BORRADOR,CLAVE_BORRADOR);
 
 }
 
@@ -1272,9 +1034,7 @@ window.abrirCodigo = function(){
   abrirModal("modalCodigo");
 
   setTimeout(()=>{
-    const inp = document.getElementById("inpCodigo");
-    inp.focus();
-    inp.select();
+    document.getElementById("inpCodigo").focus();
   },150);
 
 }
@@ -1285,9 +1045,7 @@ window.abrirNombre = function(){
   abrirModal("modalNombre");
 
   setTimeout(()=>{
-    const inp = document.getElementById("inpNombre");
-    inp.focus();
-    inp.select();
+    document.getElementById("inpNombre").focus();
   },150);
 
 }
@@ -1301,63 +1059,22 @@ window.buscarCodigo = function(){
   const div = document.getElementById("resCodigo");
 
   if(txt.length < 1){
-
     div.innerHTML = "";
     return;
-
   }
 
-  const encontrados = catalogo
-    .map(p=>{
+  const encontrados = catalogo.filter(p=>{
 
-      let score = 0;
+    const codigo =
+      normalizar(p.codigoBarra);
 
-      const codigo = normalizar(p.codigoBarra);
+    return codigo.includes(txt);
 
-      if(codigo === txt) score += 300;
-      if(codigo.startsWith(txt)) score += 150;
-      if(codigo.includes(txt)) score += 80;
-
-      if(
-        Array.isArray(p.codigosEquivalentes) &&
-        p.codigosEquivalentes.some(c=>normalizar(c) === txt)
-      ){
-        score += 250;
-      }
-
-      if(
-        Array.isArray(p.codigosEquivalentes) &&
-        p.codigosEquivalentes.some(c=>normalizar(c).includes(txt))
-      ){
-        score += 100;
-      }
-
-      return {
-        ...p,
-        score
-      };
-
-    })
-    .filter(p=>p.score > 0)
-    .sort((a,b)=>b.score - a.score)
-    .slice(0,20);
+  }).slice(0,20);
 
   pintarResultados(div,encontrados);
 
 }
-
-document.getElementById("inpCodigo")
-.addEventListener("keydown",e=>{
-
-  if(e.key === "Enter"){
-
-    e.preventDefault();
-
-    window.buscarCodigo();
-
-  }
-
-});
 
 document.getElementById("inpNombre")
 .addEventListener("input",e=>{
@@ -1367,48 +1084,44 @@ document.getElementById("inpNombre")
   const div = document.getElementById("resNombre");
 
   if(txt.length < 2){
-
     div.innerHTML = "";
     return;
-
   }
 
-  const palabras = txt.split(/\s+/).filter(Boolean);
+  const palabras = txt.split(/\s+/);
 
   const encontrados = catalogo
-    .map(p=>{
+  .map(p=>{
 
-      let score = 0;
+    let score = 0;
 
-      if(p._search.includes(txt)) score += 100;
+    if(p._search.includes(txt)) score += 100;
 
-      palabras.forEach(w=>{
-        if(p._search.includes(w)) score += 25;
-      });
+    palabras.forEach(w=>{
+      if(p._search.includes(w)) score += 25;
+    });
 
-      if(normalizar(p.codigoBarra).startsWith(txt)) score += 80;
-      if(normalizar(p.concepto).includes(txt)) score += 50;
+    return {
+      ...p,
+      score
+    };
 
-      return {
-        ...p,
-        score
-      };
-
-    })
-    .filter(x=>x.score > 0)
-    .sort((a,b)=>b.score - a.score)
-    .slice(0,20);
+  })
+  .filter(x=>x.score > 0)
+  .sort((a,b)=>b.score - a.score)
+  .slice(0,20);
 
   pintarResultados(div,encontrados);
 
 });
+
 
 function pintarResultados(div,data){
 
   if(!data.length){
 
     div.innerHTML = `
-      <div style="padding:20px; text-align:center; color:#64748b;">
+      <div style="padding:20px; text-align:center;">
         Sin resultados
       </div>
     `;
@@ -1453,34 +1166,36 @@ window.seleccionarProducto = function(id){
   productoTemporal =
     catalogo.find(x=>String(x.id) === String(id));
 
-  if(!productoTemporal){
-    return;
-  }
+  if(!productoTemporal) return;
 
   cerrarModal("modalCodigo");
   cerrarModal("modalNombre");
 
   document.getElementById("prodCantidadNombre").innerHTML = `
 
-    <div style="font-weight:900; margin-bottom:10px; color:var(--azul-oscuro);">
+    <div style="font-weight:900; margin-bottom:10px;">
       ${escapeHtml(productoTemporal.concepto)}
     </div>
 
-    <div style="font-size:12px; color:#64748b; margin-bottom:10px;">
-      Código: ${escapeHtml(productoTemporal.codigoBarra)}
-      <br>
-      Precio: ${formatearDinero(productoTemporal.precioPublico)}
-      ${
-        productoTemporal.activo
-        ? '<span class="badge-activo">ACTIVO</span>'
-        : '<span class="badge-inactivo">INACTIVO</span>'
-      }
+    <div style="font-size:12px; color:#64748b;">
+      ${escapeHtml(productoTemporal.codigoBarra)}
+    </div>
+
+  `;
+
+  document.getElementById("prodComentarioNombre").innerHTML = `
+
+    <div style="font-weight:900;">
+      ${escapeHtml(productoTemporal.concepto)}
+    </div>
+
+    <div style="font-size:12px; color:#64748b;">
+      ${escapeHtml(productoTemporal.codigoBarra)}
     </div>
 
   `;
 
   const inpCantidad = document.getElementById("inpCantidad");
-
   inpCantidad.value = 1;
 
   abrirModal("modalCantidad");
@@ -1488,7 +1203,7 @@ window.seleccionarProducto = function(id){
   setTimeout(()=>{
     inpCantidad.focus();
     inpCantidad.select();
-  },180);
+  },120);
 
 }
 
@@ -1496,26 +1211,59 @@ window.seleccionarProducto = function(id){
 CARRITO
 ========================= */
 
-window.confirmarCantidad = async function(){
+window.confirmarCantidad = function(){
 
-  if(!productoTemporal){
-    return;
-  }
+  if(!productoTemporal) return;
 
   let cant = parseFloat(
-    String(document.getElementById("inpCantidad").value).replace(",",".")
+    document.getElementById("inpCantidad").value
   );
 
   if(!Number.isFinite(cant) || cant <= 0){
     cant = 1;
   }
 
+  cantidadTemporal = cant;
+
+  cerrarModal("modalCantidad");
+
+  const inpComentario =
+    document.getElementById("inpComentario");
+
+  inpComentario.value = "";
+
+  abrirModal("modalComentario");
+
+  setTimeout(()=>{
+    inpComentario.focus();
+  },120);
+
+}
+
+window.confirmarComentario = function(){
+
+  if(!productoTemporal) return;
+
+  const comentario =
+    document.getElementById("inpComentario")
+    .value
+    .trim();
+
   const existente =
     carrito.find(x=>x.id === productoTemporal.id);
 
   if(existente){
 
-    existente.cantidad = Number(existente.cantidad) + cant;
+    existente.cantidad += cantidadTemporal;
+
+    if(comentario){
+
+      existente.comentario =
+        existente.comentario
+        ? `${existente.comentario} | ${comentario}`
+        : comentario;
+
+    }
 
   }else{
 
@@ -1524,11 +1272,10 @@ window.confirmarCantidad = async function(){
       id:productoTemporal.id,
       codigo:productoTemporal.codigoBarra || "",
       nombre:productoTemporal.concepto || "",
-      marca:productoTemporal.marca || "",
-      departamento:productoTemporal.departamento || "",
-      cantidad:cant,
+      cantidad:cantidadTemporal,
       precio:Number(productoTemporal.precioPublico || 0),
-      activo:productoTemporal.activo === true
+      activo:productoTemporal.activo === true,
+      comentario:comentario
 
     });
 
@@ -1540,28 +1287,21 @@ window.confirmarCantidad = async function(){
 
   actualizarUI();
 
-  await guardarBorrador();
-
-  cerrarModal("modalCantidad");
+  cerrarModal("modalComentario");
 
   productoTemporal = null;
-
-  limpiarBusquedas();
-
-  setTimeout(()=>{
-    abrirModal("modalMenu");
-  },150);
+  cantidadTemporal = 1;
 
 }
 
-document.getElementById("inpCantidad")
+document.getElementById("inpComentario")
 .addEventListener("keydown",e=>{
 
   if(e.key === "Enter"){
 
     e.preventDefault();
 
-    window.confirmarCantidad();
+    confirmarComentario();
 
   }
 
@@ -1616,14 +1356,20 @@ function actualizarUI(){
 
             </small>
 
+            ${
+              item.comentario
+              ? `<div class="comentario-preview">📝 ${escapeHtml(item.comentario)}</div>`
+              : ""
+            }
+
           </div>
 
           <div style="text-align:center; font-weight:900;">
-            ${formatearCantidad(item.cantidad)}
+            ${item.cantidad}
           </div>
 
           <div style="text-align:right; font-weight:700;">
-            ${formatearDinero(subtotal)}
+            $${subtotal.toFixed(2)}
           </div>
 
           <button
@@ -1645,29 +1391,23 @@ function actualizarUI(){
     carrito.length;
 
   document.getElementById("countPiezas").innerText =
-    formatearCantidad(piezas);
+    piezas;
 
   document.getElementById("totalEfectivo").innerText =
-    formatearDinero(total);
+    `$${total.toFixed(2)}`;
 
 }
 
-window.eliminar = async function(idx){
+window.eliminar = function(idx){
 
   carrito.splice(idx,1);
 
-  if(navigator.vibrate){
-    navigator.vibrate(30);
-  }
-
   actualizarUI();
-
-  await guardarBorrador();
 
 }
 
 /* =========================
-FINALIZAR FIREBASE CENTRAL
+FINALIZAR
 ========================= */
 
 document.getElementById("btnFinalizar")
@@ -1678,15 +1418,11 @@ document.getElementById("btnFinalizar")
     return;
   }
 
-  if(!confirm("¿Finalizar solicitud CENTRAL?")){
+  if(!confirm("¿Finalizar solicitud?")){
     return;
   }
 
-  const btn = document.getElementById("btnFinalizar");
-
   try{
-
-    btn.disabled = true;
 
     const fol =
       document.getElementById("folioText").innerText;
@@ -1698,80 +1434,41 @@ document.getElementById("btnFinalizar")
       );
     },0);
 
-    const totalPiezas = carrito.reduce((a,b)=>{
-      return a + Number(b.cantidad || 0);
-    },0);
-
-    const itemsEnviar = carrito.map(i=>({
-      id:i.id,
-      codigo:i.codigo,
-      nombre:i.nombre,
-      marca:i.marca || "",
-      departamento:i.departamento || "",
-      cantidad:Number(i.cantidad || 0),
-      precio:Number(i.precio || 0),
-      subtotal:Number(i.cantidad || 0) * Number(i.precio || 0),
-      activo:i.activo === true
-    }));
-
     await setDoc(
 
       doc(
         db,
         "TIENDAS",
-        TIENDA_FIREBASE,
+        SUCURSAL,
         RUTA_TRANSFERENCIAS,
         fol
       ),
 
       {
         folio:fol,
-        items:itemsEnviar,
-        total:Number(total || 0),
-        total_piezas:Number(totalPiezas || 0),
-        partidas:itemsEnviar.length,
-
-        origen:SUCURSAL_LABEL,
-        sucursal:SUCURSAL_LABEL,
-        tienda:TIENDA_FIREBASE,
-
-        estado:"PENDIENTE",
-        etapa:"SOLICITADA",
-        tipo:"SOLICITUD_TRANSFERENCIA",
-
-        capturista:"",
-        observaciones:"",
-
-        fecha:new Date().toISOString(),
-        creado_en:new Date().toISOString(),
-        actualizado_en:new Date().toISOString()
+        items:carrito,
+        total,
+        origen:SUCURSAL,
+        fecha:new Date().toISOString()
       }
 
     );
 
-    generarPDF(fol,itemsEnviar,total,totalPiezas);
+    generarPDF(fol);
 
     carrito = [];
-
-    await limpiarBorrador();
 
     actualizarUI();
 
     nuevoFolio();
 
-    limpiarBusquedas();
-
-    alert("Solicitud enviada a CENTRAL.");
+    alert("Solicitud enviada.");
 
   }catch(e){
 
-    console.error("Error guardando solicitud CENTRAL:",e);
+    console.error(e);
 
-    alert("Error guardando en Firebase.");
-
-  }finally{
-
-    btn.disabled = false;
+    alert("Error guardando.");
 
   }
 
@@ -1781,23 +1478,17 @@ document.getElementById("btnFinalizar")
 PDF
 ========================= */
 
-function generarPDF(folio,items,total,totalPiezas){
+function generarPDF(folio){
 
   const { jsPDF } = window.jspdf;
 
   const pdf = new jsPDF();
 
-  pdf.setFontSize(14);
-  pdf.text("PROVEEDORA - SOLICITUD DE TRANSFERENCIA",14,15);
-
-  pdf.setFontSize(10);
-  pdf.text(`Folio: ${folio}`,14,22);
-  pdf.text(`Sucursal: ${SUCURSAL_LABEL}`,14,28);
-  pdf.text(`Ruta Firebase: /TIENDAS/${TIENDA_FIREBASE}/${RUTA_TRANSFERENCIAS}/${folio}`,14,34);
+  pdf.text("PROVSOFT - SOLICITUD",14,15);
 
   pdf.autoTable({
 
-    startY:42,
+    startY:25,
 
     head:[[
       "Código",
@@ -1805,24 +1496,22 @@ function generarPDF(folio,items,total,totalPiezas){
       "Cant",
       "Precio",
       "Subtotal",
-      "Estado"
+      "Comentario"
     ]],
 
-    body:items.map(i=>[
+    body:carrito.map(i=>[
       i.codigo,
-      String(i.nombre || "").substring(0,36),
-      formatearCantidad(i.cantidad),
-      `$${Number(i.precio || 0).toFixed(2)}`,
-      `$${Number(i.subtotal || 0).toFixed(2)}`,
-      i.activo ? "ACTIVO" : "INACTIVO"
+      i.nombre,
+      i.cantidad,
+      `$${Number(i.precio).toFixed(2)}`,
+      `$${(
+        Number(i.precio)
+        * Number(i.cantidad)
+      ).toFixed(2)}`,
+      i.comentario || ""
     ])
 
   });
-
-  const finalY = pdf.lastAutoTable.finalY + 10;
-
-  pdf.text(`TOTAL PIEZAS: ${formatearCantidad(totalPiezas)}`,14,finalY);
-  pdf.text(`TOTAL SOLICITUD: $${Number(total || 0).toFixed(2)}`,14,finalY + 6);
 
   pdf.save(`${folio}.pdf`);
 
@@ -1834,15 +1523,11 @@ INICIO
 
 async function iniciar(){
 
-  setLoading("Generando folio CENTRAL...",5);
+  setLoading("Generando folio...",5);
 
   nuevoFolio();
 
   await cargarCatalogo();
-
-  setLoading("Revisando borrador local...",92);
-
-  await recuperarBorrador();
 
   actualizarUI();
 
@@ -1860,14 +1545,6 @@ document.getElementById("btnAbrirAgregar")
   abrirModal("modalMenu");
 
 };
-
-window.addEventListener("beforeunload",()=>{
-
-  if(carrito.length){
-    guardarBorrador();
-  }
-
-});
 
 await iniciar();
 

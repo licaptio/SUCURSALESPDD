@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+<head>	
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<title>PDD Móvil Exacta - PROVSOFT</title>
+<title>Transferencia Solicitud - PROVSOFT</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
 <style>
 *{
   box-sizing:border-box;
@@ -35,10 +36,6 @@ html,body{
   background:var(--gris);
   color:var(--texto);
 }
-
-/* =========================
-LOADING
-========================= */
 
 .loading{
   position:fixed;
@@ -100,10 +97,6 @@ LOADING
   margin-top:8px;
 }
 
-/* =========================
-HEADER
-========================= */
-
 .titulo-app{
   background:var(--azul-oscuro);
   color:white;
@@ -154,10 +147,6 @@ HEADER
   font-size:11px;
   font-weight:900;
 }
-
-/* =========================
-APP
-========================= */
 
 .app-container{
   height:calc(100vh - 88px);
@@ -298,10 +287,6 @@ APP
   font-weight:900;
 }
 
-/* =========================
-MODAL
-========================= */
-
 .modal-backdrop{
   position:fixed;
   inset:0;
@@ -435,20 +420,21 @@ MODAL
   cursor:pointer;
 }
 
+.comentario-preview{
+  margin-top:5px;
+  color:#475569;
+  font-size:11px;
+  line-height:1.3;
+}
 </style>
 </head>
 
 <body>
 
 <div class="loading" id="loading">
-
   <div class="loading-card">
-
     <div class="loading-title">PROVSOFT</div>
-
-    <div class="loading-sub">
-      Preparando solicitud...
-    </div>
+    <div class="loading-sub">Preparando solicitud...</div>
 
     <div id="loadingPct">0%</div>
 
@@ -456,12 +442,8 @@ MODAL
       <div id="loadingBar" class="progress-bar"></div>
     </div>
 
-    <div id="loadingText">
-      Iniciando...
-    </div>
-
+    <div id="loadingText">Iniciando...</div>
   </div>
-
 </div>
 
 <div class="titulo-app">
@@ -469,7 +451,6 @@ MODAL
 </div>
 
 <header class="top-header">
-
   <div class="logo-area">
     <img src="logo.jfif">
   </div>
@@ -482,7 +463,6 @@ MODAL
     <small>FOLIO</small>
     <div id="folioText">...</div>
   </div>
-
 </header>
 
 <div class="app-container">
@@ -490,7 +470,6 @@ MODAL
   <div class="resumen-barra">
 
     <div class="resumen-left">
-
       <div class="stat-item">
         <div class="stat-label">ITEMS</div>
         <div class="stat-value" id="countPartidas">0</div>
@@ -500,7 +479,6 @@ MODAL
         <div class="stat-label">PZS</div>
         <div class="stat-value" id="countPiezas">0</div>
       </div>
-
     </div>
 
     <div id="totalEfectivo" class="total-box">
@@ -516,7 +494,6 @@ MODAL
   <div class="main-work-area">
 
     <div class="captura-card">
-
       <div class="manual-title">
         Captura manual guiada
       </div>
@@ -528,7 +505,6 @@ MODAL
       <button class="btn-agregar" id="btnAbrirAgregar">
         ➕ AGREGAR ARTÍCULO
       </button>
-
     </div>
 
     <div class="lista-container">
@@ -544,7 +520,6 @@ MODAL MENU
 ========================= -->
 
 <div class="modal-backdrop" id="modalMenu">
-
   <div class="modal-card">
 
     <div class="modal-header">
@@ -558,7 +533,6 @@ MODAL MENU
     </div>
 
     <div class="modal-body">
-
       <button class="btn-agregar" onclick="abrirCodigo()">
         🔢 BUSCAR POR CÓDIGO
       </button>
@@ -566,11 +540,9 @@ MODAL MENU
       <button class="btn-agregar" style="margin-top:10px;" onclick="abrirNombre()">
         🔍 BUSCAR POR NOMBRE
       </button>
-
     </div>
 
   </div>
-
 </div>
 
 <!-- =========================
@@ -578,11 +550,9 @@ MODAL CODIGO
 ========================= -->
 
 <div class="modal-backdrop" id="modalCodigo">
-
   <div class="modal-card">
 
     <div class="modal-header">
-
       <div class="modal-title">
         Buscar por código
       </div>
@@ -590,27 +560,21 @@ MODAL CODIGO
       <button class="modal-close" onclick="cerrarModal('modalCodigo')">
         ×
       </button>
-
     </div>
 
     <div class="modal-body">
-
       <div class="buscar-grid">
-
         <input id="inpCodigo" class="input" placeholder="Código...">
 
         <button class="btn-modal btn-primary" onclick="buscarCodigo()">
           Buscar
         </button>
-
       </div>
 
       <div id="resCodigo" class="resultados"></div>
-
     </div>
 
   </div>
-
 </div>
 
 <!-- =========================
@@ -618,11 +582,9 @@ MODAL NOMBRE
 ========================= -->
 
 <div class="modal-backdrop" id="modalNombre">
-
   <div class="modal-card">
 
     <div class="modal-header">
-
       <div class="modal-title">
         Buscar por nombre
       </div>
@@ -630,19 +592,15 @@ MODAL NOMBRE
       <button class="modal-close" onclick="cerrarModal('modalNombre')">
         ×
       </button>
-
     </div>
 
     <div class="modal-body">
-
       <input id="inpNombre" class="input" placeholder="Nombre...">
 
       <div id="resNombre" class="resultados"></div>
-
     </div>
 
   </div>
-
 </div>
 
 <!-- =========================
@@ -650,11 +608,9 @@ MODAL CANTIDAD
 ========================= -->
 
 <div class="modal-backdrop" id="modalCantidad">
-
   <div class="modal-card">
 
     <div class="modal-header">
-
       <div class="modal-title">
         Cantidad
       </div>
@@ -662,15 +618,12 @@ MODAL CANTIDAD
       <button class="modal-close" onclick="cerrarModal('modalCantidad')">
         ×
       </button>
-
     </div>
 
     <div class="modal-body">
-
       <div id="prodCantidadNombre"></div>
 
       <div class="cantidad-wrap">
-
         <input
           id="inpCantidad"
           class="input"
@@ -679,25 +632,68 @@ MODAL CANTIDAD
           min="0.001"
           step="0.001"
         >
-
       </div>
-
     </div>
 
     <div class="modal-footer">
-
       <button class="btn-modal btn-secondary" onclick="cerrarModal('modalCantidad')">
         Cancelar
       </button>
 
       <button class="btn-modal btn-primary" onclick="confirmarCantidad()">
-        Agregar
+        Siguiente
       </button>
-
     </div>
 
   </div>
+</div>
 
+<!-- =========================
+MODAL COMENTARIO
+========================= -->
+
+<div class="modal-backdrop" id="modalComentario">
+  <div class="modal-card">
+
+    <div class="modal-header">
+      <div class="modal-title">
+        Comentario opcional
+      </div>
+
+      <button class="modal-close" onclick="cerrarModal('modalComentario')">
+        ×
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <div id="prodComentarioNombre" style="margin-bottom:12px;"></div>
+
+      <textarea
+        id="inpComentario"
+        class="input"
+        rows="4"
+        placeholder="Colocar comentario o Enter para avanzar"
+        style="resize:none;"
+      ></textarea>
+
+      <div style="font-size:11px; color:#64748b; margin-top:8px;">
+        Si no hay comentario, presiona Enter para agregar el artículo.
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal btn-secondary" onclick="cerrarModal('modalComentario')">
+        Cancelar
+      </button>
+
+      <button class="btn-modal btn-primary" onclick="confirmarComentario()">
+        Agregar
+      </button>
+    </div>
+
+  </div>
 </div>
 
 <script type="module">
@@ -732,7 +728,7 @@ const CLAVE_ULTIMA_DESCARGA = "ultima_descarga_catalogo";
 let catalogo = [];
 let carrito = [];
 let productoTemporal = null;
-
+let cantidadTemporal = 1;
 /* =========================
 LOADING
 ========================= */
@@ -746,6 +742,7 @@ function setLoading(txt,pct){
 
   document.getElementById("loadingBar").style.width =
     `${pct}%`;
+
 }
 
 function ocultarLoading(){
@@ -757,6 +754,7 @@ function ocultarLoading(){
   setTimeout(()=>{
     el.style.display = "none";
   },350);
+
 }
 
 /* =========================
@@ -925,7 +923,8 @@ function nuevoFolio(){
 
   const d = new Date();
 
-  const fol = `SOL-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`;
+  const fol =
+    `SOL-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`;
 
   document.getElementById("folioText").innerText = fol;
 
@@ -978,6 +977,7 @@ async function cargarCatalogo(){
       setLoading("Usando catálogo local.",100);
 
       return;
+
     }
 
     setLoading("Descargando catálogo...",70);
@@ -1115,6 +1115,7 @@ document.getElementById("inpNombre")
 
 });
 
+
 function pintarResultados(div,data){
 
   if(!data.length){
@@ -1126,6 +1127,7 @@ function pintarResultados(div,data){
     `;
 
     return;
+
   }
 
   div.innerHTML = data.map(p=>`
@@ -1181,6 +1183,18 @@ window.seleccionarProducto = function(id){
 
   `;
 
+  document.getElementById("prodComentarioNombre").innerHTML = `
+
+    <div style="font-weight:900;">
+      ${escapeHtml(productoTemporal.concepto)}
+    </div>
+
+    <div style="font-size:12px; color:#64748b;">
+      ${escapeHtml(productoTemporal.codigoBarra)}
+    </div>
+
+  `;
+
   const inpCantidad = document.getElementById("inpCantidad");
   inpCantidad.value = 1;
 
@@ -1209,12 +1223,47 @@ window.confirmarCantidad = function(){
     cant = 1;
   }
 
+  cantidadTemporal = cant;
+
+  cerrarModal("modalCantidad");
+
+  const inpComentario =
+    document.getElementById("inpComentario");
+
+  inpComentario.value = "";
+
+  abrirModal("modalComentario");
+
+  setTimeout(()=>{
+    inpComentario.focus();
+  },120);
+
+}
+
+window.confirmarComentario = function(){
+
+  if(!productoTemporal) return;
+
+  const comentario =
+    document.getElementById("inpComentario")
+    .value
+    .trim();
+
   const existente =
     carrito.find(x=>x.id === productoTemporal.id);
 
   if(existente){
 
-    existente.cantidad += cant;
+    existente.cantidad += cantidadTemporal;
+
+    if(comentario){
+
+      existente.comentario =
+        existente.comentario
+        ? `${existente.comentario} | ${comentario}`
+        : comentario;
+
+    }
 
   }else{
 
@@ -1223,9 +1272,10 @@ window.confirmarCantidad = function(){
       id:productoTemporal.id,
       codigo:productoTemporal.codigoBarra || "",
       nombre:productoTemporal.concepto || "",
-      cantidad:cant,
+      cantidad:cantidadTemporal,
       precio:Number(productoTemporal.precioPublico || 0),
-      activo:productoTemporal.activo === true
+      activo:productoTemporal.activo === true,
+      comentario:comentario
 
     });
 
@@ -1237,11 +1287,25 @@ window.confirmarCantidad = function(){
 
   actualizarUI();
 
-  cerrarModal("modalCantidad");
+  cerrarModal("modalComentario");
 
   productoTemporal = null;
+  cantidadTemporal = 1;
 
 }
+
+document.getElementById("inpComentario")
+.addEventListener("keydown",e=>{
+
+  if(e.key === "Enter"){
+
+    e.preventDefault();
+
+    confirmarComentario();
+
+  }
+
+});
 
 function actualizarUI(){
 
@@ -1291,6 +1355,12 @@ function actualizarUI(){
               }
 
             </small>
+
+            ${
+              item.comentario
+              ? `<div class="comentario-preview">📝 ${escapeHtml(item.comentario)}</div>`
+              : ""
+            }
 
           </div>
 
@@ -1425,7 +1495,8 @@ function generarPDF(folio){
       "Descripción",
       "Cant",
       "Precio",
-      "Subtotal"
+      "Subtotal",
+      "Comentario"
     ]],
 
     body:carrito.map(i=>[
@@ -1436,7 +1507,8 @@ function generarPDF(folio){
       `$${(
         Number(i.precio)
         * Number(i.cantidad)
-      ).toFixed(2)}`
+      ).toFixed(2)}`,
+      i.comentario || ""
     ])
 
   });
@@ -1457,6 +1529,8 @@ async function iniciar(){
 
   await cargarCatalogo();
 
+  actualizarUI();
+
   setLoading("Aplicación lista.",100);
 
   setTimeout(()=>{
@@ -1473,6 +1547,8 @@ document.getElementById("btnAbrirAgregar")
 };
 
 await iniciar();
+
 </script>
 </body>
 </html>
+

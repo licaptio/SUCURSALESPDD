@@ -309,7 +309,7 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const SUCURSAL = "RIOVERDE";
+const SUCURSAL = "RIO VERDE";
 const COLECCION_SOLICITUDES = "SOLTRAN";
 const COLECCION_SURTIDOS = "SURTIDOTRANS";
 
@@ -507,8 +507,8 @@ function reconstruirTransferencias(){
     } else {
       transferencias.push({
         ...solicitud,
-        tipoVista: "PENDIENTE",
-        estatus: solicitud.estatus || solicitud.estado || "PENDIENTE POR SURTIR",
+tipoVista: String(solicitud.estatus || "").toUpperCase() === "SURTIDO" ? "SURTIDO" : "PENDIENTE",
+estatus: solicitud.estatus || solicitud.estado || "PENDIENTE POR SURTIR",
         detalle: solicitud.items || solicitud.detalle || solicitud.productos || solicitud.articulos || []
       });
     }

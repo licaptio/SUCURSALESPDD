@@ -21,7 +21,7 @@
     }
 
     main{
-      max-width:1400px;
+      max-width:1600px;
       margin:auto;
       padding:16px;
     }
@@ -114,18 +114,46 @@
     .total-box{
       font-size:18px;
       font-weight:bold;
+      line-height:1.6;
+    }
+
+    .kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+      gap:12px;
+    }
+
+    .kpi{
+      background:#f9fafb;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:12px;
+    }
+
+    .kpi-title{
+      font-size:12px;
+      color:#6b7280;
+      font-weight:bold;
+      text-transform:uppercase;
+      margin-bottom:4px;
+    }
+
+    .kpi-value{
+      font-size:20px;
+      font-weight:bold;
+      color:#111827;
     }
 
     .table-wrap{
       width:100%;
       overflow:auto;
-      max-height:70vh;
+      max-height:72vh;
     }
 
     table{
       width:100%;
       border-collapse:collapse;
-      min-width:900px;
+      min-width:1450px;
     }
 
     th{
@@ -137,14 +165,48 @@
     }
 
     th,td{
-      padding:10px;
+      padding:9px;
       border-bottom:1px solid #e5e7eb;
       text-align:left;
-      font-size:14px;
+      font-size:13px;
+      vertical-align:top;
     }
 
     .right{
       text-align:right;
+    }
+
+    .tag{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:bold;
+      margin:1px;
+      white-space:nowrap;
+    }
+
+    .tag-ok{
+      background:#dcfce7;
+      color:#166534;
+    }
+
+    .tag-warn{
+      background:#fef3c7;
+      color:#92400e;
+    }
+
+    .tag-danger{
+      background:#fee2e2;
+      color:#991b1b;
+    }
+
+    tfoot td{
+      background:#f9fafb;
+      font-weight:bold;
+      position:sticky;
+      bottom:0;
+      z-index:1;
     }
 
     @media print{
@@ -159,6 +221,21 @@
       .card{
         box-shadow:none;
         border:none;
+      }
+
+      .table-wrap{
+        max-height:none;
+        overflow:visible;
+      }
+
+      table{
+        min-width:100%;
+        font-size:10px;
+      }
+
+      th,td{
+        font-size:10px;
+        padding:5px;
       }
     }
   </style>
@@ -227,11 +304,35 @@
           <tr>
             <th>Código</th>
             <th>Artículo</th>
+            <th>Departamento</th>
             <th class="right">Cantidad contada</th>
+            <th class="right">Costo sin impuesto</th>
+            <th class="right">Costo neto</th>
+            <th class="right">IVA %</th>
+            <th class="right">IVA</th>
+            <th class="right">IEPS %</th>
+            <th class="right">IEPS</th>
+            <th class="right">Total + impuestos</th>
+            <th>Estatus</th>
           </tr>
         </thead>
 
         <tbody id="tablaReporte"></tbody>
+
+        <tfoot>
+          <tr>
+            <td colspan="3">TOTALES</td>
+            <td class="right" id="footCantidad">0</td>
+            <td></td>
+            <td class="right" id="footCostoNeto">$0.00</td>
+            <td></td>
+            <td class="right" id="footIva">$0.00</td>
+            <td></td>
+            <td class="right" id="footIeps">$0.00</td>
+            <td class="right" id="footTotal">$0.00</td>
+            <td></td>
+          </tr>
+        </tfoot>
       </table>
 
     </div>
@@ -264,6 +365,7 @@
   console.log("PROJECT ID USADO:", firebaseConfig.projectId);
 
   let reporteFinal = [];
+  let totalesFinales = crearTotalesVacios();
 
   window.generarReporte = async function(){
 
@@ -283,7 +385,9 @@
     }
 
     reporteFinal = [];
+    totalesFinales = crearTotalesVacios();
     tbody.innerHTML = "";
+    pintarTotales(totalesFinales);
 
     btnGenerar.disabled = true;
 
@@ -308,7 +412,19 @@
       await pausaUI();
 
       actualizarProgreso(
-        15,
+        12,
+        "Leyendo catálogo de productos",
+        0,
+        0,
+        0
+      );
+
+      const catalogo = await cargarCatalogoProductos();
+
+      await pausaUI();
+
+      actualizarProgreso(
+        22,
         "Leyendo usuarios",
         0,
         0,
@@ -357,7 +473,7 @@
         const usuarioId = usuarioDoc.id;
 
         actualizarProgreso(
-          20 + Math.round((usuarioActual / totalUsuarios) * 20),
+          25 + Math.round((usuarioActual / totalUsuarios) * 20),
           `Leyendo partidas de usuario ${usuarioActual} de ${totalUsuarios}`,
           totalPartidas,
           mapa.size,
@@ -446,9 +562,9 @@
           if(i % 50 === 0){
 
             const avance =
-              40 +
+              45 +
               Math.round(
-                (usuarioActual / totalUsuarios) * 40
+                (usuarioActual / totalUsuarios) * 25
               );
 
             actualizarProgreso(
@@ -467,10 +583,33 @@
       }
 
       actualizarProgreso(
-        85,
-        "Construyendo tabla",
+        78,
+        "Amarrando costos, departamentos e impuestos",
         totalPartidas,
         mapa.size,
+        totalCantidad
+      );
+
+      status.textContent =
+        "Amarrando costos, departamentos e impuestos...";
+
+      await pausaUI();
+
+      reporteFinal = Array
+        .from(mapa.values())
+        .map(item => enriquecerConCatalogo(item, catalogo))
+        .sort((a,b)=>
+          String(a.departamento || "").localeCompare(String(b.departamento || "")) ||
+          String(a.descripcion || "").localeCompare(String(b.descripcion || ""))
+        );
+
+      totalesFinales = calcularTotales(reporteFinal);
+
+      actualizarProgreso(
+        90,
+        "Construyendo tabla",
+        totalPartidas,
+        reporteFinal.length,
         totalCantidad
       );
 
@@ -479,13 +618,8 @@
 
       await pausaUI();
 
-      reporteFinal = Array
-        .from(mapa.values())
-        .sort((a,b)=>
-          a.descripcion.localeCompare(b.descripcion)
-        );
-
       pintarTabla(reporteFinal);
+      pintarTotales(totalesFinales);
 
       actualizarProgreso(
         100,
@@ -495,8 +629,10 @@
         totalCantidad
       );
 
-      resumenGeneral.textContent =
-        `Partidas leídas: ${totalPartidas} / SKU únicos: ${reporteFinal.length} / Piezas: ${totalCantidad}`;
+      resumenGeneral.innerHTML =
+        `Partidas leídas: ${formatoNumero(totalPartidas)} / SKU únicos: ${formatoNumero(reporteFinal.length)} / Piezas: ${formatoNumero(totalCantidad)}<br>` +
+        `Costo neto: ${formatoMoneda(totalesFinales.costoNeto)} / IVA: ${formatoMoneda(totalesFinales.iva)} / IEPS: ${formatoMoneda(totalesFinales.ieps)} / Total con impuestos: ${formatoMoneda(totalesFinales.totalConImpuestos)}<br>` +
+        `SIN COSTO: ${totalesFinales.sinCosto} / SIN DEPARTAMENTO: ${totalesFinales.sinDepartamento} / NO ENCONTRADO EN CATÁLOGO: ${totalesFinales.noEncontrado}`;
 
       status.textContent =
         "Reporte generado correctamente.";
@@ -531,6 +667,188 @@
 
   };
 
+  async function cargarCatalogoProductos(){
+
+    const catalogo = {
+      porCodigo: new Map()
+    };
+
+    const productosRef = collection(db, "productos");
+    const productosSnap = await getDocs(productosRef);
+
+    console.log("PRODUCTOS ENCONTRADOS:", productosSnap.size);
+
+    let procesados = 0;
+
+    for(const docSnap of productosSnap.docs){
+
+      const data = docSnap.data();
+
+      const producto = {
+        id: docSnap.id,
+        activo: data.activo === true,
+        codigoBarra: limpiarCodigo(data.codigoBarra || ""),
+        concepto: data.concepto || data.descripcion || "",
+        departamento: data.departamento || "",
+        departamento_id: data.departamento_id || "",
+        marca: data.marca || "",
+        costoSinImpuesto: Number(data.costoSinImpuesto || 0),
+        ivaTasa: Number(data.ivaTasa || 0),
+        iepsTasa: Number(data.iepsTasa || 0),
+        codigosEquivalentes: extraerCodigosEquivalentes(data.codigosEquivalentes)
+      };
+
+      const codigos = new Set();
+
+      if(producto.id) codigos.add(limpiarCodigo(producto.id));
+      if(producto.codigoBarra) codigos.add(limpiarCodigo(producto.codigoBarra));
+
+      producto.codigosEquivalentes.forEach(c => {
+        if(c) codigos.add(limpiarCodigo(c));
+      });
+
+      codigos.forEach(codigo => {
+        if(codigo && !catalogo.porCodigo.has(codigo)){
+          catalogo.porCodigo.set(codigo, producto);
+        }
+      });
+
+      procesados++;
+
+      if(procesados % 250 === 0){
+        actualizarProgreso(
+          12 + Math.min(10, Math.round((procesados / productosSnap.size) * 10)),
+          `Leyendo catálogo de productos ${procesados}/${productosSnap.size}`,
+          0,
+          0,
+          0
+        );
+        await pausaUI();
+      }
+
+    }
+
+    return catalogo;
+
+  }
+
+  function enriquecerConCatalogo(item, catalogo){
+
+    const codigoBase = limpiarCodigo(item.codigo);
+    const producto = catalogo.porCodigo.get(codigoBase) || null;
+
+    const cantidad = Number(item.cantidad_contada || 0);
+
+    const estatus = [];
+
+    let descripcion = item.descripcion || "SIN DESCRIPCIÓN";
+    let departamento = "SIN DEPARTAMENTO";
+    let costoSinImpuesto = 0;
+    let ivaTasa = 0;
+    let iepsTasa = 0;
+
+    if(!producto){
+      estatus.push("NO ENCONTRADO EN CATÁLOGO");
+    }else{
+      descripcion = producto.concepto || descripcion;
+      departamento = producto.departamento || "SIN DEPARTAMENTO";
+      costoSinImpuesto = Number(producto.costoSinImpuesto || 0);
+      ivaTasa = Number(producto.ivaTasa || 0);
+      iepsTasa = Number(producto.iepsTasa || 0);
+
+      if(!producto.departamento){
+        estatus.push("SIN DEPARTAMENTO");
+      }
+
+      if(producto.activo !== true){
+        estatus.push("INACTIVO");
+      }
+    }
+
+    if(!costoSinImpuesto || costoSinImpuesto <= 0){
+      estatus.push("SIN COSTO");
+    }
+
+    if(departamento === "SIN DEPARTAMENTO" && !estatus.includes("SIN DEPARTAMENTO")){
+      estatus.push("SIN DEPARTAMENTO");
+    }
+
+    const costoNeto = redondear(cantidad * costoSinImpuesto);
+    const iva = redondear(costoNeto * (ivaTasa / 100));
+    const ieps = redondear(costoNeto * (iepsTasa / 100));
+    const totalConImpuestos = redondear(costoNeto + iva + ieps);
+
+    if(!estatus.length){
+      estatus.push("OK");
+    }
+
+    return {
+      codigo: item.codigo,
+      descripcion,
+      departamento,
+      cantidad_contada: cantidad,
+      costoSinImpuesto,
+      costoNeto,
+      ivaTasa,
+      iva,
+      iepsTasa,
+      ieps,
+      totalConImpuestos,
+      estatus,
+      encontradoCatalogo: !!producto
+    };
+
+  }
+
+  function calcularTotales(data){
+
+    const t = crearTotalesVacios();
+
+    data.forEach(item => {
+
+      t.cantidad += Number(item.cantidad_contada || 0);
+      t.costoNeto += Number(item.costoNeto || 0);
+      t.iva += Number(item.iva || 0);
+      t.ieps += Number(item.ieps || 0);
+      t.totalConImpuestos += Number(item.totalConImpuestos || 0);
+
+      if(item.estatus.includes("SIN COSTO")){
+        t.sinCosto++;
+      }
+
+      if(item.estatus.includes("SIN DEPARTAMENTO")){
+        t.sinDepartamento++;
+      }
+
+      if(item.estatus.includes("NO ENCONTRADO EN CATÁLOGO")){
+        t.noEncontrado++;
+      }
+
+    });
+
+    t.cantidad = redondear(t.cantidad);
+    t.costoNeto = redondear(t.costoNeto);
+    t.iva = redondear(t.iva);
+    t.ieps = redondear(t.ieps);
+    t.totalConImpuestos = redondear(t.totalConImpuestos);
+
+    return t;
+
+  }
+
+  function crearTotalesVacios(){
+    return {
+      cantidad:0,
+      costoNeto:0,
+      iva:0,
+      ieps:0,
+      totalConImpuestos:0,
+      sinCosto:0,
+      sinDepartamento:0,
+      noEncontrado:0
+    };
+  }
+
   function actualizarProgreso(
     porcentaje,
     texto,
@@ -555,7 +873,7 @@
 
     document.getElementById("contador")
       .textContent =
-        `Partidas leídas: ${partidas} / SKU únicos: ${skus} / Piezas: ${piezas}`;
+        `Partidas leídas: ${formatoNumero(partidas)} / SKU únicos: ${formatoNumero(skus)} / Piezas: ${formatoNumero(piezas)}`;
 
   }
 
@@ -577,9 +895,16 @@
       tr.innerHTML = `
         <td>${escapeHTML(item.codigo)}</td>
         <td>${escapeHTML(item.descripcion)}</td>
-        <td class="right">
-          ${item.cantidad_contada}
-        </td>
+        <td>${escapeHTML(item.departamento)}</td>
+        <td class="right">${formatoNumero(item.cantidad_contada)}</td>
+        <td class="right">${formatoMoneda(item.costoSinImpuesto)}</td>
+        <td class="right">${formatoMoneda(item.costoNeto)}</td>
+        <td class="right">${formatoPorcentaje(item.ivaTasa)}</td>
+        <td class="right">${formatoMoneda(item.iva)}</td>
+        <td class="right">${formatoPorcentaje(item.iepsTasa)}</td>
+        <td class="right">${formatoMoneda(item.ieps)}</td>
+        <td class="right">${formatoMoneda(item.totalConImpuestos)}</td>
+        <td>${pintarEstatus(item.estatus)}</td>
       `;
 
       fragment.appendChild(tr);
@@ -587,6 +912,83 @@
     });
 
     tbody.appendChild(fragment);
+
+  }
+
+  function pintarEstatus(lista){
+
+    return lista.map(x => {
+
+      const clase =
+        x === "OK"
+          ? "tag-ok"
+          : x === "SIN COSTO" || x === "SIN DEPARTAMENTO" || x === "INACTIVO"
+            ? "tag-warn"
+            : "tag-danger";
+
+      return `<span class="tag ${clase}">${escapeHTML(x)}</span>`;
+
+    }).join("");
+
+  }
+
+  function limpiarCodigo(valor){
+    return String(valor ?? "")
+      .trim()
+      .replace(/\.0+$/,"")
+      .replace(/\D/g,"");
+  }
+
+  function extraerCodigosEquivalentes(raw){
+
+    let arr = [];
+
+    if(Array.isArray(raw)){
+      arr = raw;
+    }else if(raw && typeof raw === "object"){
+      arr = Object.values(raw);
+    }else if(raw !== null && raw !== undefined && raw !== ""){
+      arr = String(raw).split(/[\s,;|]+/);
+    }
+
+    return Array.from(new Set(
+      arr
+        .map(x => limpiarCodigo(x))
+        .filter(Boolean)
+    ));
+
+  }
+
+  function redondear(n){
+    return Math.round((Number(n || 0) + Number.EPSILON) * 100) / 100;
+  }
+
+  function formatoMoneda(n){
+
+    return Number(n || 0).toLocaleString("es-MX", {
+      style:"currency",
+      currency:"MXN",
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    });
+
+  }
+
+  function formatoNumero(n){
+
+    return Number(n || 0).toLocaleString("es-MX", {
+      minimumFractionDigits:0,
+      maximumFractionDigits:3
+    });
+
+  }
+
+  function formatoPorcentaje(n){
+
+    return `${Number(n || 0).toLocaleString("es-MX", {
+      minimumFractionDigits:0,
+      maximumFractionDigits:3
+    })}%`;
 
   }
 
@@ -617,14 +1019,17 @@
     }
 
     let csv =
-      "codigo,descripcion,cantidad_contada\n";
+      "codigo,descripcion,departamento,cantidad_contada,costo_sin_impuesto,costo_neto,iva_tasa,iva,ieps_tasa,ieps,total_con_impuestos,estatus\n";
 
     reporteFinal.forEach(item=>{
 
       csv +=
-        `"${String(item.codigo).replace(/"/g,'""')}","${String(item.descripcion).replace(/"/g,'""')}","${item.cantidad_contada}"\n`;
+        `"${csvSafe(item.codigo)}","${csvSafe(item.descripcion)}","${csvSafe(item.departamento)}","${item.cantidad_contada}","${item.costoSinImpuesto}","${item.costoNeto}","${item.ivaTasa}","${item.iva}","${item.iepsTasa}","${item.ieps}","${item.totalConImpuestos}","${csvSafe(item.estatus.join(" | "))}"\n`;
 
     });
+
+    csv +=
+      `"TOTALES","","","${totalesFinales.cantidad}","","${totalesFinales.costoNeto}","","${totalesFinales.iva}","","${totalesFinales.ieps}","${totalesFinales.totalConImpuestos}","SIN COSTO: ${totalesFinales.sinCosto} | SIN DEPARTAMENTO: ${totalesFinales.sinDepartamento} | NO ENCONTRADO: ${totalesFinales.noEncontrado}"\n`;
 
     const blob =
       new Blob(
@@ -642,13 +1047,17 @@
 
     a.href = url;
     a.download =
-      "reporte_conteo_inventario.csv";
+      "reporte_conteo_inventario_costos.csv";
 
     a.click();
 
     URL.revokeObjectURL(url);
 
   };
+
+  function csvSafe(valor){
+    return String(valor ?? "").replace(/"/g,'""');
+  }
 
 </script>
 

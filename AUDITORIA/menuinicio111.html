@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>PROVSOFT | Auditoría</title>
+
+<style>
+
+:root{
+    --azul:#003B73;
+    --azul2:#005AA7;
+    --amarillo:#FFD447;
+    --fondo:#f4f6f9;
+    --texto:#1e1e1e;
+    --card:#ffffff;
+    --shadow:0 8px 20px rgba(0,0,0,.12);
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:var(--fondo);
+    color:var(--texto);
+}
+
+header{
+    background:linear-gradient(135deg,var(--azul),var(--azul2));
+    color:white;
+    padding:30px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    box-shadow:var(--shadow);
+}
+
+.logo-area{
+    display:flex;
+    align-items:center;
+    gap:20px;
+}
+
+.logo-area img{
+    width:70px;
+    height:70px;
+    object-fit:contain;
+    background:white;
+    border-radius:14px;
+    padding:6px;
+}
+
+.logo-area h1{
+    font-size:32px;
+}
+
+.logo-area p{
+    opacity:.9;
+    margin-top:5px;
+}
+
+.container{
+    width:100%;
+    max-width:1400px;
+    margin:auto;
+    padding:30px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:25px;
+}
+
+.card{
+    background:var(--card);
+    border-radius:18px;
+    padding:25px;
+    box-shadow:var(--shadow);
+    transition:.2s ease;
+    border-left:8px solid var(--azul2);
+    text-decoration:none;
+    color:inherit;
+}
+
+.card:hover{
+    transform:translateY(-5px);
+}
+
+.icono{
+    font-size:48px;
+    margin-bottom:15px;
+}
+
+.card h2{
+    font-size:22px;
+    margin-bottom:10px;
+}
+
+.card p{
+    font-size:14px;
+    line-height:1.5;
+    opacity:.8;
+}
+
+footer{
+    text-align:center;
+    padding:30px;
+    color:#666;
+    font-size:13px;
+}
+
+.badge{
+    display:inline-block;
+    margin-top:15px;
+    background:var(--amarillo);
+    color:#000;
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo-area">
+
+        <!-- CAMBIA logo.jfif SI QUIERES -->
+        <img src="logo.jfif" alt="Logo">
+
+        <div>
+            <h1>PROVSOFT AUDITORÍA</h1>
+            <p>Sistema de herramientas y reportes</p>
+        </div>
+
+    </div>
+
+</header>
+
+<div class="container">
+
+    <div class="grid">
+
+        <!-- REPORTE CONTEO -->
+        <a class="card" href="APPREPORTECONTEO.html">
+
+            <div class="icono">📦</div>
+
+            <h2>Reporte Conteo</h2>
+
+            <p>
+                Acceso al sistema de reportes y consolidación
+                de conteos de inventario.
+            </p>
+
+            <span class="badge">INVENTARIO</span>
+
+        </a>
+
+        <!-- INDEX -->
+        <a class="card" href="index.html">
+
+            <div class="icono">🏠</div>
+
+            <h2>Inicio</h2>
+
+            <p>
+                Pantalla principal del sistema PROVSOFT
+                Auditoría.
+            </p>
+
+            <span class="badge">PRINCIPAL</span>
+
+        </a>
+
+    </div>
+
+</div>
+
+<footer>
+    PROVSOFT © 2026 | Auditoría y Control
+</footer>
+
+</body>
+</html>

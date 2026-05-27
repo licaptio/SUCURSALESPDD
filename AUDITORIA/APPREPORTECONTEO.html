@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reporte Conteo Inventario - PROVSOFT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#f3f4f6;
+      color:#111827;
+    }
+
+    header{
+      background:#0f172a;
+      color:white;
+      padding:20px;
+      text-align:center;
+    }
+
+    main{
+      max-width:1400px;
+      margin:auto;
+      padding:16px;
+    }
+
+    .card{
+      background:white;
+      border-radius:12px;
+      padding:16px;
+      margin-bottom:16px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    label{
+      font-weight:bold;
+      display:block;
+      margin-bottom:6px;
+    }
+
+    input{
+      width:100%;
+      box-sizing:border-box;
+      padding:12px;
+      border-radius:8px;
+      border:1px solid #d1d5db;
+      margin-bottom:12px;
+      font-size:16px;
+    }
+
+    button{
+      border:none;
+      background:#0f172a;
+      color:white;
+      padding:12px 18px;
+      border-radius:8px;
+      cursor:pointer;
+      margin-right:8px;
+      margin-bottom:8px;
+      font-size:15px;
+      font-weight:bold;
+    }
+
+    button:hover{
+      background:#1e293b;
+    }
+
+    button:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+    }
+
+    .status{
+      margin-top:10px;
+      font-weight:bold;
+    }
+
+    .progress-container{
+      margin-top:14px;
+    }
+
+    .progress-header{
+      display:flex;
+      justify-content:space-between;
+      margin-bottom:6px;
+      font-size:14px;
+      font-weight:bold;
+    }
+
+    .progress-bar{
+      width:100%;
+      height:22px;
+      background:#e5e7eb;
+      border-radius:999px;
+      overflow:hidden;
+    }
+
+    .progress-fill{
+      height:100%;
+      width:0%;
+      background:#0f172a;
+      transition:width .25s ease;
+    }
+
+    .contador{
+      margin-top:10px;
+      font-size:14px;
+      font-weight:bold;
+      color:#374151;
+    }
+
+    .total-box{
+      font-size:18px;
+      font-weight:bold;
+    }
+
+    .table-wrap{
+      width:100%;
+      overflow:auto;
+      max-height:70vh;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:900px;
+    }
+
+    th{
+      background:#0f172a;
+      color:white;
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+
+    th,td{
+      padding:10px;
+      border-bottom:1px solid #e5e7eb;
+      text-align:left;
+      font-size:14px;
+    }
+
+    .right{
+      text-align:right;
+    }
+
+    @media print{
+      .no-print{
+        display:none;
+      }
+
+      body{
+        background:white;
+      }
+
+      .card{
+        box-shadow:none;
+        border:none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Reporte de Conteo Inventario</h1>
+  <div>PROVSOFT</div>
+</header>
+
+<main>
+
+  <div class="card no-print">
+
+    <label for="conteoId">Conteo ID</label>
+    <input id="conteoId" value="ALLENDE_MAYO_2026"/>
+
+    <button id="btnGenerar" onclick="generarReporte()">
+      Generar reporte
+    </button>
+
+    <button onclick="exportarCSV()">
+      Exportar CSV
+    </button>
+
+    <button onclick="window.print()">
+      Imprimir
+    </button>
+
+    <div id="status" class="status">
+      Esperando...
+    </div>
+
+    <div class="progress-container">
+
+      <div class="progress-header">
+        <span id="progressText">Preparando...</span>
+        <span id="progressPercent">0%</span>
+      </div>
+
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+
+      <div id="contador" class="contador">
+        Partidas leídas: 0 / SKU únicos: 0 / Piezas: 0
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div id="resumenGeneral" class="total-box">
+      Sin datos cargados.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Artículo</th>
+            <th class="right">Cantidad contada</th>
+          </tr>
+        </thead>
+
+        <tbody id="tablaReporte"></tbody>
+      </table>
+
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+  import {
+    getFirestore,
+    collection,
+    getDocs
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+    authDomain: "inventariopv-643f1.firebaseapp.com",
+    projectId: "inventariopv-643f1",
+    storageBucket: "inventariopv-643f1.appspot.com",
+    messagingSenderId: "96242533231",
+    appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  console.log("PROJECT ID USADO:", firebaseConfig.projectId);
+
+  let reporteFinal = [];
+
+  window.generarReporte = async function(){
+
+    const conteoId = document
+      .getElementById("conteoId")
+      .value
+      .trim();
+
+    const tbody = document.getElementById("tablaReporte");
+    const status = document.getElementById("status");
+    const resumenGeneral = document.getElementById("resumenGeneral");
+    const btnGenerar = document.getElementById("btnGenerar");
+
+    if(!conteoId){
+      alert("Coloca el conteo ID");
+      return;
+    }
+
+    reporteFinal = [];
+    tbody.innerHTML = "";
+
+    btnGenerar.disabled = true;
+
+    actualizarProgreso(
+      5,
+      "Preparando reporte",
+      0,
+      0,
+      0
+    );
+
+    status.textContent = "Preparando reporte...";
+    resumenGeneral.textContent = "Procesando...";
+
+    const mapa = new Map();
+
+    let totalPartidas = 0;
+    let totalCantidad = 0;
+
+    try{
+
+      await pausaUI();
+
+      actualizarProgreso(
+        15,
+        "Leyendo usuarios",
+        0,
+        0,
+        0
+      );
+
+      const usuariosRef = collection(
+        db,
+        "CONTEOS_INVENTARIO",
+        conteoId,
+        "USUARIOS"
+      );
+
+      const usuariosSnap = await getDocs(usuariosRef);
+
+      console.log(
+        "USUARIOS ENCONTRADOS:",
+        usuariosSnap.size
+      );
+
+      let usuarioActual = 0;
+      const totalUsuarios = usuariosSnap.docs.length;
+
+      if(totalUsuarios === 0){
+        actualizarProgreso(
+          100,
+          "Reporte terminado sin usuarios encontrados",
+          0,
+          0,
+          0
+        );
+
+        resumenGeneral.textContent =
+          "No se encontraron usuarios en este conteo. Revisa el Conteo ID.";
+
+        status.textContent =
+          "Sin usuarios encontrados.";
+
+        return;
+      }
+
+      for(const usuarioDoc of usuariosSnap.docs){
+
+        usuarioActual++;
+
+        const usuarioId = usuarioDoc.id;
+
+        actualizarProgreso(
+          20 + Math.round((usuarioActual / totalUsuarios) * 20),
+          `Leyendo partidas de usuario ${usuarioActual} de ${totalUsuarios}`,
+          totalPartidas,
+          mapa.size,
+          totalCantidad
+        );
+
+        status.textContent =
+          `Leyendo usuario ${usuarioActual} de ${totalUsuarios}`;
+
+        await pausaUI();
+
+        const partidasRef = collection(
+          db,
+          "CONTEOS_INVENTARIO",
+          conteoId,
+          "USUARIOS",
+          usuarioId,
+          "PARTIDAS"
+        );
+
+        const partidasSnap = await getDocs(partidasRef);
+
+        console.log(
+          "PARTIDAS USUARIO:",
+          usuarioId,
+          partidasSnap.size
+        );
+
+        const totalDocsUsuario = partidasSnap.docs.length;
+
+        for(let i = 0; i < totalDocsUsuario; i++){
+
+          const p = partidasSnap.docs[i].data();
+
+          if(p.eliminado === true){
+            continue;
+          }
+
+          const codigo = String(
+            p.codigo ||
+            p.productoId ||
+            p.codigoOriginal ||
+            p.codigoEscaneadoUltimo ||
+            ""
+          ).trim();
+
+          if(!codigo){
+            continue;
+          }
+
+          const descripcion = String(
+            p.descripcion ||
+            p.concepto ||
+            p.nombre ||
+            "SIN DESCRIPCIÓN"
+          ).trim();
+
+          const cantidad = Number(
+            p.cantidad || 0
+          );
+
+          if(!mapa.has(codigo)){
+
+            mapa.set(codigo, {
+              codigo,
+              descripcion,
+              cantidad_contada:0
+            });
+
+          }
+
+          const item = mapa.get(codigo);
+
+          item.cantidad_contada += cantidad;
+
+          if(
+            (!item.descripcion || item.descripcion === "SIN DESCRIPCIÓN") &&
+            descripcion
+          ){
+            item.descripcion = descripcion;
+          }
+
+          totalPartidas++;
+          totalCantidad += cantidad;
+
+          if(i % 50 === 0){
+
+            const avance =
+              40 +
+              Math.round(
+                (usuarioActual / totalUsuarios) * 40
+              );
+
+            actualizarProgreso(
+              avance,
+              "Agrupando SKU repetidos",
+              totalPartidas,
+              mapa.size,
+              totalCantidad
+            );
+
+            await pausaUI();
+          }
+
+        }
+
+      }
+
+      actualizarProgreso(
+        85,
+        "Construyendo tabla",
+        totalPartidas,
+        mapa.size,
+        totalCantidad
+      );
+
+      status.textContent =
+        "Construyendo tabla...";
+
+      await pausaUI();
+
+      reporteFinal = Array
+        .from(mapa.values())
+        .sort((a,b)=>
+          a.descripcion.localeCompare(b.descripcion)
+        );
+
+      pintarTabla(reporteFinal);
+
+      actualizarProgreso(
+        100,
+        "Reporte terminado",
+        totalPartidas,
+        reporteFinal.length,
+        totalCantidad
+      );
+
+      resumenGeneral.textContent =
+        `Partidas leídas: ${totalPartidas} / SKU únicos: ${reporteFinal.length} / Piezas: ${totalCantidad}`;
+
+      status.textContent =
+        "Reporte generado correctamente.";
+
+    }
+    catch(error){
+
+      console.error(error);
+
+      status.textContent =
+        "Error al generar reporte.";
+
+      actualizarProgreso(
+        0,
+        "Error al generar reporte",
+        totalPartidas,
+        mapa.size,
+        totalCantidad
+      );
+
+      alert(
+        "ERROR:\n\n" +
+        error.message
+      );
+
+    }
+    finally{
+
+      btnGenerar.disabled = false;
+
+    }
+
+  };
+
+  function actualizarProgreso(
+    porcentaje,
+    texto,
+    partidas,
+    skus,
+    piezas
+  ){
+
+    porcentaje = Math.max(
+      0,
+      Math.min(100, porcentaje)
+    );
+
+    document.getElementById("progressFill")
+      .style.width = porcentaje + "%";
+
+    document.getElementById("progressPercent")
+      .textContent = porcentaje + "%";
+
+    document.getElementById("progressText")
+      .textContent = texto;
+
+    document.getElementById("contador")
+      .textContent =
+        `Partidas leídas: ${partidas} / SKU únicos: ${skus} / Piezas: ${piezas}`;
+
+  }
+
+  function pintarTabla(data){
+
+    const tbody =
+      document.getElementById("tablaReporte");
+
+    tbody.innerHTML = "";
+
+    const fragment =
+      document.createDocumentFragment();
+
+    data.forEach(item=>{
+
+      const tr =
+        document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${escapeHTML(item.codigo)}</td>
+        <td>${escapeHTML(item.descripcion)}</td>
+        <td class="right">
+          ${item.cantidad_contada}
+        </td>
+      `;
+
+      fragment.appendChild(tr);
+
+    });
+
+    tbody.appendChild(fragment);
+
+  }
+
+  function pause(ms){
+    return new Promise(r=>setTimeout(r,ms));
+  }
+
+  async function pausaUI(){
+    await pause(20);
+  }
+
+  function escapeHTML(text){
+
+    return String(text)
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+
+  }
+
+  window.exportarCSV = function(){
+
+    if(!reporteFinal.length){
+      alert("Primero genera el reporte");
+      return;
+    }
+
+    let csv =
+      "codigo,descripcion,cantidad_contada\n";
+
+    reporteFinal.forEach(item=>{
+
+      csv +=
+        `"${String(item.codigo).replace(/"/g,'""')}","${String(item.descripcion).replace(/"/g,'""')}","${item.cantidad_contada}"\n`;
+
+    });
+
+    const blob =
+      new Blob(
+        [csv],
+        {
+          type:"text/csv;charset=utf-8;"
+        }
+      );
+
+    const url =
+      URL.createObjectURL(blob);
+
+    const a =
+      document.createElement("a");
+
+    a.href = url;
+    a.download =
+      "reporte_conteo_inventario.csv";
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+  };
+
+</script>
+
+</body>
+</html>

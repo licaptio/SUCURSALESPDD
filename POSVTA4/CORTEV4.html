@@ -183,7 +183,7 @@
 
           // [9.4] Detalle por departamento / artículo
           for(const det of (v.detalle||[])){
-            const dep=det.departamento_info?.nombre?.toUpperCase()||"SIN DEPTO";
+            const dep = String(det.departamento_info?.nombre || "SIN DEPTO").toUpperCase();
             const importe=(det.importe||0)-(det.descuento_monto||0);
             const costoD=det.costo_total||det.costo_unit*(det.cantidad||1)||0;
             const utilD=det.utilidad||importe-costoD;
@@ -193,7 +193,7 @@
             porDepto[dep].venta+=importe; porDepto[dep].costo+=costoD;
             porDepto[dep].utilidad+=utilD; porDepto[dep].impuestos+=iva+ieps;
 
-            const art=det.nombre?.toUpperCase()||"SIN NOMBRE";
+            const art = String(det.nombre || "SIN NOMBRE").toUpperCase();
             if(!porArticulo[art]) porArticulo[art]={cantidad:0,importe:0,costo:0};
             porArticulo[art].cantidad+=det.cantidad||0;
             porArticulo[art].importe+=importe;

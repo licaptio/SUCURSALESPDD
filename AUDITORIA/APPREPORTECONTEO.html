@@ -5,6 +5,9 @@
   <title>Reporte Conteo Inventario - PROVSOFT</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
   <style>
     body{
       margin:0;
@@ -245,6 +248,10 @@
       Exportar CSV
     </button>
 
+    <button onclick="generarPDFGeneral()">
+      Generar PDF final
+    </button>
+
     <button onclick="window.print()">
       Imprimir
     </button>
@@ -405,6 +412,9 @@
   let reporteFinal = [];
   let totalesFinales = crearTotalesVacios();
 
+  let usuariosCapturistas = [];
+  let fechaInicialInventario = null;
+
   window.generarReporte = async function(){
 
     const conteoId =
@@ -434,6 +444,8 @@
 
     reporteFinal = [];
     totalesFinales = crearTotalesVacios();
+    usuariosCapturistas = [];
+    fechaInicialInventario = null;
 
     tbody.innerHTML = "";
 
@@ -527,6 +539,8 @@
         const usuarioId =
           usuarioDoc.id;
 
+        usuariosCapturistas.push(usuarioId);
+
         actualizarProgreso(
           25 + Math.round((usuarioActual / totalUsuarios) * 20),
           `Leyendo partidas de usuario ${usuarioActual} de ${totalUsuarios}`,
@@ -559,6 +573,8 @@
 
           const p =
             partidasSnap.docs[i].data();
+
+          registrarFechaInicialInventario(p);
 
           if(p.eliminado === true){
             continue;
@@ -635,6 +651,13 @@
         }
 
       }
+
+      usuariosCapturistas =
+        Array.from(
+          new Set(
+            usuariosCapturistas.filter(Boolean)
+          )
+        );
 
       actualizarProgreso(
         78,
@@ -1385,6 +1408,130 @@
 
   }
 
+  function registrarFechaInicialInventario(p){
+
+    const posiblesFechas = [
+      p.fecha,
+      p.fechaCaptura,
+      p.fecha_captura,
+      p.fechaRegistro,
+      p.fecha_registro,
+      p.timestamp,
+      p.creado_en,
+      p.createdAt,
+      p.creadoEl
+    ];
+
+    for(const valor of posiblesFechas){
+
+      const fecha =
+        convertirFechaFlexible(valor);
+
+      if(!fecha){
+        continue;
+      }
+
+      if(
+        !fechaInicialInventario ||
+        fecha < fechaInicialInventario
+      ){
+
+        fechaInicialInventario = fecha;
+
+      }
+
+      break;
+
+    }
+
+  }
+
+  function convertirFechaFlexible(valor){
+
+    if(!valor){
+      return null;
+    }
+
+    try{
+
+      if(
+        typeof valor === "object" &&
+        typeof valor.toDate === "function"
+      ){
+
+        const f = valor.toDate();
+
+        if(!isNaN(f.getTime())){
+          return f;
+        }
+
+      }
+
+      if(
+        typeof valor === "object" &&
+        valor.seconds
+      ){
+
+        const f =
+          new Date(valor.seconds * 1000);
+
+        if(!isNaN(f.getTime())){
+          return f;
+        }
+
+      }
+
+      const f =
+        new Date(valor);
+
+      if(!isNaN(f.getTime())){
+        return f;
+      }
+
+      return null;
+
+    }
+    catch(e){
+
+      return null;
+
+    }
+
+  }
+
+  async function cargarImagenBase64(src){
+
+    return new Promise((resolve,reject)=>{
+
+      const img = new Image();
+
+      img.onload = function(){
+
+        const canvas =
+          document.createElement("canvas");
+
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        const ctx =
+          canvas.getContext("2d");
+
+        ctx.drawImage(img,0,0);
+
+        resolve(
+          canvas.toDataURL("image/jpeg")
+        );
+
+      };
+
+      img.onerror = reject;
+
+      img.src = src;
+
+    });
+
+  }
+
   window.exportarCSV = function(){
 
     if(!reporteFinal.length){
@@ -1432,6 +1579,320 @@
     a.click();
 
     URL.revokeObjectURL(url);
+
+  };
+
+  window.generarPDFGeneral = async function(){
+
+    if(!reporteFinal.length){
+
+      alert(
+        "Primero genera el reporte"
+      );
+
+      return;
+
+    }
+
+    if(
+      !window.jspdf ||
+      !window.jspdf.jsPDF
+    ){
+
+      alert(
+        "No cargó la librería jsPDF. Revisa conexión a internet."
+      );
+
+      return;
+
+    }
+
+    const { jsPDF } =
+      window.jspdf;
+
+    const doc =
+      new jsPDF({
+        orientation:"landscape",
+        unit:"mm",
+        format:"a4"
+      });
+
+    const conteoId =
+      document
+        .getElementById("conteoId")
+        .value
+        .trim();
+
+    const pageWidth =
+      doc.internal.pageSize.getWidth();
+
+    const fechaGeneracion =
+      new Date();
+
+    const fechaInicialTexto =
+      fechaInicialInventario
+        ? fechaInicialInventario.toLocaleString("es-MX")
+        : "SIN FECHA";
+
+    try{
+
+      const logo =
+        await cargarImagenBase64("logo.jfif");
+
+      doc.addImage(
+        logo,
+        "JPEG",
+        10,
+        8,
+        28,
+        28
+      );
+
+    }
+    catch(e){
+
+      console.warn(
+        "No se pudo cargar logo.jfif",
+        e
+      );
+
+    }
+
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(20);
+
+    doc.text(
+      "PROVEEDORA DE DULCES Y DESECHABLES",
+      pageWidth / 2,
+      16,
+      {
+        align:"center"
+      }
+    );
+
+    doc.setFontSize(15);
+
+    doc.text(
+      "REPORTE GENERAL DE INVENTARIO",
+      pageWidth / 2,
+      25,
+      {
+        align:"center"
+      }
+    );
+
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(9);
+
+    doc.text(
+      `Conteo ID: ${conteoId}`,
+      10,
+      42
+    );
+
+    doc.text(
+      `Fecha inicial del inventario: ${fechaInicialTexto}`,
+      10,
+      48
+    );
+
+    doc.text(
+      `Fecha de generación: ${fechaGeneracion.toLocaleString("es-MX")}`,
+      10,
+      54
+    );
+
+    doc.text(
+      `Usuarios que capturaron: ${usuariosCapturistas.join(", ") || "SIN USUARIOS"}`,
+      10,
+      60,
+      {
+        maxWidth:275
+      }
+    );
+
+    const filas =
+      reporteFinal.map(item => [
+        item.codigo,
+        item.descripcion,
+        formatoNumero(item.cantidad_contada),
+        formatoMoneda(item.costoSinImpuesto),
+        formatoMoneda(item.costoNeto),
+        formatoMoneda(item.iva),
+        formatoMoneda(item.ieps),
+        formatoMoneda(item.totalConImpuestos)
+      ]);
+
+    doc.autoTable({
+
+      startY:68,
+
+      head:[[
+        "Código",
+        "Artículo",
+        "Cantidad",
+        "Costo",
+        "Costo Total",
+        "IVA",
+        "IEPS",
+        "Total Costo + IVA + IEPS"
+      ]],
+
+      body:filas,
+
+      foot:[[
+        "",
+        "TOTALES",
+        formatoNumero(totalesFinales.cantidad),
+        "",
+        formatoMoneda(totalesFinales.costoNeto),
+        formatoMoneda(totalesFinales.iva),
+        formatoMoneda(totalesFinales.ieps),
+        formatoMoneda(totalesFinales.totalConImpuestos)
+      ]],
+
+      theme:"grid",
+
+      styles:{
+        font:"helvetica",
+        fontSize:7.2,
+        cellPadding:1.7,
+        overflow:"linebreak",
+        valign:"middle"
+      },
+
+      headStyles:{
+        fillColor:[15,23,42],
+        textColor:[255,255,255],
+        fontStyle:"bold",
+        halign:"center"
+      },
+
+      footStyles:{
+        fillColor:[229,231,235],
+        textColor:[17,24,39],
+        fontStyle:"bold"
+      },
+
+      columnStyles:{
+        0:{cellWidth:28},
+        1:{cellWidth:105},
+        2:{cellWidth:20,halign:"right"},
+        3:{cellWidth:24,halign:"right"},
+        4:{cellWidth:27,halign:"right"},
+        5:{cellWidth:22,halign:"right"},
+        6:{cellWidth:22,halign:"right"},
+        7:{cellWidth:35,halign:"right"}
+      },
+
+      margin:{
+        left:7,
+        right:7
+      },
+
+      didDrawPage:function(data){
+
+        const pageNumber =
+          doc.internal.getNumberOfPages();
+
+        doc.setFont("helvetica","normal");
+        doc.setFontSize(8);
+
+        doc.text(
+          `PROVSOFT | Documento generado automáticamente | Página ${pageNumber}`,
+          pageWidth / 2,
+          202,
+          {
+            align:"center"
+          }
+        );
+
+      }
+
+    });
+
+    let finalY =
+      doc.lastAutoTable.finalY + 8;
+
+    if(finalY > 185){
+
+      doc.addPage();
+
+      finalY = 15;
+
+    }
+
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(11);
+
+    doc.text(
+      "Resumen final",
+      10,
+      finalY
+    );
+
+    finalY += 6;
+
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(9);
+
+    doc.text(
+      `SKU únicos: ${formatoNumero(reporteFinal.length)}`,
+      10,
+      finalY
+    );
+
+    finalY += 5;
+
+    doc.text(
+      `Cantidad total contada: ${formatoNumero(totalesFinales.cantidad)}`,
+      10,
+      finalY
+    );
+
+    finalY += 5;
+
+    doc.text(
+      `Costo total: ${formatoMoneda(totalesFinales.costoNeto)}`,
+      10,
+      finalY
+    );
+
+    finalY += 5;
+
+    doc.text(
+      `IVA total: ${formatoMoneda(totalesFinales.iva)}`,
+      10,
+      finalY
+    );
+
+    finalY += 5;
+
+    doc.text(
+      `IEPS total: ${formatoMoneda(totalesFinales.ieps)}`,
+      10,
+      finalY
+    );
+
+    finalY += 5;
+
+    doc.text(
+      `Total costo + IVA + IEPS: ${formatoMoneda(totalesFinales.totalConImpuestos)}`,
+      10,
+      finalY
+    );
+
+    finalY += 7;
+
+    doc.text(
+      `SIN COSTO: ${totalesFinales.sinCosto} | SIN DEPARTAMENTO: ${totalesFinales.sinDepartamento} | NO ENCONTRADO EN CATÁLOGO: ${totalesFinales.noEncontrado}`,
+      10,
+      finalY
+    );
+
+    doc.save(
+      `REPORTE_GENERAL_INVENTARIO_${conteoId}.pdf`
+    );
 
   };
 

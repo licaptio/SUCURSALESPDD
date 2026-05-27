@@ -114,34 +114,7 @@
     .total-box{
       font-size:18px;
       font-weight:bold;
-      line-height:1.6;
-    }
-
-    .kpi-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-      gap:12px;
-    }
-
-    .kpi{
-      background:#f9fafb;
-      border:1px solid #e5e7eb;
-      border-radius:12px;
-      padding:12px;
-    }
-
-    .kpi-title{
-      font-size:12px;
-      color:#6b7280;
-      font-weight:bold;
-      text-transform:uppercase;
-      margin-bottom:4px;
-    }
-
-    .kpi-value{
-      font-size:20px;
-      font-weight:bold;
-      color:#111827;
+      line-height:1.7;
     }
 
     .table-wrap{
@@ -210,6 +183,7 @@
     }
 
     @media print{
+
       .no-print{
         display:none;
       }
@@ -237,6 +211,7 @@
         font-size:10px;
         padding:5px;
       }
+
     }
   </style>
 </head>
@@ -253,9 +228,16 @@
   <div class="card no-print">
 
     <label for="conteoId">Conteo ID</label>
-    <input id="conteoId" value="ALLENDE_MAYO_2026"/>
 
-    <button id="btnGenerar" onclick="generarReporte()">
+    <input
+      id="conteoId"
+      value="ALLENDE_MAYO_2026"
+    />
+
+    <button
+      id="btnGenerar"
+      onclick="generarReporte()"
+    >
       Generar reporte
     </button>
 
@@ -274,12 +256,22 @@
     <div class="progress-container">
 
       <div class="progress-header">
-        <span id="progressText">Preparando...</span>
-        <span id="progressPercent">0%</span>
+
+        <span id="progressText">
+          Preparando...
+        </span>
+
+        <span id="progressPercent">
+          0%
+        </span>
+
       </div>
 
       <div class="progress-bar">
-        <div id="progressFill" class="progress-fill"></div>
+        <div
+          id="progressFill"
+          class="progress-fill"
+        ></div>
       </div>
 
       <div id="contador" class="contador">
@@ -291,15 +283,22 @@
   </div>
 
   <div class="card">
-    <div id="resumenGeneral" class="total-box">
+
+    <div
+      id="resumenGeneral"
+      class="total-box"
+    >
       Sin datos cargados.
     </div>
+
   </div>
 
   <div class="card">
+
     <div class="table-wrap">
 
       <table>
+
         <thead>
           <tr>
             <th>Código</th>
@@ -322,27 +321,66 @@
         <tfoot>
           <tr>
             <td colspan="3">TOTALES</td>
-            <td class="right" id="footCantidad">0</td>
+
+            <td
+              class="right"
+              id="footCantidad"
+            >
+              0
+            </td>
+
             <td></td>
-            <td class="right" id="footCostoNeto">$0.00</td>
+
+            <td
+              class="right"
+              id="footCostoNeto"
+            >
+              $0.00
+            </td>
+
             <td></td>
-            <td class="right" id="footIva">$0.00</td>
+
+            <td
+              class="right"
+              id="footIva"
+            >
+              $0.00
+            </td>
+
             <td></td>
-            <td class="right" id="footIeps">$0.00</td>
-            <td class="right" id="footTotal">$0.00</td>
+
+            <td
+              class="right"
+              id="footIeps"
+            >
+              $0.00
+            </td>
+
+            <td
+              class="right"
+              id="footTotal"
+            >
+              $0.00
+            </td>
+
             <td></td>
+
           </tr>
         </tfoot>
+
       </table>
 
     </div>
+
   </div>
 
 </main>
 
 <script type="module">
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    initializeApp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
   import {
     getFirestore,
@@ -351,42 +389,54 @@
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
+
     apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
     authDomain: "inventariopv-643f1.firebaseapp.com",
     projectId: "inventariopv-643f1",
     storageBucket: "inventariopv-643f1.appspot.com",
     messagingSenderId: "96242533231",
     appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-
-  console.log("PROJECT ID USADO:", firebaseConfig.projectId);
 
   let reporteFinal = [];
   let totalesFinales = crearTotalesVacios();
 
   window.generarReporte = async function(){
 
-    const conteoId = document
-      .getElementById("conteoId")
-      .value
-      .trim();
+    const conteoId =
+      document
+        .getElementById("conteoId")
+        .value
+        .trim();
 
-    const tbody = document.getElementById("tablaReporte");
-    const status = document.getElementById("status");
-    const resumenGeneral = document.getElementById("resumenGeneral");
-    const btnGenerar = document.getElementById("btnGenerar");
+    const tbody =
+      document.getElementById("tablaReporte");
+
+    const status =
+      document.getElementById("status");
+
+    const resumenGeneral =
+      document.getElementById("resumenGeneral");
+
+    const btnGenerar =
+      document.getElementById("btnGenerar");
 
     if(!conteoId){
+
       alert("Coloca el conteo ID");
       return;
+
     }
 
     reporteFinal = [];
     totalesFinales = crearTotalesVacios();
+
     tbody.innerHTML = "";
+
     pintarTotales(totalesFinales);
 
     btnGenerar.disabled = true;
@@ -399,8 +449,11 @@
       0
     );
 
-    status.textContent = "Preparando reporte...";
-    resumenGeneral.textContent = "Procesando...";
+    status.textContent =
+      "Preparando reporte...";
+
+    resumenGeneral.textContent =
+      "Procesando...";
 
     const mapa = new Map();
 
@@ -419,7 +472,8 @@
         0
       );
 
-      const catalogo = await cargarCatalogoProductos();
+      const catalogo =
+        await cargarCatalogoProductos();
 
       await pausaUI();
 
@@ -438,17 +492,16 @@
         "USUARIOS"
       );
 
-      const usuariosSnap = await getDocs(usuariosRef);
-
-      console.log(
-        "USUARIOS ENCONTRADOS:",
-        usuariosSnap.size
-      );
+      const usuariosSnap =
+        await getDocs(usuariosRef);
 
       let usuarioActual = 0;
-      const totalUsuarios = usuariosSnap.docs.length;
+
+      const totalUsuarios =
+        usuariosSnap.docs.length;
 
       if(totalUsuarios === 0){
+
         actualizarProgreso(
           100,
           "Reporte terminado sin usuarios encontrados",
@@ -458,19 +511,21 @@
         );
 
         resumenGeneral.textContent =
-          "No se encontraron usuarios en este conteo. Revisa el Conteo ID.";
+          "No se encontraron usuarios.";
 
         status.textContent =
           "Sin usuarios encontrados.";
 
         return;
+
       }
 
       for(const usuarioDoc of usuariosSnap.docs){
 
         usuarioActual++;
 
-        const usuarioId = usuarioDoc.id;
+        const usuarioId =
+          usuarioDoc.id;
 
         actualizarProgreso(
           25 + Math.round((usuarioActual / totalUsuarios) * 20),
@@ -494,19 +549,16 @@
           "PARTIDAS"
         );
 
-        const partidasSnap = await getDocs(partidasRef);
+        const partidasSnap =
+          await getDocs(partidasRef);
 
-        console.log(
-          "PARTIDAS USUARIO:",
-          usuarioId,
-          partidasSnap.size
-        );
-
-        const totalDocsUsuario = partidasSnap.docs.length;
+        const totalDocsUsuario =
+          partidasSnap.docs.length;
 
         for(let i = 0; i < totalDocsUsuario; i++){
 
-          const p = partidasSnap.docs[i].data();
+          const p =
+            partidasSnap.docs[i].data();
 
           if(p.eliminado === true){
             continue;
@@ -531,9 +583,8 @@
             "SIN DESCRIPCIÓN"
           ).trim();
 
-          const cantidad = Number(
-            p.cantidad || 0
-          );
+          const cantidad =
+            Number(p.cantidad || 0);
 
           if(!mapa.has(codigo)){
 
@@ -545,13 +596,15 @@
 
           }
 
-          const item = mapa.get(codigo);
+          const item =
+            mapa.get(codigo);
 
           item.cantidad_contada += cantidad;
 
           if(
-            (!item.descripcion || item.descripcion === "SIN DESCRIPCIÓN") &&
-            descripcion
+            (!item.descripcion ||
+             item.descripcion === "SIN DESCRIPCIÓN")
+            && descripcion
           ){
             item.descripcion = descripcion;
           }
@@ -576,6 +629,7 @@
             );
 
             await pausaUI();
+
           }
 
         }
@@ -597,13 +651,25 @@
 
       reporteFinal = Array
         .from(mapa.values())
-        .map(item => enriquecerConCatalogo(item, catalogo))
+        .map(item =>
+          enriquecerConCatalogo(
+            item,
+            catalogo
+          )
+        )
         .sort((a,b)=>
-          String(a.departamento || "").localeCompare(String(b.departamento || "")) ||
-          String(a.descripcion || "").localeCompare(String(b.descripcion || ""))
+          String(a.departamento || "")
+            .localeCompare(
+              String(b.departamento || "")
+            ) ||
+          String(a.descripcion || "")
+            .localeCompare(
+              String(b.descripcion || "")
+            )
         );
 
-      totalesFinales = calcularTotales(reporteFinal);
+      totalesFinales =
+        calcularTotales(reporteFinal);
 
       actualizarProgreso(
         90,
@@ -619,6 +685,7 @@
       await pausaUI();
 
       pintarTabla(reporteFinal);
+
       pintarTotales(totalesFinales);
 
       actualizarProgreso(
@@ -673,57 +740,128 @@
       porCodigo: new Map()
     };
 
-    const productosRef = collection(db, "productos");
-    const productosSnap = await getDocs(productosRef);
+    const productosRef =
+      collection(db, "productos");
 
-    console.log("PRODUCTOS ENCONTRADOS:", productosSnap.size);
+    const productosSnap =
+      await getDocs(productosRef);
 
     let procesados = 0;
 
     for(const docSnap of productosSnap.docs){
 
-      const data = docSnap.data();
+      const data =
+        docSnap.data();
 
       const producto = {
+
         id: docSnap.id,
-        activo: data.activo === true,
-        codigoBarra: limpiarCodigo(data.codigoBarra || ""),
-        concepto: data.concepto || data.descripcion || "",
-        departamento: data.departamento || "",
-        departamento_id: data.departamento_id || "",
-        marca: data.marca || "",
-        costoSinImpuesto: Number(data.costoSinImpuesto || 0),
-        ivaTasa: Number(data.ivaTasa || 0),
-        iepsTasa: Number(data.iepsTasa || 0),
-        codigosEquivalentes: extraerCodigosEquivalentes(data.codigosEquivalentes)
+
+        activo:
+          data.activo === true,
+
+        codigoBarra:
+          limpiarCodigo(
+            data.codigoBarra || ""
+          ),
+
+        concepto:
+          data.concepto ||
+          data.descripcion ||
+          "",
+
+        departamento:
+          data.departamento || "",
+
+        departamento_id:
+          data.departamento_id || "",
+
+        marca:
+          data.marca || "",
+
+        costoSinImpuesto:
+          Number(
+            data.costoSinImpuesto || 0
+          ),
+
+        ivaTasa:
+          Number(
+            data.ivaTasa || 0
+          ),
+
+        iepsTasa:
+          Number(
+            data.iepsTasa || 0
+          ),
+
+        codigosEquivalentes:
+          extraerCodigosEquivalentes(
+            data.codigosEquivalentes
+          )
+
       };
 
-      const codigos = new Set();
+      const codigos =
+        new Set();
 
-      if(producto.id) codigos.add(limpiarCodigo(producto.id));
-      if(producto.codigoBarra) codigos.add(limpiarCodigo(producto.codigoBarra));
+      if(producto.id){
+        codigos.add(
+          limpiarCodigo(producto.id)
+        );
+      }
 
-      producto.codigosEquivalentes.forEach(c => {
-        if(c) codigos.add(limpiarCodigo(c));
-      });
+      if(producto.codigoBarra){
+        codigos.add(
+          limpiarCodigo(producto.codigoBarra)
+        );
+      }
+
+      producto.codigosEquivalentes
+        .forEach(c => {
+
+          if(c){
+            codigos.add(
+              limpiarCodigo(c)
+            );
+          }
+
+        });
 
       codigos.forEach(codigo => {
-        if(codigo && !catalogo.porCodigo.has(codigo)){
-          catalogo.porCodigo.set(codigo, producto);
+
+        if(
+          codigo &&
+          !catalogo.porCodigo.has(codigo)
+        ){
+
+          catalogo.porCodigo.set(
+            codigo,
+            producto
+          );
+
         }
+
       });
 
       procesados++;
 
       if(procesados % 250 === 0){
+
         actualizarProgreso(
-          12 + Math.min(10, Math.round((procesados / productosSnap.size) * 10)),
-          `Leyendo catálogo de productos ${procesados}/${productosSnap.size}`,
+          12 + Math.min(
+            10,
+            Math.round(
+              (procesados / productosSnap.size) * 10
+            )
+          ),
+          `Leyendo catálogo ${procesados}/${productosSnap.size}`,
           0,
           0,
           0
         );
+
         await pausaUI();
+
       }
 
     }
@@ -732,112 +870,244 @@
 
   }
 
-  function enriquecerConCatalogo(item, catalogo){
+  function enriquecerConCatalogo(
+    item,
+    catalogo
+  ){
 
-    const codigoBase = limpiarCodigo(item.codigo);
-    const producto = catalogo.porCodigo.get(codigoBase) || null;
+    const codigoBase =
+      limpiarCodigo(item.codigo);
 
-    const cantidad = Number(item.cantidad_contada || 0);
+    const producto =
+      catalogo.porCodigo.get(codigoBase)
+      || null;
+
+    const cantidad =
+      Number(item.cantidad_contada || 0);
 
     const estatus = [];
 
-    let descripcion = item.descripcion || "SIN DESCRIPCIÓN";
-    let departamento = "SIN DEPARTAMENTO";
+    let descripcion =
+      item.descripcion ||
+      "SIN DESCRIPCIÓN";
+
+    let departamento =
+      "SIN DEPARTAMENTO";
+
     let costoSinImpuesto = 0;
     let ivaTasa = 0;
     let iepsTasa = 0;
 
     if(!producto){
-      estatus.push("NO ENCONTRADO EN CATÁLOGO");
-    }else{
-      descripcion = producto.concepto || descripcion;
-      departamento = producto.departamento || "SIN DEPARTAMENTO";
-      costoSinImpuesto = Number(producto.costoSinImpuesto || 0);
-      ivaTasa = Number(producto.ivaTasa || 0);
-      iepsTasa = Number(producto.iepsTasa || 0);
+
+      estatus.push(
+        "NO ENCONTRADO EN CATÁLOGO"
+      );
+
+    }
+    else{
+
+      descripcion =
+        producto.concepto || descripcion;
+
+      departamento =
+        producto.departamento ||
+        "SIN DEPARTAMENTO";
+
+      costoSinImpuesto =
+        Number(
+          producto.costoSinImpuesto || 0
+        );
+
+      ivaTasa =
+        Number(
+          producto.ivaTasa || 0
+        );
+
+      iepsTasa =
+        Number(
+          producto.iepsTasa || 0
+        );
 
       if(!producto.departamento){
-        estatus.push("SIN DEPARTAMENTO");
+
+        estatus.push(
+          "SIN DEPARTAMENTO"
+        );
+
       }
 
       if(producto.activo !== true){
-        estatus.push("INACTIVO");
+
+        estatus.push(
+          "INACTIVO"
+        );
+
       }
+
     }
 
-    if(!costoSinImpuesto || costoSinImpuesto <= 0){
-      estatus.push("SIN COSTO");
+    if(
+      !costoSinImpuesto ||
+      costoSinImpuesto <= 0
+    ){
+
+      estatus.push(
+        "SIN COSTO"
+      );
+
     }
 
-    if(departamento === "SIN DEPARTAMENTO" && !estatus.includes("SIN DEPARTAMENTO")){
-      estatus.push("SIN DEPARTAMENTO");
+    if(
+      departamento === "SIN DEPARTAMENTO" &&
+      !estatus.includes("SIN DEPARTAMENTO")
+    ){
+
+      estatus.push(
+        "SIN DEPARTAMENTO"
+      );
+
     }
 
-    const costoNeto = redondear(cantidad * costoSinImpuesto);
-    const iva = redondear(costoNeto * (ivaTasa / 100));
-    const ieps = redondear(costoNeto * (iepsTasa / 100));
-    const totalConImpuestos = redondear(costoNeto + iva + ieps);
+    const costoNeto =
+      redondear(
+        cantidad * costoSinImpuesto
+      );
+
+    const ivaFactor =
+      normalizarTasa(ivaTasa);
+
+    const iepsFactor =
+      normalizarTasa(iepsTasa);
+
+    const iva =
+      redondear(
+        costoNeto * ivaFactor
+      );
+
+    const ieps =
+      redondear(
+        costoNeto * iepsFactor
+      );
+
+    const totalConImpuestos =
+      redondear(
+        costoNeto + iva + ieps
+      );
 
     if(!estatus.length){
       estatus.push("OK");
     }
 
     return {
+
       codigo: item.codigo,
+
       descripcion,
+
       departamento,
+
       cantidad_contada: cantidad,
+
       costoSinImpuesto,
+
       costoNeto,
+
       ivaTasa,
+
       iva,
+
       iepsTasa,
+
       ieps,
+
       totalConImpuestos,
+
       estatus,
+
       encontradoCatalogo: !!producto
+
     };
 
   }
 
   function calcularTotales(data){
 
-    const t = crearTotalesVacios();
+    const t =
+      crearTotalesVacios();
 
     data.forEach(item => {
 
-      t.cantidad += Number(item.cantidad_contada || 0);
-      t.costoNeto += Number(item.costoNeto || 0);
-      t.iva += Number(item.iva || 0);
-      t.ieps += Number(item.ieps || 0);
-      t.totalConImpuestos += Number(item.totalConImpuestos || 0);
+      t.cantidad +=
+        Number(
+          item.cantidad_contada || 0
+        );
 
-      if(item.estatus.includes("SIN COSTO")){
+      t.costoNeto +=
+        Number(
+          item.costoNeto || 0
+        );
+
+      t.iva +=
+        Number(
+          item.iva || 0
+        );
+
+      t.ieps +=
+        Number(
+          item.ieps || 0
+        );
+
+      t.totalConImpuestos +=
+        Number(
+          item.totalConImpuestos || 0
+        );
+
+      if(
+        item.estatus.includes("SIN COSTO")
+      ){
         t.sinCosto++;
       }
 
-      if(item.estatus.includes("SIN DEPARTAMENTO")){
+      if(
+        item.estatus.includes("SIN DEPARTAMENTO")
+      ){
         t.sinDepartamento++;
       }
 
-      if(item.estatus.includes("NO ENCONTRADO EN CATÁLOGO")){
+      if(
+        item.estatus.includes("NO ENCONTRADO EN CATÁLOGO")
+      ){
         t.noEncontrado++;
       }
 
     });
 
-    t.cantidad = redondear(t.cantidad);
-    t.costoNeto = redondear(t.costoNeto);
-    t.iva = redondear(t.iva);
-    t.ieps = redondear(t.ieps);
-    t.totalConImpuestos = redondear(t.totalConImpuestos);
+    t.cantidad =
+      redondear(t.cantidad);
+
+    t.costoNeto =
+      redondear(t.costoNeto);
+
+    t.iva =
+      redondear(t.iva);
+
+    t.ieps =
+      redondear(t.ieps);
+
+    t.totalConImpuestos =
+      redondear(
+        t.totalConImpuestos
+      );
 
     return t;
 
   }
 
   function crearTotalesVacios(){
+
     return {
+
       cantidad:0,
       costoNeto:0,
       iva:0,
@@ -846,7 +1116,35 @@
       sinCosto:0,
       sinDepartamento:0,
       noEncontrado:0
+
     };
+
+  }
+
+  function pintarTotales(t){
+
+    document.getElementById("footCantidad")
+      .textContent =
+        formatoNumero(t.cantidad);
+
+    document.getElementById("footCostoNeto")
+      .textContent =
+        formatoMoneda(t.costoNeto);
+
+    document.getElementById("footIva")
+      .textContent =
+        formatoMoneda(t.iva);
+
+    document.getElementById("footIeps")
+      .textContent =
+        formatoMoneda(t.ieps);
+
+    document.getElementById("footTotal")
+      .textContent =
+        formatoMoneda(
+          t.totalConImpuestos
+        );
+
   }
 
   function actualizarProgreso(
@@ -863,13 +1161,16 @@
     );
 
     document.getElementById("progressFill")
-      .style.width = porcentaje + "%";
+      .style.width =
+        porcentaje + "%";
 
     document.getElementById("progressPercent")
-      .textContent = porcentaje + "%";
+      .textContent =
+        porcentaje + "%";
 
     document.getElementById("progressText")
-      .textContent = texto;
+      .textContent =
+        texto;
 
     document.getElementById("contador")
       .textContent =
@@ -922,21 +1223,29 @@
       const clase =
         x === "OK"
           ? "tag-ok"
-          : x === "SIN COSTO" || x === "SIN DEPARTAMENTO" || x === "INACTIVO"
+          : x === "SIN COSTO" ||
+            x === "SIN DEPARTAMENTO" ||
+            x === "INACTIVO"
             ? "tag-warn"
             : "tag-danger";
 
-      return `<span class="tag ${clase}">${escapeHTML(x)}</span>`;
+      return `
+        <span class="tag ${clase}">
+          ${escapeHTML(x)}
+        </span>
+      `;
 
     }).join("");
 
   }
 
   function limpiarCodigo(valor){
+
     return String(valor ?? "")
       .trim()
       .replace(/\.0+$/,"")
       .replace(/\D/g,"");
+
   }
 
   function extraerCodigosEquivalentes(raw){
@@ -944,60 +1253,125 @@
     let arr = [];
 
     if(Array.isArray(raw)){
+
       arr = raw;
-    }else if(raw && typeof raw === "object"){
+
+    }
+    else if(raw && typeof raw === "object"){
+
       arr = Object.values(raw);
-    }else if(raw !== null && raw !== undefined && raw !== ""){
-      arr = String(raw).split(/[\s,;|]+/);
+
+    }
+    else if(
+      raw !== null &&
+      raw !== undefined &&
+      raw !== ""
+    ){
+
+      arr =
+        String(raw)
+          .split(/[\s,;|]+/);
+
     }
 
-    return Array.from(new Set(
-      arr
-        .map(x => limpiarCodigo(x))
-        .filter(Boolean)
-    ));
+    return Array.from(
+      new Set(
+        arr
+          .map(x =>
+            limpiarCodigo(x)
+          )
+          .filter(Boolean)
+      )
+    );
 
   }
 
   function redondear(n){
-    return Math.round((Number(n || 0) + Number.EPSILON) * 100) / 100;
+
+    return Math.round(
+      (
+        Number(n || 0)
+        + Number.EPSILON
+      ) * 100
+    ) / 100;
+
+  }
+
+  function normalizarTasa(tasa){
+
+    const n =
+      Number(tasa || 0);
+
+    if(!n){
+      return 0;
+    }
+
+    if(n >= 1){
+      return n / 100;
+    }
+
+    return n;
+
   }
 
   function formatoMoneda(n){
 
-    return Number(n || 0).toLocaleString("es-MX", {
-      style:"currency",
-      currency:"MXN",
-      minimumFractionDigits:2,
-      maximumFractionDigits:2
-    });
+    return Number(n || 0)
+      .toLocaleString(
+        "es-MX",
+        {
+          style:"currency",
+          currency:"MXN",
+          minimumFractionDigits:2,
+          maximumFractionDigits:2
+        }
+      );
 
   }
 
   function formatoNumero(n){
 
-    return Number(n || 0).toLocaleString("es-MX", {
-      minimumFractionDigits:0,
-      maximumFractionDigits:3
-    });
+    return Number(n || 0)
+      .toLocaleString(
+        "es-MX",
+        {
+          minimumFractionDigits:0,
+          maximumFractionDigits:3
+        }
+      );
 
   }
 
   function formatoPorcentaje(n){
 
-    return `${Number(n || 0).toLocaleString("es-MX", {
-      minimumFractionDigits:0,
-      maximumFractionDigits:3
-    })}%`;
+    const factor =
+      normalizarTasa(n);
+
+    const porcentaje =
+      factor * 100;
+
+    return `${porcentaje.toLocaleString(
+      "es-MX",
+      {
+        minimumFractionDigits:0,
+        maximumFractionDigits:3
+      }
+    )}%`;
 
   }
 
   function pause(ms){
-    return new Promise(r=>setTimeout(r,ms));
+
+    return new Promise(r=>
+      setTimeout(r,ms)
+    );
+
   }
 
   async function pausaUI(){
+
     await pause(20);
+
   }
 
   function escapeHTML(text){
@@ -1014,8 +1388,13 @@
   window.exportarCSV = function(){
 
     if(!reporteFinal.length){
-      alert("Primero genera el reporte");
+
+      alert(
+        "Primero genera el reporte"
+      );
+
       return;
+
     }
 
     let csv =
@@ -1046,6 +1425,7 @@
       document.createElement("a");
 
     a.href = url;
+
     a.download =
       "reporte_conteo_inventario_costos.csv";
 
@@ -1056,7 +1436,10 @@
   };
 
   function csvSafe(valor){
-    return String(valor ?? "").replace(/"/g,'""');
+
+    return String(valor ?? "")
+      .replace(/"/g,'""');
+
   }
 
 </script>

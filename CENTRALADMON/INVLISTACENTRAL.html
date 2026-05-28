@@ -1487,11 +1487,11 @@ setStatus(
     function construirPivot(registros) {
       const mapa = new Map();
 
-const totalInvPorFecha = {};
-const totalEqPorFecha = {};
-const totalTransPorFecha = {};
-const totalProvTransPorFecha = {};
-const totalVtaPorFecha = {};
+      const totalInvPorFecha = {};
+      const totalEqPorFecha = {};
+      const totalTransPorFecha = {};
+      const totalProvTransPorFecha = {};
+      const totalVtaPorFecha = {};
       
       const fechasConMovimiento = new Set();
 
@@ -1506,26 +1506,23 @@ const totalVtaPorFecha = {};
         fechasConMovimiento.add(fecha);
 
         if (!mapa.has(codigoKey)) {
-mapa.set(codigoKey, {
-  codigo: String(item.codigo || "").trim(),
-  codigoKey,
-  descripcion: String(item.descripcion || "").trim(),
-
-  invPorFecha: {},
-  eqPorFecha: {},
-  transPorFecha: {},
-  provTransPorFecha: {},
-  vtaPorFecha: {},
-
-  totalInvBase: 0,
-  totalEq: 0,
-  totalTrans: 0,
-  totalProvTrans: 0,
-  totalVta: 0,
-
-  totalInv: 0,
-  neto: 0
-});
+          mapa.set(codigoKey, {
+            codigo: String(item.codigo || "").trim(),
+            codigoKey,
+            descripcion: String(item.descripcion || "").trim(),
+            invPorFecha: {},
+            eqPorFecha: {},
+            transPorFecha: {},
+            provTransPorFecha: {},
+            vtaPorFecha: {},
+            totalInvBase: 0,
+            totalEq: 0,
+            totalTrans: 0,
+            totalProvTrans: 0,
+            totalVta: 0,
+            totalInv: 0,
+            neto: 0
+          });
         }
 
         const row = mapa.get(codigoKey);
@@ -1547,13 +1544,11 @@ mapa.set(codigoKey, {
           row.transPorFecha[fecha] = (row.transPorFecha[fecha] || 0) + cantidad;
           totalTransPorFecha[fecha] = (totalTransPorFecha[fecha] || 0) + cantidad;
         }
-        if (origen === "PROVTRANS") {
-  row.provTransPorFecha[fecha] =
-    (row.provTransPorFecha[fecha] || 0) + cantidad;
 
-  totalProvTransPorFecha[fecha] =
-    (totalProvTransPorFecha[fecha] || 0) + cantidad;
-}
+        if (origen === "PROVTRANS") {
+          row.provTransPorFecha[fecha] = (row.provTransPorFecha[fecha] || 0) + cantidad;
+          totalProvTransPorFecha[fecha] = (totalProvTransPorFecha[fecha] || 0) + cantidad;
+        }
 
         if (origen === "VTA") {
           row.vtaPorFecha[fecha] = (row.vtaPorFecha[fecha] || 0) + cantidad;
@@ -1568,14 +1563,14 @@ mapa.set(codigoKey, {
         if (totalInvPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "INV" });
         if (totalEqPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "EQUIV" });
         if (totalTransPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "TRANS" });
-        if (totalProvTransPorFecha[fecha] > 0)
-  columnas.push({ fecha, tipo: "PROVTRANS" });
+        if (totalProvTransPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "PROVTRANS" });
         if (totalVtaPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "VTA" });
       }
 
       let totalInvGeneralBase = 0;
       let totalEqGeneral = 0;
       let totalTransGeneral = 0;
+      let totalProvTransGeneral = 0;
       let totalVtaGeneral = 0;
       let totalNetoGeneral = 0;
 
@@ -1583,16 +1578,16 @@ mapa.set(codigoKey, {
         row.totalInvBase = Object.values(row.invPorFecha).reduce((a, b) => a + Number(b || 0), 0);
         row.totalEq = Object.values(row.eqPorFecha).reduce((a, b) => a + Number(b || 0), 0);
         row.totalTrans = Object.values(row.transPorFecha).reduce((a, b) => a + Number(b || 0), 0);
+        row.totalProvTrans = Object.values(row.provTransPorFecha).reduce((a, b) => a + Number(b || 0), 0);
         row.totalVta = Object.values(row.vtaPorFecha).reduce((a, b) => a + Number(b || 0), 0);
 
-        row.totalProvTrans = Object.values(row.provTransPorFecha).reduce((a, b) => a + Number(b || 0), 0);
-row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTrans;
-        
+        row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTrans;
         row.neto = row.totalInv - row.totalVta;
 
         totalInvGeneralBase += row.totalInvBase;
         totalEqGeneral += row.totalEq;
         totalTransGeneral += row.totalTrans;
+        totalProvTransGeneral += row.totalProvTrans;
         totalVtaGeneral += row.totalVta;
         totalNetoGeneral += row.neto;
 
@@ -1613,16 +1608,19 @@ row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTr
         totalInvPorFecha,
         totalEqPorFecha,
         totalTransPorFecha,
+        totalProvTransPorFecha,
         totalVtaPorFecha,
         totalInvGeneralBase,
         totalEqGeneral,
         totalTransGeneral,
-        totalInvGeneral: totalInvGeneralBase + totalEqGeneral + totalTransGeneral,
+        totalProvTransGeneral,
+        totalInvGeneral: totalInvGeneralBase + totalEqGeneral + totalTransGeneral + totalProvTransGeneral,
         totalVtaGeneral,
         totalNetoGeneral,
         totalCodigos: rows.length
       };
     }
+    
 
     function pintarResumen(registros, pivot, extra = {}) {
       // Resumen visual desactivado: la pantalla se mantiene limpia.
@@ -1645,6 +1643,7 @@ row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTr
         totalInvPorFecha,
         totalEqPorFecha,
         totalTransPorFecha,
+        totalProvTransPorFecha,
         totalVtaPorFecha,
         totalInvGeneral,
         totalVtaGeneral,
@@ -1683,14 +1682,13 @@ row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTr
             val = row.invPorFecha[col.fecha] || 0;
           } else if (col.tipo === "EQUIV") {
             val = row.eqPorFecha[col.fecha] || 0;
-} else if (col.tipo === "TRANS") {
-  val = row.transPorFecha[col.fecha] || 0;
-} else if (col.tipo === "PROVTRANS") {
-  val = row.provTransPorFecha[col.fecha] || 0;
-} else {
-  val = row.vtaPorFecha[col.fecha] || 0;
-}
-          
+          } else if (col.tipo === "TRANS") {
+            val = row.transPorFecha[col.fecha] || 0;
+          } else if (col.tipo === "PROVTRANS") {
+            val = row.provTransPorFecha[col.fecha] || 0;
+          } else {
+            val = row.vtaPorFecha[col.fecha] || 0;
+          }
 
           const clase = claseColumna(col.tipo);
           const tieneValor = Number(val) !== 0;
@@ -1727,6 +1725,8 @@ row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTr
             val = totalEqPorFecha[col.fecha] || 0;
           } else if (col.tipo === "TRANS") {
             val = totalTransPorFecha[col.fecha] || 0;
+          } else if (col.tipo === "PROVTRANS") {
+            val = totalProvTransPorFecha[col.fecha] || 0;
           } else {
             val = totalVtaPorFecha[col.fecha] || 0;
           }
@@ -1740,7 +1740,7 @@ row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTr
       `;
       tfoot.appendChild(trFoot);
     }
-
+    
     function excelCellStyle(tipo, bold = false) {
       const fills = {
         INV: "FFFFFF",
@@ -1782,11 +1782,13 @@ row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTr
         totalInvPorFecha,
         totalEqPorFecha,
         totalTransPorFecha,
+        totalProvTransPorFecha,
         totalVtaPorFecha,
         totalInvGeneral,
         totalVtaGeneral,
         totalNetoGeneral
       } = ultimaPivot;
+      
 
       const header = [
         "codigo",
@@ -1807,6 +1809,7 @@ row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTr
             if (col.tipo === "INV") return row.invPorFecha[col.fecha] || "";
             if (col.tipo === "EQUIV") return row.eqPorFecha[col.fecha] || "";
             if (col.tipo === "TRANS") return row.transPorFecha[col.fecha] || "";
+            if (col.tipo === "PROVTRANS") return row.provTransPorFecha[col.fecha] || "";
             return row.vtaPorFecha[col.fecha] || "";
           }),
           row.totalInv || 0,
@@ -1822,8 +1825,10 @@ row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTr
           if (col.tipo === "INV") return totalInvPorFecha[col.fecha] || 0;
           if (col.tipo === "EQUIV") return totalEqPorFecha[col.fecha] || 0;
           if (col.tipo === "TRANS") return totalTransPorFecha[col.fecha] || 0;
+          if (col.tipo === "PROVTRANS") return totalProvTransPorFecha[col.fecha] || 0;
           return totalVtaPorFecha[col.fecha] || 0;
         }),
+        
         totalInvGeneral || 0,
         totalVtaGeneral || 0,
         totalNetoGeneral || 0

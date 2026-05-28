@@ -2064,43 +2064,13 @@ function bindDetalleEvents() {
 }
 
 async function cargarOperadores() {
-  try {
-    const snap = await getDocs(
-      query(
-        collection(db, COLECCION_OPERADORES),
-        where('activo', '==', true)
-      )
-    );
 
-    const lista = [];
+  operadorCapturaCache = [];
 
-    snap.forEach(docSnap => {
-      const data = docSnap.data() || {};
-      const nombre = String(data.nombre || data.usuario || docSnap.id).trim();
+  return true;
 
-      if (nombre) {
-        lista.push({
-          id: docSnap.id,
-          nombre
-        });
-      }
-    });
-
-    operadorCapturaCache = [...lista].sort((a, b) => {
-      return a.nombre.localeCompare(b.nombre, 'es-MX', {
-        sensitivity: 'base',
-        numeric: true
-      });
-    });
-
-  } catch (error) {
-    console.warn(
-      'No se pudieron cargar operadores dinámicos. Se usarán responsables fijos.',
-      error
-    );
-  }
 }
-
+  
 async function cargarCatalogo() {
   try {
     const snap = await getDocs(

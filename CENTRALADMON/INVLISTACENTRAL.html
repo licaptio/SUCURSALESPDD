@@ -1655,9 +1655,15 @@ setStatus(
         <th class="left sticky1">Código</th>
         <th class="left sticky2">Descripción</th>
         ${columnas.map(col => `
-          <th class="${claseColumna(col.tipo)}">
-            ${escapeHtml(col.fecha)} ${col.tipo}
-          </th>
+<th class="${claseColumna(col.tipo)}">
+  <div style="font-weight:900;font-size:11px;">
+    ${col.tipo}
+  </div>
+  <div style="font-size:10px;color:#555;">
+    ${escapeHtml(col.fecha)}
+  </div>
+</th>
+
         `).join("")}
         <th class="total-col">TOTAL INV</th>
         <th class="total-col">TOTAL VTA</th>

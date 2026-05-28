@@ -1278,11 +1278,7 @@ function getRefsPorTienda() {
 async function cargarProvTrans() {
   const { PROVTRANS_REF } = getRefsPorTienda();
 
-  const snap = await PROVTRANS_REF
-    .where("estatus", "==", "SURTIDO")
-    .where("almacen_origen", "==", "CEDIS MATRIZ")
-    .where("sucursal_destino", "==", "CENTRAL")
-    .get();
+  const snap = await PROVTRANS_REF.get();
 
   const docs = [];
   const catalogo = new Map();
@@ -1290,17 +1286,34 @@ async function cargarProvTrans() {
   snap.forEach(doc => {
     const data = doc.data() || {};
 
+    const estatus = String(data.estatus || data.status || "").trim().toUpperCase();
+    const almacenOrigen = String(data.almacen_origen || "").trim().toUpperCase();
+    const sucursalDestino = String(data.sucursal_destino || "").trim().toUpperCase();
+
+    if (!["SURTIDO", "CORREGIDO"].includes(estatus)) return;
+    if (almacenOrigen !== "CEDIS MATRIZ") return;
+    if (sucursalDestino !== "CENTRAL") return;
+
     const fecha = normalizarFecha(
+      data.fecha_surtido ||
+      data.fecha_surtido_completo ||
       data.fecha_guardado_server ||
-      data.fecha_guardado
+      data.fecha_guardado ||
+      data.fecha
     );
 
     const detalle = Array.isArray(data.detalle) ? data.detalle : [];
 
     detalle.forEach(item => {
-      const codigoOriginal = String(item.codigo || "").trim();
-      const descripcion = String(item.nombre || "").trim();
-      const cantidad = Number(item.cantidad_solicitada || 0);
+      const codigoOriginal = String(item.codigo || item.codigoCapturado || "").trim();
+      const descripcion = String(item.nombre || item.descripcion || "").trim();
+
+      const cantidadSurtida = Number(item.cantidad_surtida || 0);
+      const cantidadSolicitada = Number(item.cantidad_solicitada || 0);
+
+      const cantidad = cantidadSurtida > 0
+        ? cantidadSurtida
+        : cantidadSolicitada;
 
       if (!codigoOriginal || !fecha || !Number.isFinite(cantidad) || cantidad <= 0) return;
 
@@ -1320,12 +1333,16 @@ async function cargarProvTrans() {
     });
   });
 
+  console.log("SURTIDOTRANS docs leídos:", snap.size);
+  console.log("SURTIDOTRANS items sumados:", docs.length);
+
   return {
     docs,
     totalProvTransDocs: snap.size,
     catalogo
   };
 }
+    
     
     async function cargarVentas() {
       const { VENTAS_REF } = getRefsPorTienda();
@@ -1568,7 +1585,9 @@ mapa.set(codigoKey, {
         row.totalTrans = Object.values(row.transPorFecha).reduce((a, b) => a + Number(b || 0), 0);
         row.totalVta = Object.values(row.vtaPorFecha).reduce((a, b) => a + Number(b || 0), 0);
 
-        row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans;
+        row.totalProvTrans = Object.values(row.provTransPorFecha).reduce((a, b) => a + Number(b || 0), 0);
+row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTrans;
+        
         row.neto = row.totalInv - row.totalVta;
 
         totalInvGeneralBase += row.totalInvBase;
@@ -1614,6 +1633,7 @@ mapa.set(codigoKey, {
       if (tipo === "INV") return "inv-col";
       if (tipo === "EQUIV") return "eq-col";
       if (tipo === "TRANS") return "trans-col";
+      if (tipo === "PROVTRANS") return "trans-col";
       if (tipo === "VTA") return "vta-col";
       return "total-col";
     }
@@ -1663,11 +1683,14 @@ mapa.set(codigoKey, {
             val = row.invPorFecha[col.fecha] || 0;
           } else if (col.tipo === "EQUIV") {
             val = row.eqPorFecha[col.fecha] || 0;
-          } else if (col.tipo === "TRANS") {
-            val = row.transPorFecha[col.fecha] || 0;
-          } else {
-            val = row.vtaPorFecha[col.fecha] || 0;
-          }
+} else if (col.tipo === "TRANS") {
+  val = row.transPorFecha[col.fecha] || 0;
+} else if (col.tipo === "PROVTRANS") {
+  val = row.provTransPorFecha[col.fecha] || 0;
+} else {
+  val = row.vtaPorFecha[col.fecha] || 0;
+}
+          
 
           const clase = claseColumna(col.tipo);
           const tieneValor = Number(val) !== 0;

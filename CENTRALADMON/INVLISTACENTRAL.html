@@ -686,19 +686,20 @@ tfoot td {
       return "CENTRAL";
     }
 
-    function getRefsPorTienda() {
-      const TIENDA = getTiendaActual();
+function getRefsPorTienda() {
+  const TIENDA = getTiendaActual();
 
-      return {
-        TIENDA,
-        INVENTARIOS_REF: db.collection("TIENDAS").doc(TIENDA).collection("inventario1"),
-        TRANSFERENCIAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("TECNOTRANSF"),
-        VENTAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("ventas"),
-        PRODUCTOS_REF: db.collection("productos"),
-        EQUIVALENCIAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("configuracion_equivalencias")
-      };
-    }
-
+  return {
+    TIENDA,
+    INVENTARIOS_REF: db.collection("TIENDAS").doc(TIENDA).collection("inventario1"),
+    TRANSFERENCIAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("TECNOTRANSF"),
+    PROVTRANS_REF: db.collection("TIENDAS").doc(TIENDA).collection("SURTIDOTRANS"),
+    VENTAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("ventas"),
+    PRODUCTOS_REF: db.collection("productos"),
+    EQUIVALENCIAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("configuracion_equivalencias")
+  };
+}
+    
     function setStatus(msg, type = "", progress = null) {
       const statusEl = document.getElementById("status");
       if (statusEl) {
@@ -1274,7 +1275,58 @@ tfoot td {
         catalogo
       };
     }
+async function cargarProvTrans() {
+  const { PROVTRANS_REF } = getRefsPorTienda();
 
+  const snap = await PROVTRANS_REF
+    .where("estatus", "==", "SURTIDO")
+    .where("almacen_origen", "==", "CEDIS MATRIZ")
+    .where("sucursal_destino", "==", "CENTRAL")
+    .get();
+
+  const docs = [];
+  const catalogo = new Map();
+
+  snap.forEach(doc => {
+    const data = doc.data() || {};
+
+    const fecha = normalizarFecha(
+      data.fecha_guardado_server ||
+      data.fecha_guardado
+    );
+
+    const detalle = Array.isArray(data.detalle) ? data.detalle : [];
+
+    detalle.forEach(item => {
+      const codigoOriginal = String(item.codigo || "").trim();
+      const descripcion = String(item.nombre || "").trim();
+      const cantidad = Number(item.cantidad_solicitada || 0);
+
+      if (!codigoOriginal || !fecha || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+      docs.push({
+        origen: "PROVTRANS",
+        id: `${doc.id}_${codigoOriginal}`,
+        codigo: codigoOriginal,
+        codigoKey: normalizarCodigo(codigoOriginal),
+        descripcion,
+        fecha,
+        cantidad
+      });
+
+      if (!catalogo.has(codigoOriginal)) {
+        catalogo.set(codigoOriginal, descripcion);
+      }
+    });
+  });
+
+  return {
+    docs,
+    totalProvTransDocs: snap.size,
+    catalogo
+  };
+}
+    
     async function cargarVentas() {
       const { VENTAS_REF } = getRefsPorTienda();
       const ventasSnap = await VENTAS_REF.get();
@@ -1327,14 +1379,26 @@ tfoot td {
         await cargarEquivalencias(true);
         setStatus("Catálogo, alias y reglas de equivalencia cargados...", "", 32);
 
-        const [inventariosData, transferenciasData, ventasData] = await Promise.all([
-          cargarInventarios(),
-          cargarTransferencias(),
-          cargarVentas()
-        ]);
-
+const [
+  inventariosData,
+  transferenciasData,
+  provTransData,
+  ventasData
+] = await Promise.all([
+  cargarInventarios(),
+  cargarTransferencias(),
+  cargarProvTrans(),
+  cargarVentas()
+]);
+        
         const catalogo = new Map();
-        [equivalentesCatalogoData.catalogo, inventariosData.catalogo, transferenciasData.catalogo, ventasData.catalogo].forEach(mapita => {
+        [
+  equivalentesCatalogoData.catalogo,
+  inventariosData.catalogo,
+  transferenciasData.catalogo,
+  provTransData.catalogo,
+  ventasData.catalogo
+].forEach(mapita => {
           mapita.forEach((descripcion, codigo) => {
             if (codigo && !catalogo.has(codigo)) catalogo.set(codigo, descripcion || "");
           });
@@ -1342,11 +1406,13 @@ tfoot td {
         opcionesCodigos = Array.from(catalogo.entries()).map(([codigo, descripcion]) => ({ codigo, descripcion }));
         refrescarDatalistsOpciones();
 
-        let registros = [
-          ...inventariosData.docs,
-          ...transferenciasData.docs,
-          ...ventasData.docs
-        ];
+let registros = [
+  ...inventariosData.docs,
+  ...transferenciasData.docs,
+  ...provTransData.docs,
+  ...ventasData.docs
+];
+        
 
         const empaqueData = aplicarEquivalenciasEmpaque(registros);
         registros = empaqueData.registros;
@@ -1383,12 +1449,11 @@ tfoot td {
 
         pintarTabla(pivot);
 
-        setStatus(
-          `Listo. Inventario: ${inventariosData.docs.length} | Transferencias: ${transferenciasData.docs.length} | Ventas: ${ventasData.docs.length} | Reglas factor: ${Object.keys(equivalenciasMap).length} | Virtuales: ${empaqueData.totalVirtuales || 0} | Códigos: ${pivot.totalCodigos}`,
-          "ok",
-          100
-        );
-
+setStatus(
+  `Listo. Inventario: ${inventariosData.docs.length} | TECNOTRANSF: ${transferenciasData.docs.length} | PROVTRANS: ${provTransData.docs.length} | Ventas: ${ventasData.docs.length} | Reglas factor: ${Object.keys(equivalenciasMap).length} | Virtuales: ${empaqueData.totalVirtuales || 0} | Códigos: ${pivot.totalCodigos}`,
+  "ok",
+  100
+);
         const loader = document.getElementById("loader");
         const tablaWrap = document.getElementById("tablaWrap");
 
@@ -1405,11 +1470,12 @@ tfoot td {
     function construirPivot(registros) {
       const mapa = new Map();
 
-      const totalInvPorFecha = {};
-      const totalEqPorFecha = {};
-      const totalTransPorFecha = {};
-      const totalVtaPorFecha = {};
-
+const totalInvPorFecha = {};
+const totalEqPorFecha = {};
+const totalTransPorFecha = {};
+const totalProvTransPorFecha = {};
+const totalVtaPorFecha = {};
+      
       const fechasConMovimiento = new Set();
 
       for (const item of registros) {
@@ -1423,21 +1489,26 @@ tfoot td {
         fechasConMovimiento.add(fecha);
 
         if (!mapa.has(codigoKey)) {
-          mapa.set(codigoKey, {
-            codigo: String(item.codigo || "").trim(),
-            codigoKey,
-            descripcion: String(item.descripcion || "").trim(),
-            invPorFecha: {},
-            eqPorFecha: {},
-            transPorFecha: {},
-            vtaPorFecha: {},
-            totalInvBase: 0,
-            totalEq: 0,
-            totalTrans: 0,
-            totalVta: 0,
-            totalInv: 0,
-            neto: 0
-          });
+mapa.set(codigoKey, {
+  codigo: String(item.codigo || "").trim(),
+  codigoKey,
+  descripcion: String(item.descripcion || "").trim(),
+
+  invPorFecha: {},
+  eqPorFecha: {},
+  transPorFecha: {},
+  provTransPorFecha: {},
+  vtaPorFecha: {},
+
+  totalInvBase: 0,
+  totalEq: 0,
+  totalTrans: 0,
+  totalProvTrans: 0,
+  totalVta: 0,
+
+  totalInv: 0,
+  neto: 0
+});
         }
 
         const row = mapa.get(codigoKey);
@@ -1459,6 +1530,13 @@ tfoot td {
           row.transPorFecha[fecha] = (row.transPorFecha[fecha] || 0) + cantidad;
           totalTransPorFecha[fecha] = (totalTransPorFecha[fecha] || 0) + cantidad;
         }
+        if (origen === "PROVTRANS") {
+  row.provTransPorFecha[fecha] =
+    (row.provTransPorFecha[fecha] || 0) + cantidad;
+
+  totalProvTransPorFecha[fecha] =
+    (totalProvTransPorFecha[fecha] || 0) + cantidad;
+}
 
         if (origen === "VTA") {
           row.vtaPorFecha[fecha] = (row.vtaPorFecha[fecha] || 0) + cantidad;
@@ -1473,6 +1551,8 @@ tfoot td {
         if (totalInvPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "INV" });
         if (totalEqPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "EQUIV" });
         if (totalTransPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "TRANS" });
+        if (totalProvTransPorFecha[fecha] > 0)
+  columnas.push({ fecha, tipo: "PROVTRANS" });
         if (totalVtaPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "VTA" });
       }
 

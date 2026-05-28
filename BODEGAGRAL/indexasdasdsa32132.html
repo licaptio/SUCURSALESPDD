@@ -251,7 +251,7 @@ button:disabled{
 }
 
 .sucursal-card-btn span{
-  display:block;
+  display:none;
   color:#335c7d;
   font-size:13px;
   font-weight:normal;
@@ -803,6 +803,7 @@ tr.diff-row td{background:#fff7ed;}
 }
 
 #viewSucursal .sucursal-card-btn span{
+  display:none;
   font-size:11px;
   line-height:1.25;
   overflow-wrap:anywhere;
@@ -969,37 +970,30 @@ tr.diff-row td{background:#fff7ed;}
 
   <button class="sucursal-card-btn" data-sucursal="allende1">
     <strong>ALLENDE 1</strong>
-    <span>/TIENDAS/ALLENDE 1/transferencias1</span>
   </button>
 
   <button class="sucursal-card-btn" data-sucursal="allende2">
     <strong>ALLENDE 2</strong>
-    <span>/TIENDAS/ALLENDE 2/SOLTRAN</span>
   </button>
 
   <button class="sucursal-card-btn" data-sucursal="montemorelos">
     <strong>MONTEMORELOS</strong>
-    <span>/TIENDAS/MONTEMORELOS/SOLTRAN</span>
   </button>
 
   <button class="sucursal-card-btn" data-sucursal="central">
     <strong>CENTRAL</strong>
-    <span>/TIENDAS/CENTRAL/SOLTRAN</span>
   </button>
 
   <button class="sucursal-card-btn" data-sucursal="osito">
     <strong>OSITO</strong>
-    <span>/TIENDAS/OSITO/SOLTRAN</span>
   </button>
 
   <button class="sucursal-card-btn" data-sucursal="rioverde">
     <strong>RIO VERDE</strong>
-    <span>/TIENDAS/RIO VERDE/SOLTRAN</span>
   </button>
 
   <button class="sucursal-card-btn" data-sucursal="provileon">
     <strong>PROVILEON</strong>
-    <span>/TIENDAS/PROVILEON/SOLTRAN</span>
   </button>
 
 </div>
@@ -3107,13 +3101,18 @@ async function generarPDFHojaCheck(payload) {
     ? payload.detalle
     : [];
 
-  const rows = detallePdf.map((item, idx) => [
-    idx + 1,
-    item.codigo || '',
-    item.nombre || '',
-    Number(item.cantidad_solicitada || 0),
-    ''
-  ]);
+  const rows = detallePdf.map((item, idx) => {
+    const nombre = String(item.nombre || '').trim();
+    const comentario = String(item.comentario || '').trim();
+
+    return [
+      idx + 1,
+      item.codigo || '',
+      comentario ? `${nombre}\nComentario: ${comentario}` : nombre,
+      Number(item.cantidad_solicitada || 0),
+      ''
+    ];
+  });
 
   pdf.autoTable({
     startY:y,
@@ -3272,14 +3271,6 @@ async function generarPDFProfesional(payload) {
     Number(item.diferencia || 0) !== 0
   );
 
-  const equivalentes = detallePdf.filter(item =>
-    item.codigoFueEquivalente === true ||
-    (
-      Array.isArray(item.codigosEquivalentes) &&
-      item.codigosEquivalentes.length > 0
-    )
-  );
-
   function ensureSpace(required = 34) {
     if (y + required > 250) {
       pdf.addPage();
@@ -3319,6 +3310,15 @@ async function generarPDFProfesional(payload) {
     return 'SURTIDO PARCIAL';
   }
 
+  function conceptoConComentario(item) {
+    const nombre = String(item.nombre || '').trim();
+    const comentario = String(item.comentario || '').trim();
+
+    if (!comentario) return nombre;
+
+    return `${nombre}\nComentario: ${comentario}`;
+  }
+
   function imprimirTablaSurtidosCompacta(titulo, nota, lista) {
     tituloSeccion(titulo, nota);
 
@@ -3338,7 +3338,7 @@ async function generarPDFProfesional(payload) {
       return [
         idx + 1,
         item.codigo || '',
-        item.nombre || '',
+        conceptoConComentario(item),
         cantidadSurtida,
         money(precioPublico),
         money(totalLinea)
@@ -3403,7 +3403,7 @@ async function generarPDFProfesional(payload) {
     const rows = lista.map((item, idx) => [
       idx + 1,
       item.codigo || '',
-      item.nombre || '',
+      conceptoConComentario(item),
       Number(item.cantidad_solicitada || 0),
       Number(item.cantidad_surtida || 0),
       Number(item.diferencia || 0),
@@ -3459,79 +3459,6 @@ async function generarPDFProfesional(payload) {
     y = pdf.lastAutoTable.finalY + 9;
   }
 
-  function imprimirTablaEquivalentes() {
-    tituloSeccion(
-      '4. CÓDIGOS EQUIVALENTES / SOLO INFORMATIVO',
-      'Muestra productos encontrados o respaldados con códigos equivalentes. El código correcto para inventario es el código actual.'
-    );
-
-    if (!equivalentes.length) {
-      pdf.setFont('helvetica','italic');
-      pdf.setFontSize(8);
-      pdf.text('Sin códigos equivalentes detectados.', 10, y + 4);
-      y += 12;
-      return;
-    }
-
-    const rows = equivalentes.map((item, idx) => {
-      const listaEq = normalizarEquivalentes(item.codigosEquivalentes);
-      const capturado = String(item.codigoCapturado || item.codigo || '').trim();
-      const codigoReal = String(item.codigo || '').trim();
-
-      return [
-        idx + 1,
-        capturado || codigoReal,
-        codigoReal,
-        item.nombre || '',
-        listaEq.length ? listaEq.join(', ') : '-',
-        item.codigoFueEquivalente === true ? 'CAPTURADO COMO EQUIVALENTE' : 'CATÁLOGO CON EQUIVALENTES'
-      ];
-    });
-
-    pdf.autoTable({
-      startY:y,
-
-      head:[[
-        '#',
-        'Código capturado',
-        'Código actual',
-        'Producto',
-        'Equivalentes',
-        'Nota'
-      ]],
-
-      body:rows,
-
-      theme:'grid',
-
-      headStyles:{
-        fillColor:[249,115,22]
-      },
-
-      styles:{
-        fontSize:7.1,
-        cellPadding:1.8,
-        overflow:'linebreak'
-      },
-
-      columnStyles:{
-        0:{cellWidth:8},
-        1:{cellWidth:28},
-        2:{cellWidth:28},
-        3:{cellWidth:58},
-        4:{cellWidth:42},
-        5:{cellWidth:31}
-      },
-
-      margin:{
-        left:10,
-        right:10
-      }
-    });
-
-    y = pdf.lastAutoTable.finalY + 9;
-  }
-
   imprimirTablaSurtidosCompacta(
     '1. ARTÍCULOS SURTIDOS PARA REVISIÓN',
     'Sección operativa principal para revisión física: código de barras, concepto, cantidad surtida, precio público y total.',
@@ -3549,8 +3476,6 @@ async function generarPDFProfesional(payload) {
     'Resumen de diferencias: artículos agregados manualmente, surtidos parciales o cantidades cambiadas contra la solicitud.',
     agregadosOCambiados
   );
-
-  imprimirTablaEquivalentes();
 
   ensureSpace(52);
 

@@ -2792,29 +2792,133 @@ async function guardarCambios() {
     console.error(error);
 
     setStatus(
-      'Error al guardar cambios: ' + error.message,
+      'Error al guardar cambios.',
       'error'
     );
+
+    alert('Error al guardar cambios: ' + error.message);
 
   } finally {
     $('btnGuardarCambios').disabled = false;
   }
 }
 
+function abrirSelectorResponsables() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+
+    overlay.style.cssText = `
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.55);
+      z-index:10000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    `;
+
+    const capturaOptions = operadorCapturaCache.length
+      ? operadorCapturaCache.map(o => o.nombre)
+      : RESPONSABLES.captura;
+
+    overlay.innerHTML = `
+      <div style="
+        background:white;
+        width:min(560px,96vw);
+        border-radius:18px;
+        padding:18px;
+        box-shadow:0 20px 50px rgba(0,0,0,.3);
+      ">
+        <h2 style="
+          margin:0 0 12px;
+          color:#00416A;
+        ">
+          Responsables de surtido
+        </h2>
+
+        <div class="field">
+          <label>Quién captura</label>
+          <select id="selQuienCaptura">
+            <option value="">Seleccione...</option>
+            ${capturaOptions.map(n => `<option>${escapeHtml(n)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Quién surte</label>
+          <select id="selQuienSurte">
+            <option value="">Seleccione...</option>
+            ${RESPONSABLES.surtido.map(n => `<option>${escapeHtml(n)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Quién lleva</label>
+          <select id="selQuienLleva">
+            <option value="">Seleccione...</option>
+            ${RESPONSABLES.chofer.map(n => `<option>${escapeHtml(n)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="actions-2">
+          <button id="btnConfirmarResp" class="btn-success">Confirmar surtido</button>
+          <button id="btnCancelarResp" class="btn-secondary">Cancelar</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btnCancelarResp').onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+
+    overlay.querySelector('#btnConfirmarResp').onclick = () => {
+      const quienCaptura = overlay.querySelector('#selQuienCaptura').value;
+      const quienSurte = overlay.querySelector('#selQuienSurte').value;
+      const quienLleva = overlay.querySelector('#selQuienLleva').value;
+
+      if (!quienCaptura || !quienSurte || !quienLleva) {
+        alert('Seleccione los tres responsables.');
+        return;
+      }
+
+      overlay.remove();
+
+      resolve({
+        quienCaptura,
+        quienSurte,
+        quienLleva
+      });
+    };
+  });
+}
+
 async function guardarSurtido() {
   if (!validarGuardar()) return;
 
-  const respuesta = await mostrarDialogoOpcion();
+  const responsables =
+    await abrirSelectorResponsables();
 
-  if (!respuesta) return;
+  if (!responsables) return;
+
+  const confirmar = confirm(
+    '¿Confirmar surtido definitivo? La solicitud quedará marcada como SURTIDO.'
+  );
+
+  if (!confirmar) return;
 
   try {
     $('btnGuardarSurtido').disabled = true;
-    $('btnGuardarCambios').disabled = true;
 
-    setStatus('Guardando surtido...');
+    setStatus('Guardando surtido definitivo...');
 
-    const payload = construirPayload(respuesta, 'SURTIDO');
+    const payload = construirPayload(
+      responsables,
+      'SURTIDO'
+    );
 
     await setDoc(
       doc(
@@ -2835,294 +2939,172 @@ async function guardarSurtido() {
         estatus:'SURTIDO',
         fecha_surtido:nowISO(),
         folio_surtido:payload.folio_surtido,
+        surtido_resumen:{
+          quien_captura:responsables.quienCaptura,
+          quien_surte:responsables.quienSurte,
+          quien_lleva:responsables.quienLleva,
+          fecha:nowISO()
+        },
         bloqueo: {
           activo:false,
           uid: auth.currentUser?.uid || '',
           usuario: auth.currentUser?.email || '',
-          liberado_en: nowISO()
+          liberado_en:nowISO()
         }
       },
       { merge:true }
     );
 
-    await generarPDFProfesional(payload);
+    bloqueoActivoSolicitudId = null;
 
     setStatus(
-      `Surtido completado: ${payload.folio_surtido}`,
+      `Surtido generado: ${payload.folio_surtido}`,
       'ok'
     );
 
-    alert(
-      `Surtido completado.\n\nFolio: ${payload.folio_surtido}`
-    );
+    generarPdfSurtido(payload);
 
-    bloqueoActivoSolicitudId = null;
+    alert('Surtido guardado correctamente.');
 
     await limpiarPantalla(false);
-
     abrirModalInicioOperacion();
 
   } catch (error) {
     console.error(error);
 
     setStatus(
-      'Error al guardar: ' + error.message,
+      'Error al guardar surtido.',
       'error'
     );
 
+    alert('Error al guardar surtido: ' + error.message);
+
   } finally {
     $('btnGuardarSurtido').disabled = false;
-    $('btnGuardarCambios').disabled = false;
   }
 }
 
-function mostrarDialogoOpcion() {
-  return new Promise((resolve) => {
+function obtenerDatosImpresionSolicitud() {
+  const folio =
+    solicitudOriginal?.folio ||
+    solicitudOriginal?.id ||
+    $('folioSolicitud').value ||
+    '-';
 
-    const opcionesCaptura =
-      RESPONSABLES.captura.map(nombre =>
-        `<option value="${escapeHtml(nombre)}">${escapeHtml(nombre)}</option>`
-      ).join('');
+  const fecha =
+    solicitudOriginal?.fechaSolicitud ||
+    solicitudOriginal?.fecha ||
+    solicitudOriginal?.creado_en ||
+    '';
 
-    const opcionesSurtido =
-      RESPONSABLES.surtido.map(nombre =>
-        `<option value="${escapeHtml(nombre)}">${escapeHtml(nombre)}</option>`
-      ).join('');
+  const sucursal =
+    solicitudOriginal?.sucursal ||
+    solicitudOriginal?.destino ||
+    sucursalActual?.nombre ||
+    '-';
 
-    const opcionesChofer =
-      RESPONSABLES.chofer.map(nombre =>
-        `<option value="${escapeHtml(nombre)}">${escapeHtml(nombre)}</option>`
-      ).join('');
+  const items = Array.isArray(solicitudOriginal?.carrito)
+    ? solicitudOriginal.carrito
+    : Array.isArray(solicitudOriginal?.items)
+      ? solicitudOriginal.items
+      : detalle.map(x => ({
+          codigo:x.codigo,
+          nombre:x.nombre,
+          cantidad:x.cantidad_solicitada,
+          comentario:x.comentario
+        }));
 
-    const modal = document.createElement('div');
-
-    modal.style.cssText=`
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.5);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      z-index:10000;
-      padding:16px;
-    `;
-
-    modal.innerHTML = `
-      <div style="
-        background:white;
-        width:100%;
-        max-width:460px;
-        border-radius:18px;
-        padding:22px;
-      ">
-
-        <h2 style="
-          margin:0 0 12px;
-          color:#00416A;
-        ">
-          Responsables del surtido
-        </h2>
-
-        <div class="field">
-          <label>Quién capturó</label>
-          <select id="dlgCaptura">
-            ${opcionesCaptura}
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Quién surtió</label>
-          <select id="dlgSurte">
-            ${opcionesSurtido}
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Quién lleva</label>
-          <select id="dlgLleva">
-            ${opcionesChofer}
-          </select>
-        </div>
-
-        <div style="
-          display:flex;
-          gap:10px;
-          margin-top:16px;
-        ">
-          <button id="dlgCancelar" class="btn-secondary">
-            Cancelar
-          </button>
-
-          <button id="dlgAceptar" class="btn-success">
-            Confirmar surtido
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    modal.querySelector('#dlgCancelar').onclick = () => {
-      modal.remove();
-      resolve(null);
-    };
-
-    modal.querySelector('#dlgAceptar').onclick = () => {
-      const data = {
-        quienCaptura:
-          modal.querySelector('#dlgCaptura').value,
-
-        quienSurte:
-          modal.querySelector('#dlgSurte').value,
-
-        quienLleva:
-          modal.querySelector('#dlgLleva').value
-      };
-
-      modal.remove();
-
-      resolve(data);
-    };
-  });
+  return {
+    folio,
+    fecha,
+    sucursal,
+    items
+  };
 }
 
-function cargarImagenComoDataURL(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
+function generarPdfSolicitudOriginal() {
+  if (!solicitudOriginal) {
+    alert('Primero cargue una solicitud.');
+    return;
+  }
 
-    img.crossOrigin = 'anonymous';
+  const data = obtenerDatosImpresionSolicitud();
 
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      const ctx = canvas.getContext('2d');
-
-      ctx.drawImage(img, 0, 0);
-
-      resolve(canvas.toDataURL('image/png'));
-    };
-
-    img.onerror = reject;
-
-    img.src = url;
-  });
-}
-
-async function generarPDFHojaCheck(payload) {
   const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p','mm','letter');
 
-  const pdf = new jsPDF(
-    'p',
-    'mm',
-    'letter'
-  );
-
-  const pageWidth =
-    pdf.internal.pageSize.getWidth();
-
-  let y = 10;
-
-  let logo = null;
-
-  try {
-    logo = await cargarImagenComoDataURL(LOGO_URL);
-  } catch(e){
-    console.warn('No se pudo cargar logo:', e);
-  }
-
-  if (logo) {
-    pdf.addImage(
-      logo,
-      'PNG',
-      10,
-      7,
-      52,
-      18
-    );
-  }
+  const pageWidth = pdf.internal.pageSize.getWidth();
 
   pdf.setFont('helvetica','bold');
-  pdf.setFontSize(17);
-
-  pdf.text(
-    'HOJA DE REVISIÓN DE TRANSFERENCIA',
-    pageWidth - 10,
-    15,
-    { align:'right' }
-  );
+  pdf.setFontSize(14);
+  pdf.setTextColor(0,65,106);
+  pdf.text('HOJA DE SOLICITUD DE TRANSFERENCIA', pageWidth / 2, 14, {
+    align:'center'
+  });
 
   pdf.setFontSize(9);
-  pdf.setFont('helvetica','normal');
-
-  pdf.text(
-    'PROVSOFT | Documento previo al surtido',
-    pageWidth - 10,
-    22,
-    { align:'right' }
-  );
+  pdf.setTextColor(0,0,0);
+  pdf.text('PROVEEDORA DE DULCES Y DESECHABLES', pageWidth / 2, 20, {
+    align:'center'
+  });
 
   pdf.setDrawColor(0,65,106);
   pdf.setLineWidth(.8);
-  pdf.line(10,30,pageWidth-10,30);
+  pdf.line(10,25,pageWidth-10,25);
 
-  y = 38;
-
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica','bold');
-  pdf.text('Datos de solicitud',10,y);
+  pdf.text('Folio:',10,34);
+  pdf.text('Sucursal:',10,40);
+  pdf.text('Fecha:',110,34);
+  pdf.text('Partidas:',110,40);
 
-  y += 6;
   pdf.setFont('helvetica','normal');
+  pdf.text(String(data.folio || '-'),28,34);
+  pdf.text(String(data.sucursal || '-'),28,40);
+  pdf.text(fechaMx(data.fecha),127,34);
+  pdf.text(String(data.items.length || 0),127,40);
 
-  const datos = [
-    ['Folio solicitud', payload.folio_solicitud],
-    ['Sucursal destino', payload.sucursal_destino],
-    ['Almacén origen', payload.almacen_origen],
-    ['Fecha impresión', fechaMx(nowISO())]
-  ];
+  const rows = data.items.map((item, idx) => {
+    const codigo =
+      item.codigo ||
+      item.codigoBarra ||
+      item.codigo_capturado ||
+      '';
 
-  datos.forEach((d, i) => {
-    const x = i % 2 === 0 ? 10 : 110;
-    const yy = y + Math.floor(i / 2) * 6;
+    const nombre =
+      item.nombre ||
+      item.concepto ||
+      '';
 
-    pdf.setFont('helvetica','bold');
-    pdf.text(`${d[0]}:`, x, yy);
+    const cantidad =
+      Number(
+        item.cantidad ||
+        item.cantidad_solicitada ||
+        0
+      );
 
-    pdf.setFont('helvetica','normal');
-    pdf.text(String(d[1] || '-'), x + 32, yy);
-  });
-
-  y += 22;
-
-  const detallePdf = Array.isArray(payload.detalle)
-    ? payload.detalle
-    : [];
-
-  const rows = detallePdf.map((item, idx) => {
-    const nombre = String(item.nombre || '').trim();
-    const comentario = String(item.comentario || '').trim();
+    const comentario =
+      String(item.comentario || '').trim();
 
     return [
       idx + 1,
-      item.codigo || '',
-      comentario ? `${nombre}\nComentario: ${comentario}` : nombre,
-      Number(item.cantidad_solicitada || 0),
-      ''
+      codigo,
+      comentario
+        ? `${nombre}\nComentario: ${comentario}`
+        : nombre,
+      cantidad
     ];
   });
 
   pdf.autoTable({
-    startY:y,
+    startY:48,
 
     head:[[
       '#',
       'Código',
-      'Concepto',
-      'Solicitado',
-      'Revisado'
+      'Producto solicitado',
+      'Cantidad'
     ]],
 
     body:rows,
@@ -3140,11 +3122,10 @@ async function generarPDFHojaCheck(payload) {
     },
 
     columnStyles:{
-      0:{cellWidth:8},
-      1:{cellWidth:28},
-      2:{cellWidth:106},
-      3:{cellWidth:24, halign:'center'},
-      4:{cellWidth:28, halign:'center'}
+      0:{cellWidth:10},
+      1:{cellWidth:35},
+      2:{cellWidth:115},
+      3:{cellWidth:25, halign:'center'}
     },
 
     margin:{
@@ -3153,13 +3134,16 @@ async function generarPDFHojaCheck(payload) {
     }
   });
 
-  pdf.save(
-    `HOJA_REVISION_${payload.folio_solicitud || payload.folio_surtido}.pdf`
-  );
+  const finalY = pdf.lastAutoTable.finalY + 10;
+
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(9);
+  pdf.text('Documento de apoyo para surtido. No representa transferencia definitiva.',10,finalY);
+
+  pdf.save(`SOLICITUD_${data.folio}.pdf`);
 }
 
-async function generarPDFProfesional(payload) {
-
+function generarPdfSurtido(payload) {
   const { jsPDF } = window.jspdf;
 
   const pdf = new jsPDF(
@@ -3171,46 +3155,30 @@ async function generarPDFProfesional(payload) {
   const pageWidth =
     pdf.internal.pageSize.getWidth();
 
-  let y = 10;
-
-  let logo = null;
-
-  try {
-    logo = await cargarImagenComoDataURL(LOGO_URL);
-  } catch(e){
-    console.warn('No se pudo cargar logo:', e);
-  }
-
-  if (logo) {
-    pdf.addImage(
-      logo,
-      'PNG',
-      10,
-      7,
-      52,
-      18
-    );
-  }
+  let y = 14;
 
   pdf.setFont('helvetica','bold');
-  pdf.setFontSize(17);
-
+  pdf.setFontSize(14);
+  pdf.setTextColor(0,65,106);
   pdf.text(
     'SURTIDO DE TRANSFERENCIA',
-    pageWidth - 10,
-    15,
-    { align:'right' }
+    pageWidth / 2,
+    y,
+    { align:'center' }
   );
+
+  y += 6;
 
   pdf.setFontSize(9);
-  pdf.setFont('helvetica','normal');
-
+  pdf.setTextColor(0,0,0);
   pdf.text(
-    'PROVSOFT | Documento operativo de surtido',
-    pageWidth - 10,
-    22,
-    { align:'right' }
+    'PROVEEDORA DE DULCES Y DESECHABLES',
+    pageWidth / 2,
+    y,
+    { align:'center' }
   );
+
+  y += 10;
 
   pdf.setDrawColor(0,65,106);
   pdf.setLineWidth(.8);
@@ -3261,11 +3229,6 @@ async function generarPDFProfesional(payload) {
     Number(item.cantidad_surtida || 0) > 0
   );
 
-  const noSurtidos = detallePdf.filter(item =>
-    Number(item.cantidad_solicitada || 0) > 0 &&
-    Number(item.cantidad_surtida || 0) === 0
-  );
-
   const agregadosOCambiados = detallePdf.filter(item =>
     item.agregado_en_surtido === true ||
     Number(item.diferencia || 0) !== 0
@@ -3310,13 +3273,8 @@ async function generarPDFProfesional(payload) {
     return 'SURTIDO PARCIAL';
   }
 
-  function conceptoConComentario(item) {
-    const nombre = String(item.nombre || '').trim();
-    const comentario = String(item.comentario || '').trim();
-
-    if (!comentario) return nombre;
-
-    return `${nombre}\nComentario: ${comentario}`;
+  function conceptoPdfLimpio(item) {
+    return String(item.nombre || '').trim();
   }
 
   function imprimirTablaSurtidosCompacta(titulo, nota, lista) {
@@ -3338,7 +3296,7 @@ async function generarPDFProfesional(payload) {
       return [
         idx + 1,
         item.codigo || '',
-        conceptoConComentario(item),
+        conceptoPdfLimpio(item),
         cantidadSurtida,
         money(precioPublico),
         money(totalLinea)
@@ -3403,7 +3361,7 @@ async function generarPDFProfesional(payload) {
     const rows = lista.map((item, idx) => [
       idx + 1,
       item.codigo || '',
-      conceptoConComentario(item),
+      conceptoPdfLimpio(item),
       Number(item.cantidad_solicitada || 0),
       Number(item.cantidad_surtida || 0),
       Number(item.diferencia || 0),
@@ -3466,14 +3424,8 @@ async function generarPDFProfesional(payload) {
   );
 
   imprimirTablaDetalle(
-    '2. ARTÍCULOS NO SURTIDOS / SOLO INFORMATIVO',
-    'Partidas solicitadas que quedaron en cero surtido. No se usan para revisar entrega física, solo para aclaración.',
-    noSurtidos
-  );
-
-  imprimirTablaDetalle(
-    '3. AGREGADOS, MODIFICADOS O CAMBIADOS / SOLO INFORMATIVO',
-    'Resumen de diferencias: artículos agregados manualmente, surtidos parciales o cantidades cambiadas contra la solicitud.',
+    '2. AGREGADOS, MODIFICADOS O NO SURTIDOS / SOLO INFORMATIVO',
+    'Resumen de diferencias: artículos agregados manualmente, surtidos parciales, no surtidos o cantidades cambiadas contra la solicitud.',
     agregadosOCambiados
   );
 
@@ -3488,72 +3440,69 @@ async function generarPDFProfesional(payload) {
   }, 0);
 
   pdf.setFont('helvetica','bold');
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setTextColor(0,0,0);
-  pdf.text(`Importe solicitado: ${money(totalSolicitado)}`, 10, y);
-  pdf.text(`Importe surtido: ${money(totalSurtido)}`, 110, y);
 
-  y += 18;
-
-  function firmaBox(x,titulo,nombre) {
-    pdf.roundedRect(
-      x,
-      y,
-      58,
-      28,
-      2,
-      2
-    );
-
-    pdf.line(
-      x + 4,
-      y + 17,
-      x + 54,
-      y + 17
-    );
-
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica','bold');
-    pdf.text(
-      titulo,
-      x + 29,
-      y + 22,
-      { align:'center' }
-    );
-
-    pdf.setFont('helvetica','normal');
-    pdf.text(
-      String(nombre || ''),
-      x + 29,
-      y + 26,
-      { align:'center', maxWidth:54 }
-    );
-  }
-
-  firmaBox(10,'CAPTURA',payload.quien_captura);
-  firmaBox(74,'SURTE',payload.quien_surte);
-  firmaBox(138,'LLEVA',payload.quien_lleva);
-
-  pdf.save(
-    `${payload.folio_surtido}_${payload.sucursal_destino}.pdf`
+  pdf.text(
+    `Importe solicitado: ${money(totalSolicitado)}`,
+    10,
+    y
   );
+
+  pdf.text(
+    `Importe surtido: ${money(totalSurtido)}`,
+    110,
+    y
+  );
+
+  y += 16;
+
+  pdf.text('Firma quien surte:',10,y);
+  pdf.line(45,y,100,y);
+
+  pdf.text('Firma quien recibe:',110,y);
+  pdf.line(147,y,202,y);
+
+  const safeName =
+    String(payload.folio_surtido || 'SURTIDO')
+      .replace(/[^\w\-]+/g,'_');
+
+  pdf.save(`${safeName}.pdf`);
 }
 
-async function imprimirSolicitudActual() {
-  if (!validarGuardar()) return;
+function seleccionarSucursal(clave) {
+  sucursalActual = SUCURSALES[clave];
 
-  const payload = construirPayload(null, 'HOJA_CHECK');
+  if (!sucursalActual) {
+    alert('Sucursal no válida.');
+    return;
+  }
 
-  await generarPDFHojaCheck(payload);
+  $('subSucursal').textContent =
+    `PROVSOFT | ${sucursalActual.nombre}`;
+
+  limpiarPantalla(false);
+
+  showView('viewApp');
+
+  abrirModalInicioOperacion();
+}
+
+async function logout() {
+  await liberarBloqueoSolicitud();
+
+  await signOut(auth);
 }
 
 function bindEvents() {
-
   $('btnLogin').onclick = async () => {
-    const email = $('loginEmail').value.trim();
-    const pass = $('loginPassword').value;
+    const email =
+      $('loginEmail').value.trim();
 
-    if (!email || !pass) {
+    const password =
+      $('loginPassword').value;
+
+    if (!email || !password) {
       $('loginEstado').textContent =
         'Ingrese correo y contraseña.';
       return;
@@ -3568,10 +3517,12 @@ function bindEvents() {
       await signInWithEmailAndPassword(
         auth,
         email,
-        pass
+        password
       );
 
     } catch (error) {
+      console.error(error);
+
       $('loginEstado').textContent =
         'Error de acceso: ' + error.message;
 
@@ -3580,91 +3531,81 @@ function bindEvents() {
     }
   };
 
-  $('btnLogoutSelector').onclick = async () => {
-    await liberarBloqueoSolicitud();
-    await signOut(auth);
-  };
+  $('loginPassword').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      $('btnLogin').click();
+    }
+  });
 
-  $('btnLogoutApp').onclick = async () => {
-    await liberarBloqueoSolicitud();
-    await signOut(auth);
-  };
+  document.querySelectorAll('.sucursal-card-btn').forEach(btn => {
+    btn.onclick = () => {
+      seleccionarSucursal(btn.dataset.sucursal);
+    };
+  });
+
+  $('btnLogoutSelector').onclick = logout;
+  $('btnLogoutApp').onclick = logout;
 
   $('btnCambiarSucursal').onclick = async () => {
     await liberarBloqueoSolicitud();
-
-    sucursalActual = null;
     solicitudOriginal = null;
     detalle = [];
-
     showView('viewSucursal');
   };
-
-  document.querySelectorAll('.sucursal-card-btn').forEach(btn => {
-    btn.onclick = async () => {
-      const clave = btn.dataset.sucursal;
-
-      sucursalActual = SUCURSALES[clave];
-
-      if (!sucursalActual) {
-        alert('Sucursal inválida.');
-        return;
-      }
-
-      $('subSucursal').textContent =
-        `PROVSOFT | ${sucursalActual.nombre}`;
-
-      showView('viewApp');
-
-      await limpiarPantalla(false);
-
-      abrirModalInicioOperacion();
-    };
-  });
 
   $('btnCargarSolicitud').onclick = cargarSolicitud;
 
   $('btnNuevaOperacion').onclick = async () => {
-    await limpiarPantalla();
-
+    await limpiarPantalla(true);
     cerrarModalInicioOperacion();
   };
-
-  $('folioSolicitud').addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      await cargarSolicitud();
-    }
-  });
 
   $('btnCerrarModalSolicitudes').onclick = () => {
     $('modalSolicitudes').style.display = 'none';
   };
 
-  $('buscarSolicitudModal').addEventListener('input', () => {
-    const q = $('buscarSolicitudModal').value.trim().toLowerCase();
+  $('buscarSolicitudModal').addEventListener('input', (e) => {
+    const q = String(e.target.value || '').toLowerCase().trim();
 
-    const filtradas = solicitudesDisponibles.filter(item =>
-      String(item.folio || '').toLowerCase().includes(q) ||
-      String(item.id || '').toLowerCase().includes(q)
+    if (!q) {
+      renderListaSolicitudesModal(solicitudesDisponibles);
+      return;
+    }
+
+    const filtradas = solicitudesDisponibles.filter(x =>
+      String(x.folio || '').toLowerCase().includes(q) ||
+      String(x.id || '').toLowerCase().includes(q)
     );
 
     renderListaSolicitudesModal(filtradas);
   });
 
-  $('busquedaProducto').addEventListener('input', (e) => {
+  $('folioSolicitud').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      cargarSolicitud();
+    }
+  });
+
+  $('busquedaProducto').addEventListener('input', () => {
     clearTimeout(timerBusqueda);
 
     timerBusqueda = setTimeout(() => {
-      const lista = buscarEnCatalogo(e.target.value);
+      const lista = buscarEnCatalogo(
+        $('busquedaProducto').value
+      );
 
       renderResultadosBusqueda(lista);
-    }, 120);
+    }, 180);
   });
 
   $('busquedaProducto').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-      const lista = buscarEnCatalogo(e.target.value);
+      e.preventDefault();
+
+      const lista = buscarEnCatalogo(
+        $('busquedaProducto').value
+      );
 
       if (lista.length === 1) {
         productoSeleccionado = lista[0];
@@ -3673,10 +3614,8 @@ function bindEvents() {
           productoSeleccionado.concepto + ' | ' + productoSeleccionado.codigoBarra;
 
         $('results').style.display = 'none';
-
         $('cantidadAgregar').focus();
         $('cantidadAgregar').select();
-
       } else {
         renderResultadosBusqueda(lista);
       }
@@ -3690,13 +3629,47 @@ function bindEvents() {
     }
   });
 
-  $('btnAgregarProducto').onclick = agregarProductoExtra;
+  $('btnAgregarProducto').onclick =
+    agregarProductoExtra;
 
-  $('btnGuardarCambios').onclick = guardarCambios;
+  $('btnGuardarCambios').onclick =
+    guardarCambios;
 
-  $('btnGuardarSurtido').onclick = guardarSurtido;
+  $('btnGuardarSurtido').onclick =
+    guardarSurtido;
 
-  $('btnImprimirSolicitud').onclick = imprimirSolicitudActual;
+  $('btnImprimirSolicitud').onclick =
+    generarPdfSolicitudOriginal;
+
+  window.addEventListener('beforeunload', () => {
+    if (!sucursalActual || !bloqueoActivoSolicitudId) return;
+
+    const actual = usuarioActualBloqueo();
+
+    const refPath = [
+      ...sucursalActual.solicitudes,
+      bloqueoActivoSolicitudId
+    ].join('/');
+
+    const data = {
+      bloqueo: {
+        activo: false,
+        uid: actual.uid,
+        usuario: actual.usuario,
+        liberado_en: nowISO()
+      }
+    };
+
+    try {
+      navigator.sendBeacon?.(
+        '/noop',
+        JSON.stringify({
+          path: refPath,
+          data
+        })
+      );
+    } catch {}
+  });
 }
 
 async function inicializarSistema() {

@@ -3003,7 +3003,7 @@ function obtenerDatosImpresionSolicitud() {
     sucursalActual?.nombre ||
     '-';
 
-  const items = Array.isArray(solicitudOriginal?.carrito)
+  const itemsBase = Array.isArray(solicitudOriginal?.carrito)
     ? solicitudOriginal.carrito
     : Array.isArray(solicitudOriginal?.items)
       ? solicitudOriginal.items
@@ -3014,6 +3014,16 @@ function obtenerDatosImpresionSolicitud() {
           comentario:x.comentario
         }));
 
+  const items = [...itemsBase].sort((a, b) => {
+    const nombreA = String(a.nombre || a.concepto || '').trim();
+    const nombreB = String(b.nombre || b.concepto || '').trim();
+
+    return nombreA.localeCompare(nombreB, 'es-MX', {
+      sensitivity: 'base',
+      numeric: true
+    });
+  });
+
   return {
     folio,
     fecha,
@@ -3021,7 +3031,7 @@ function obtenerDatosImpresionSolicitud() {
     items
   };
 }
-
+  
 function generarPdfSolicitudOriginal() {
   if (!solicitudOriginal) {
     alert('Primero cargue una solicitud.');
@@ -3221,10 +3231,19 @@ function generarPdfSurtido(payload) {
 
   y += 34;
 
-  const detallePdf = Array.isArray(payload.detalle)
-    ? payload.detalle
-    : [];
-
+const detallePdf = Array.isArray(payload.detalle)
+  ? [...payload.detalle].sort((a, b) => {
+      return String(a.nombre || '').trim().localeCompare(
+        String(b.nombre || '').trim(),
+        'es-MX',
+        {
+          sensitivity: 'base',
+          numeric: true
+        }
+      );
+    })
+  : [];
+  
   const surtidos = detallePdf.filter(item =>
     Number(item.cantidad_surtida || 0) > 0
   );

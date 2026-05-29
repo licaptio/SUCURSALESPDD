@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carga y Validación RPT Ventas MONTEMORELOS - PROVSOFT</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #edf3f8;
+      --card: #ffffff;
+      --line: #d9e2ec;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --brand1: #00416a;
+      --brand2: #0c6cbd;
+      --ok: #0f9d58;
+      --warn: #d97706;
+      --danger: #dc2626;
+      --shadow: 0 12px 30px rgba(0,0,0,.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    .app {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .topbar {
+      background: linear-gradient(135deg, var(--brand1), var(--brand2));
+      color: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px 20px;
+      flex: 0 0 auto;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+    }
+
+    .topbar p {
+      margin: 6px 0 0;
+      opacity: .95;
+      font-size: 14px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      padding: 14px;
+    }
+
+    .toolbar-grid {
+      display: grid;
+      grid-template-columns: 180px 180px minmax(220px, 1fr) 160px 180px 160px 160px;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: bold;
+    }
+
+    .field input,
+    .field select,
+    .field button,
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+      color: var(--text);
+    }
+
+    .field input,
+    .field select,
+    .field button {
+      height: 44px;
+    }
+
+    .field textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .field button {
+      border: none;
+      background: var(--brand2);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .field button.secondary { background: #64748b; }
+    .field button.warn { background: var(--warn); }
+    .field button.success { background: var(--ok); }
+    .field button.pdf { background: #7c3aed; }
+    .field button:hover { filter: brightness(.97); }
+
+    .status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .status.ok { color: var(--ok); font-weight: bold; }
+    .status.warn { color: var(--warn); font-weight: bold; }
+    .status.error { color: var(--danger); font-weight: bold; }
+
+    .main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(420px, 46%) minmax(520px, 54%);
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .left, .right {
+      min-height: 0;
+      display: grid;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .left {
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .right {
+      grid-template-rows: minmax(220px, 34%) minmax(220px, 28%) minmax(0, 1fr);
+    }
+
+    .panel-title {
+      padding: 14px 16px 0;
+      font-size: 16px;
+      font-weight: bold;
+      flex: 0 0 auto;
+    }
+
+    .metrics {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: #fbfdff;
+      min-width: 0;
+    }
+
+    .metric .k {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .metric .v {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .table-wrap {
+      min-height: 0;
+      flex: 1 1 auto;
+      overflow: auto;
+      padding: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      padding: 11px 10px;
+      border-bottom: 1px solid #edf2f7;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      z-index: 2;
+      color: #334155;
+    }
+
+    td.wrap, th.wrap {
+      white-space: normal;
+    }
+
+    tr:hover { background: #f8fbff; }
+    tr.ticket-row.selected { background: #eaf3ff; }
+    tr.anomalia-row { background: #fff7ed; }
+
+    .summary-grid {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+
+    .summary-grid > .panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 40px 12px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #e8f1ff;
+      color: #0b4f8a;
+    }
+
+    .badge.ok { background: #e7f7ee; color: #0d7a45; }
+    .badge.warn { background: #fff3e0; color: #a65b00; }
+    .badge.err { background: #fee2e2; color: #b91c1c; }
+
+    .ticket-detail {
+      padding: 14px;
+      min-height: 0;
+      flex: 1 1 auto;
+      overflow: auto;
+    }
+
+    .detail-head {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fbfdff;
+      min-width: 0;
+    }
+
+    .mini .k {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .mini .v {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .btn-mini {
+      height: 32px;
+      padding: 0 10px;
+      border: none;
+      border-radius: 10px;
+      background: var(--brand2);
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-mini.gray { background: #64748b; }
+    .btn-mini.warn { background: var(--warn); }
+    .btn-mini:hover { filter: brightness(.97); }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 3000;
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    .modal {
+      width: min(760px, 100%);
+      max-height: calc(100vh - 40px);
+      background: white;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      box-shadow: 0 30px 70px rgba(0,0,0,.25);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-head {
+      background: linear-gradient(135deg, var(--brand1), var(--brand2));
+      color: white;
+      padding: 16px 18px;
+      flex: 0 0 auto;
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .modal-body {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .readonly-box {
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 0 18px 18px;
+      flex: 0 0 auto;
+    }
+
+    .help {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1600px) {
+      .toolbar-grid {
+        grid-template-columns: 180px 180px minmax(180px, 1fr) 150px 170px 150px 150px;
+      }
+    }
+
+    @media (max-width: 1400px) {
+      body { overflow: auto; }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .toolbar-grid {
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+      }
+
+      .metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+        overflow: visible;
+      }
+
+      .left, .right {
+        overflow: visible;
+      }
+
+      .right {
+        grid-template-rows: auto auto auto;
+      }
+
+      .detail-head, .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .modal-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <h1>Carga y Validación RPT Ventas - PROVSOFT</h1>
+      <p>Parseo, validación, ajuste y subida de ventas del sistema viejo a Firebase</p>
+    </div>
+
+    <div class="panel toolbar">
+      <div class="toolbar-grid">
+      
+        <div class="field">
+          <label for="fechaTrabajo">Fecha de asignación</label>
+          <input type="date" id="fechaTrabajo" />
+        </div>
+
+        <div class="field">
+          <label for="fileRPT">Archivo RPT</label>
+          <input type="file" id="fileRPT" accept=".rpt,.txt,.prn" />
+        </div>
+
+        <div class="field">
+          <label>&nbsp;</label>
+          <button id="btnProcesar">Procesar RPT</button>
+        </div>
+
+        <div class="field">
+          <label>&nbsp;</label>
+          <button id="btnSubir" class="success">Subir válidos a Firebase</button>
+        </div>
+
+        <div class="field">
+          <label>&nbsp;</label>
+          <button id="btnExportar" class="secondary">Exportar JSON</button>
+        </div>
+
+        <div class="field">
+          <label>&nbsp;</label>
+          <button id="btnPDF" class="pdf">Descargar PDF</button>
+        </div>
+      </div>
+      <div class="status" id="status">Listo para procesar archivo.</div>
+    </div>
+
+    <div class="main">
+      <div class="left">
+        <div class="panel">
+          <div class="panel-title">Resumen general</div>
+          <div class="metrics" id="metricsResumen">
+            <div class="metric"><div class="k">Líneas candidatas</div><div class="v">0</div></div>
+            <div class="metric"><div class="k">Líneas parseadas</div><div class="v">0</div></div>
+            <div class="metric"><div class="k">Líneas rechazadas</div><div class="v">0</div></div>
+            <div class="metric"><div class="k">Tickets detectados</div><div class="v">0</div></div>
+            <div class="metric"><div class="k">Tickets válidos</div><div class="v">0</div></div>
+            <div class="metric"><div class="k">Tickets con anomalía</div><div class="v">0</div></div>
+            <div class="metric"><div class="k">Total RPT</div><div class="v">$0.00</div></div>
+            <div class="metric"><div class="k">Total interpretado</div><div class="v">$0.00</div></div>
+          </div>
+        </div>
+
+        <div class="panel" style="display:flex; flex-direction:column;">
+          <div class="panel-title">Tickets detectados</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Venta</th>
+                  <th>Fecha</th>
+                  <th>Partidas</th>
+                  <th>Total RPT</th>
+                  <th>Total calc.</th>
+                  <th>Estatus</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyTickets">
+                <tr><td colspan="6" class="empty">Sin información procesada.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="panel" style="display:flex; flex-direction:column;">
+          <div class="panel-title">Comparativo y control</div>
+          <div class="summary-grid">
+            <div class="panel">
+              <div class="panel-title">Resumen por departamento</div>
+              <div class="table-wrap" style="padding-top:8px;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="wrap">Departamento</th>
+                      <th>Líneas</th>
+                      <th>Cantidad</th>
+                      <th>Venta</th>
+                      <th>Costo</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyDeptos">
+                    <tr><td colspan="5" class="empty">Sin datos.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-title">Anomalías detectadas</div>
+              <div class="table-wrap" style="padding-top:8px;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tipo</th>
+                      <th>Venta</th>
+                      <th>Código</th>
+                      <th class="wrap">Detalle</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyAnomalias">
+                    <tr><td colspan="4" class="empty">Sin anomalías ni rechazos.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="display:flex; flex-direction:column;">
+          <div class="panel-title">Vista previa de líneas preparadas para Firebase</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Venta</th>
+                  <th>Código</th>
+                  <th class="wrap">Descripción</th>
+                  <th>Cantidad</th>
+                  <th>Costo</th>
+                  <th>Total</th>
+                  <th>Depto.</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyPreview">
+                <tr><td colspan="8" class="empty">Sin información preparada.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel" style="display:flex; flex-direction:column;">
+          <div class="panel-title">Detalle del ticket</div>
+          <div class="ticket-detail" id="ticketDetalle">
+            <div class="empty">Selecciona un ticket procesado para ver su detalle.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalEditar">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Corregir línea antes de subir</h3>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="field">
+            <label>Venta</label>
+            <div class="readonly-box" id="editVenta"></div>
+          </div>
+          <div class="field">
+            <label>Código</label>
+            <div class="readonly-box" id="editCodigo"></div>
+          </div>
+          <div class="field" style="grid-column:1 / -1;">
+            <label>Descripción</label>
+            <div class="readonly-box" id="editDescripcion"></div>
+          </div>
+          <div class="field">
+            <label for="editCantidad">Cantidad</label>
+            <input type="number" id="editCantidad" step="0.001" min="0" />
+          </div>
+          <div class="field">
+            <label for="editTotal">Total</label>
+            <input type="number" id="editTotal" step="0.01" min="0" />
+          </div>
+          <div class="field">
+            <label for="editCosto">Costo compra</label>
+            <input type="number" id="editCosto" step="0.01" min="0" />
+          </div>
+          <div class="field">
+            <label>Precio calculado</label>
+            <div class="readonly-box" id="editPrecio"></div>
+          </div>
+          <div class="field" style="grid-column:1 / -1;">
+            <label for="editMotivo">Motivo de ajuste</label>
+            <textarea id="editMotivo" placeholder="Ej. Cantidad errónea en origen. Se corrige antes de subir a Firebase."></textarea>
+            <div class="help">La corrección modifica solo la vista preparada y el registro a subir. No altera el archivo original.</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-mini gray" id="btnCerrarModal" type="button">Cancelar</button>
+        <button class="btn-mini warn" id="btnGuardarModal" type="button">Guardar ajuste</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from "./config.js";
+    import {
+      collection,
+      doc,
+      getDocs,
+      setDoc,
+      serverTimestamp,
+      query,
+      where,
+      writeBatch
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const SUCURSAL = "MONTEMORELOS";
+    const $ = (id) => document.getElementById(id);
+
+    const statusEl = $("status");
+    const tbodyTickets = $("tbodyTickets");
+    const tbodyPreview = $("tbodyPreview");
+    const tbodyDeptos = $("tbodyDeptos");
+    const tbodyAnomalias = $("tbodyAnomalias");
+    const ticketDetalle = $("ticketDetalle");
+    const metricsResumen = $("metricsResumen");
+    const modalEditar = $("modalEditar");
+
+    let lineasPreparadas = [];
+    let ticketsProcesados = [];
+    let ticketSeleccionado = null;
+    let lineaEnEdicion = null;
+    let resumenDeptos = [];
+    let anomaliasGlobales = [];
+    let totalRptArchivo = 0;
+    let archivoNombreActual = "";
+    let ultimoResumenCarga = null;
+    let lineasRechazadas = [];
+    let lineasCandidatasDetalle = 0;
+    let isBusy = false;
+
+    function setStatus(msg, type = "normal") {
+      statusEl.textContent = msg;
+      statusEl.className =
+        type === "ok" ? "status ok" :
+        type === "warn" ? "status warn" :
+        type === "error" ? "status error" :
+        "status";
+    }
+
+function setBusy(flag) {
+  isBusy = !!flag;
+
+  const ids = ["btnProcesar", "btnSubir", "btnExportar", "btnPDF", "btnGuardarModal", "btnCerrarModal"];
+  for (const id of ids) {
+    const el = $(id);
+    if (el) el.disabled = isBusy;
+  }
+
+  const fileInput = $("fileRPT");
+  const fechaInput = $("fechaTrabajo");
+
+  if (fileInput) fileInput.disabled = isBusy;
+  if (fechaInput) fechaInput.disabled = isBusy;
+}
+
+    function money(v) {
+      return Number(v || 0).toLocaleString("es-MX", {
+        style: "currency",
+        currency: "MXN"
+      });
+    }
+
+    function aNumero(v) {
+      if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+      const limpio = String(v ?? "").replace(/,/g, "").trim();
+      const n = Number(limpio);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function cantidadBonita(v) {
+      const n = aNumero(v);
+      if (Number.isInteger(n)) return String(n);
+      return String(Number(n.toFixed(4)));
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function fechaInputAReporte(valor) {
+      if (!valor) return "";
+      const [yyyy, mm, dd] = valor.split("-");
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function fechaReporteAInput(fecha) {
+      if (!fecha || !fecha.includes("/")) return "";
+      const [dd, mm, yyyy] = fecha.split("/");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function nombreArchivoSeguro(nombre) {
+      return String(nombre || "archivo_rpt")
+        .replace(/[^a-zA-Z0-9._-]+/g, "_")
+        .replace(/_+/g, "_");
+    }
+
+    function leerArchivo(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = reject;
+        reader.readAsText(file, "latin1");
+      });
+    }
+
+    const NUM2_PATTERN = '(-?(?:\\d{1,3}(?:,\\d{3})*|\\d+)\\.\\d{2})';
+    const NUM4_PATTERN = '(-?(?:\\d{1,3}(?:,\\d{3})*|\\d+)\\.\\d{4})';
+    const DETALLE_REGEX = new RegExp(
+      '^' +
+      '(\\d{2}\\/\\d{2}\\/\\d{4})\\s+' +
+      '(\\d+)\\s+' +
+      '(\\S+)\\s+' +
+      '(.+?)\\s+' +
+      NUM4_PATTERN + '\\s+' +
+      NUM2_PATTERN + '\\s+' +
+      NUM2_PATTERN + '\\s+' +
+      NUM2_PATTERN + '\\s+' +
+      NUM2_PATTERN + '\\s+' +
+      NUM2_PATTERN + '\\s+' +
+      NUM2_PATTERN + '\\s+' +
+      NUM2_PATTERN + '%\\s+' +
+      '(.+?)\\s+' +
+      '(\\d+)\\s+' +
+      '(.+)' +
+      '$'
+    );
+
+    function esLineaCandidataDetalle(linea) {
+      return /^\d{2}\/\d{2}\/\d{4}\s+\d+\s+\S+/.test(String(linea || "").trim());
+    }
+
+    function parseLineaDetalle(linea) {
+      const intentos = [
+        String(linea || "").trimEnd(),
+        String(linea || "").replace(/\t/g, " ").replace(/\s{2,}/g, " ").trim()
+      ];
+
+      for (const intento of intentos) {
+        const m = intento.match(DETALLE_REGEX);
+        if (!m) continue;
+
+        return {
+          Fecha: m[1],
+          Venta: aNumero(m[2]),
+          Codigo: m[3],
+          descripcion: m[4].trim(),
+          "Cantidad vendida": aNumero(m[5]),
+          "Costo compra": aNumero(m[6]),
+          "Costo total": aNumero(m[7]),
+          "IVA ventas": aNumero(m[8]),
+          "Venta pieza": aNumero(m[9]),
+          "venta Total": aNumero(m[10]),
+          "Utilidad rpt": aNumero(m[11]),
+          "% utilidad rpt": aNumero(m[12]),
+          Departamento: m[13].trim(),
+          Cliente: aNumero(m[14]),
+          "nombre cliente": m[15].trim()
+        };
+      }
+
+      return null;
+    }
+
+    function parseTotalTicket(linea) {
+      const m = linea.match(/Total\s+Ventas\s*:\s*(\d+\.\d{2})/i);
+      return m ? aNumero(m[1]) : null;
+    }
+
+    function procesarTextoRPT(texto) {
+      const lineas = texto.replace(/\r/g, "").split("\n");
+      const detalles = [];
+      const totalesRpt = new Map();
+      let ultimoTicket = null;
+      lineasRechazadas = [];
+      lineasCandidatasDetalle = 0;
+
+      for (let i = 0; i < lineas.length; i++) {
+        const raw = lineas[i];
+        const linea = raw.trimEnd();
+        if (!linea.trim()) continue;
+
+        const candidata = esLineaCandidataDetalle(linea);
+        if (candidata) lineasCandidatasDetalle++;
+
+        const detalle = parseLineaDetalle(linea);
+        if (detalle) {
+          detalle.linea_origen = i + 1;
+          detalles.push(detalle);
+          ultimoTicket = detalle.Venta;
+          continue;
+        }
+
+        if (candidata) {
+          lineasRechazadas.push({
+            linea_origen: i + 1,
+            venta: ultimoTicket ?? "-",
+            codigo: "-",
+            detalle: "Línea candidata no pudo interpretarse con el parser endurecido",
+            tipo: "RECHAZO",
+            contenido: linea
+          });
+          continue;
+        }
+
+        const totalTicket = parseTotalTicket(linea);
+        if (totalTicket !== null && ultimoTicket !== null) {
+          totalesRpt.set(ultimoTicket, totalTicket);
+          continue;
+        }
+      }
+
+      return { detalles, totalesRpt };
+    }
+
+    function generarClaveLineaBase(l) {
+      return [l.Fecha, l.Venta, l.Codigo, l["Cantidad vendida"], l["venta Total"]].join("|");
+    }
+
+    function extraerCodigoDeAnomalia(texto) {
+      const m = String(texto || "").match(/^\[(.*?)\]/);
+      return m ? m[1] : "-";
+    }
+
+    function validarLineaPreparada(linea) {
+      const anomalias = [];
+
+      if (!linea.Fecha) anomalias.push("Fecha vacía");
+      if (!linea.Venta) anomalias.push("Venta vacía");
+      if (!linea.Codigo) anomalias.push("Código vacío");
+      if (!linea.descripcion) anomalias.push("Descripción vacía");
+      if (aNumero(linea["Cantidad vendida"]) === 0) anomalias.push("Cantidad = 0");
+      if (aNumero(linea["Costo compra"]) < 0) anomalias.push("Costo compra negativo");
+      if (aNumero(linea["Costo total"]) < 0) anomalias.push("Costo total negativo");
+      if (aNumero(linea["venta Total"]) < 0) anomalias.push("Total negativo");
+
+      const costoEsperado = Number((aNumero(linea["Cantidad vendida"]) * aNumero(linea["Costo compra"])).toFixed(2));
+      if (Math.abs(costoEsperado - aNumero(linea["Costo total"])) > 0.11) {
+        anomalias.push(`Costo total no cuadra (${money(linea["Costo total"])} vs ${money(costoEsperado)})`);
+      }
+
+      const precioCalculado = aNumero(linea["Cantidad vendida"]) !== 0
+        ? aNumero(linea["venta Total"]) / aNumero(linea["Cantidad vendida"])
+        : 0;
+
+      if (Math.abs(aNumero(linea["Cantidad vendida"])) > 1 && Math.abs(precioCalculado) < 0.05) {
+        anomalias.push("Precio unitario sospechosamente bajo");
+      }
+
+      return {
+        ...linea,
+        precioCalculado,
+        anomalias
+      };
+    }
+
+    function revalidarEstadoActual() {
+      const claves = new Set();
+
+      for (const ticket of ticketsProcesados) {
+        for (const linea of ticket.lineas) {
+          const revalidada = validarLineaPreparada(linea);
+          Object.assign(linea, revalidada);
+
+          const clave = generarClaveLineaBase(linea);
+          linea.claveLinea = clave;
+
+          if (claves.has(clave)) {
+            linea.anomalias = [...new Set([...(linea.anomalias || []), "Posible línea duplicada en archivo"])];
+          }
+          claves.add(clave);
+        }
+      }
+
+      for (const ticket of ticketsProcesados) {
+        ticket.totalCalculado = Number(ticket.lineas.reduce((acc, x) => acc + aNumero(x["venta Total"]), 0).toFixed(2));
+        ticket.partidas = ticket.lineas.length;
+        ticket.anomalias = [];
+
+        if (ticket.totalRpt !== null) {
+          if (Math.abs(ticket.totalRpt - ticket.totalCalculado) > 0.11) {
+            ticket.anomalias.push(`Total ticket no cuadra (${money(ticket.totalRpt)} vs ${money(ticket.totalCalculado)})`);
+          }
+        } else {
+          ticket.anomalias.push("Ticket sin Total Ventas en RPT");
+        }
+
+        for (const linea of ticket.lineas) {
+          if (linea.anomalias?.length) {
+            ticket.anomalias.push(...linea.anomalias.map(a => `[${linea.Codigo}] ${a}`));
+          }
+        }
+
+        ticket.anomalias = [...new Set(ticket.anomalias)];
+        ticket.estatus = ticket.anomalias.length ? "ANOMALIA" : "VALIDO";
+      }
+
+      lineasPreparadas = ticketsProcesados.flatMap(t => t.lineas);
+      resumenDeptos = construirResumenDeptos(lineasPreparadas);
+      anomaliasGlobales = [
+        ...ticketsProcesados.flatMap(t =>
+          t.anomalias.map(a => ({
+            tipo: "ANOMALIA",
+            venta: t.venta,
+            detalle: a,
+            codigo: extraerCodigoDeAnomalia(a)
+          }))
+        ),
+        ...lineasRechazadas
+      ];
+      ticketSeleccionado = ticketsProcesados.find(t => t.venta === ticketSeleccionado?.venta) || ticketsProcesados[0] || null;
+      ultimoResumenCarga = null;
+    }
+
+    function construirResumenDeptos(lineas) {
+      const mapa = new Map();
+      for (const l of lineas) {
+        const depto = l.Departamento || "SIN DEPTO";
+        if (!mapa.has(depto)) {
+          mapa.set(depto, {
+            departamento: depto,
+            lineas: 0,
+            cantidad: 0,
+            venta: 0,
+            costo: 0
+          });
+        }
+        const d = mapa.get(depto);
+        d.lineas += 1;
+        d.cantidad += aNumero(l["Cantidad vendida"]);
+        d.venta += aNumero(l["venta Total"]);
+        d.costo += aNumero(l["Costo total"]);
+      }
+
+      return Array.from(mapa.values())
+        .map(x => ({
+          ...x,
+          venta: Number(x.venta.toFixed(2)),
+          costo: Number(x.costo.toFixed(2))
+        }))
+        .sort((a, b) => b.venta - a.venta);
+    }
+
+    function validarYPreparar(detalles, totalesRpt) {
+      const grupos = new Map();
+      totalRptArchivo = 0;
+      ultimoResumenCarga = null;
+
+      for (const linea of detalles) {
+        const preparada = validarLineaPreparada({
+          ...linea,
+          archivo_origen: archivoNombreActual,
+          sucursal: SUCURSAL,
+          claveLinea: "",
+          ajustado_manual: false,
+          motivo_ajuste: ""
+        });
+
+        if (!grupos.has(preparada.Venta)) {
+          grupos.set(preparada.Venta, {
+            venta: preparada.Venta,
+            fecha: preparada.Fecha,
+            cliente: preparada["nombre cliente"],
+            lineas: [],
+            totalRpt: totalesRpt.get(preparada.Venta) ?? null,
+            totalCalculado: 0,
+            estatus: "VALIDO",
+            anomalias: []
+          });
+        }
+
+        grupos.get(preparada.Venta).lineas.push(preparada);
+      }
+
+      ticketsProcesados = Array.from(grupos.values()).sort((a, b) => Number(b.venta) - Number(a.venta));
+
+      for (const ticket of ticketsProcesados) {
+        if (ticket.totalRpt !== null) totalRptArchivo += ticket.totalRpt;
+      }
+
+      ticketSeleccionado = ticketsProcesados[0] || null;
+      revalidarEstadoActual();
+    }
+
+    function renderResumen() {
+      const ticketsValidos = ticketsProcesados.filter(t => t.estatus === "VALIDO").length;
+      const ticketsError = ticketsProcesados.filter(t => t.estatus === "ANOMALIA").length;
+      const totalInterpretado = Number(lineasPreparadas.reduce((acc, x) => acc + aNumero(x["venta Total"]), 0).toFixed(2));
+
+      metricsResumen.innerHTML = `
+        <div class="metric"><div class="k">Líneas candidatas</div><div class="v">${lineasCandidatasDetalle}</div></div>
+        <div class="metric"><div class="k">Líneas parseadas</div><div class="v">${lineasPreparadas.length}</div></div>
+        <div class="metric"><div class="k">Líneas rechazadas</div><div class="v">${lineasRechazadas.length}</div></div>
+        <div class="metric"><div class="k">Tickets detectados</div><div class="v">${ticketsProcesados.length}</div></div>
+        <div class="metric"><div class="k">Tickets válidos</div><div class="v">${ticketsValidos}</div></div>
+        <div class="metric"><div class="k">Tickets con anomalía</div><div class="v">${ticketsError}</div></div>
+        <div class="metric"><div class="k">Total RPT</div><div class="v">${money(totalRptArchivo)}</div></div>
+        <div class="metric"><div class="k">Total interpretado</div><div class="v">${money(totalInterpretado)}</div></div>
+      `;
+    }
+
+    function renderTickets() {
+      if (!ticketsProcesados.length) {
+        tbodyTickets.innerHTML = '<tr><td colspan="6" class="empty">Sin información procesada.</td></tr>';
+        return;
+      }
+
+      tbodyTickets.innerHTML = ticketsProcesados.map(t => `
+        <tr class="ticket-row ${ticketSeleccionado && ticketSeleccionado.venta === t.venta ? "selected" : ""} ${t.estatus === "ANOMALIA" ? "anomalia-row" : ""}" data-venta="${t.venta}">
+          <td><strong>${t.venta}</strong></td>
+          <td>${escapeHtml(t.fecha)}</td>
+          <td>${t.partidas}</td>
+          <td>${t.totalRpt !== null ? money(t.totalRpt) : "-"}</td>
+          <td>${money(t.totalCalculado)}</td>
+          <td>${t.estatus === "VALIDO" ? '<span class="badge ok">VALIDO</span>' : '<span class="badge err">ANOMALIA</span>'}</td>
+        </tr>
+      `).join("");
+
+      Array.from(tbodyTickets.querySelectorAll("[data-venta]")).forEach(row => {
+        row.addEventListener("click", () => {
+          const venta = Number(row.getAttribute("data-venta"));
+          ticketSeleccionado = ticketsProcesados.find(t => t.venta === venta) || null;
+          renderTickets();
+          renderDetalleTicket();
+        });
+      });
+    }
+
+    function renderPreview() {
+      if (!lineasPreparadas.length) {
+        tbodyPreview.innerHTML = '<tr><td colspan="8" class="empty">Sin información preparada.</td></tr>';
+        return;
+      }
+
+      tbodyPreview.innerHTML = lineasPreparadas.slice(0, 300).map(l => `
+        <tr>
+          <td>${escapeHtml(l.Fecha)}</td>
+          <td>${l.Venta}</td>
+          <td>${escapeHtml(l.Codigo)}</td>
+          <td class="wrap">${escapeHtml(l.descripcion)}</td>
+          <td>${cantidadBonita(l["Cantidad vendida"])}</td>
+          <td>${money(l["Costo compra"])}</td>
+          <td>${money(l["venta Total"])}</td>
+          <td>${escapeHtml(l.Departamento || "")}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderDeptos() {
+      if (!resumenDeptos.length) {
+        tbodyDeptos.innerHTML = '<tr><td colspan="5" class="empty">Sin datos.</td></tr>';
+        return;
+      }
+
+      tbodyDeptos.innerHTML = resumenDeptos.map(d => `
+        <tr>
+          <td class="wrap">${escapeHtml(d.departamento)}</td>
+          <td>${d.lineas}</td>
+          <td>${cantidadBonita(d.cantidad)}</td>
+          <td>${money(d.venta)}</td>
+          <td>${money(d.costo)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderAnomalias() {
+      if (!anomaliasGlobales.length) {
+        tbodyAnomalias.innerHTML = '<tr><td colspan="4" class="empty">Sin anomalías ni rechazos.</td></tr>';
+        return;
+      }
+
+      tbodyAnomalias.innerHTML = anomaliasGlobales.slice(0, 300).map(a => `
+        <tr>
+          <td>${escapeHtml(a.tipo || "ANOMALIA")}</td>
+          <td>${escapeHtml(String(a.venta ?? "-"))}</td>
+          <td>${escapeHtml(a.codigo ?? "-")}</td>
+          <td class="wrap">${escapeHtml(a.detalle)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderDetalleTicket() {
+      if (!ticketSeleccionado) {
+        ticketDetalle.innerHTML = '<div class="empty">Selecciona un ticket procesado para ver su detalle.</div>';
+        return;
+      }
+
+      const anomaliasHtml = ticketSeleccionado.anomalias.length
+        ? `<div style="margin:10px 0 12px;">${ticketSeleccionado.anomalias.map(a => `<span class="badge err" style="margin-right:6px; margin-bottom:6px;">${escapeHtml(a)}</span>`).join("")}</div>`
+        : '<div style="margin:10px 0 12px;"><span class="badge ok">Ticket sin anomalías</span></div>';
+
+      ticketDetalle.innerHTML = `
+        <div class="detail-head">
+          <div class="mini"><div class="k">Venta</div><div class="v">${ticketSeleccionado.venta}</div></div>
+          <div class="mini"><div class="k">Fecha</div><div class="v">${escapeHtml(ticketSeleccionado.fecha)}</div></div>
+          <div class="mini"><div class="k">Cliente</div><div class="v">${escapeHtml(ticketSeleccionado.cliente || "PUBLICO EN GENERAL")}</div></div>
+          <div class="mini"><div class="k">Estatus</div><div class="v">${ticketSeleccionado.estatus}</div></div>
+        </div>
+
+        ${anomaliasHtml}
+
+        <div class="table-wrap" style="padding:0; border:1px solid var(--line); border-radius:14px; overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th class="wrap">Descripción</th>
+                <th>Cantidad</th>
+                <th>Costo</th>
+                <th>Precio</th>
+                <th>Total</th>
+                <th>Depto.</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${ticketSeleccionado.lineas.map((l, idx) => `
+                <tr>
+                  <td>${escapeHtml(l.Codigo)}</td>
+                  <td class="wrap">${escapeHtml(l.descripcion)}</td>
+                  <td>${cantidadBonita(l["Cantidad vendida"])}</td>
+                  <td>${money(l["Costo compra"])}</td>
+                  <td>${money(l.precioCalculado)}</td>
+                  <td>${money(l["venta Total"])}</td>
+                  <td>${escapeHtml(l.Departamento || "")}</td>
+                  <td><button type="button" class="btn-mini warn" data-edit-line="${ticketSeleccionado.venta}|${idx}">Editar</button></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      Array.from(ticketDetalle.querySelectorAll("[data-edit-line]")).forEach(btn => {
+        btn.addEventListener("click", () => {
+          const [ventaStr, idxStr] = btn.getAttribute("data-edit-line").split("|");
+          const venta = Number(ventaStr);
+          const idx = Number(idxStr);
+          const ticket = ticketsProcesados.find(t => t.venta === venta);
+          if (!ticket) return;
+          lineaEnEdicion = ticket.lineas[idx] || null;
+          if (!lineaEnEdicion) return;
+          abrirModal();
+        });
+      });
+    }
+
+    function renderTodo() {
+      renderResumen();
+      renderTickets();
+      renderPreview();
+      renderDeptos();
+      renderAnomalias();
+      renderDetalleTicket();
+    }
+
+    function abrirModal() {
+      if (!lineaEnEdicion) return;
+
+      $("editVenta").textContent = String(lineaEnEdicion.Venta);
+      $("editCodigo").textContent = String(lineaEnEdicion.Codigo);
+      $("editDescripcion").textContent = lineaEnEdicion.descripcion;
+      $("editCantidad").value = lineaEnEdicion["Cantidad vendida"];
+      $("editTotal").value = lineaEnEdicion["venta Total"];
+      $("editCosto").value = lineaEnEdicion["Costo compra"];
+      $("editMotivo").value = lineaEnEdicion.motivo_ajuste || "";
+      recalcularModal();
+      modalEditar.classList.add("show");
+    }
+
+    function cerrarModal() {
+      modalEditar.classList.remove("show");
+      lineaEnEdicion = null;
+    }
+
+    function recalcularModal() {
+      const cantidad = aNumero($("editCantidad").value);
+      const total = aNumero($("editTotal").value);
+      const precio = cantidad > 0 ? total / cantidad : 0;
+      $("editPrecio").textContent = money(precio);
+    }
+
+    function recomputarDespuesDeAjuste() {
+      revalidarEstadoActual();
+    }
+
+    function guardarAjusteModal() {
+      if (!lineaEnEdicion) return;
+
+      const cantidad = aNumero($("editCantidad").value);
+      const total = aNumero($("editTotal").value);
+      const costo = aNumero($("editCosto").value);
+      const motivo = $("editMotivo").value.trim();
+
+      if (cantidad <= 0) {
+        alert("La cantidad debe ser mayor a 0.");
+        return;
+      }
+
+      if (total < 0 || costo < 0) {
+        alert("Costo y total no pueden ser negativos.");
+        return;
+      }
+
+      lineaEnEdicion["Cantidad vendida"] = cantidad;
+      lineaEnEdicion["venta Total"] = total;
+      lineaEnEdicion["Costo compra"] = costo;
+      lineaEnEdicion["Costo total"] = Number((cantidad * costo).toFixed(2));
+      lineaEnEdicion.precioCalculado = cantidad !== 0 ? total / cantidad : 0;
+      lineaEnEdicion.ajustado_manual = true;
+      lineaEnEdicion.motivo_ajuste = motivo;
+
+      recomputarDespuesDeAjuste();
+      renderTodo();
+      cerrarModal();
+      setStatus("Ajuste aplicado en staging. Pendiente de subida a Firebase.", "warn");
+    }
+
+    async function procesarArchivo() {
+      if (isBusy) return;
+      setBusy(true);
+      try {
+        const file = $("fileRPT").files[0];
+        if (!file) {
+          alert("Selecciona un archivo .rpt, .txt o .prn");
+          return;
+        }
+
+        archivoNombreActual = file.name;
+        const texto = await leerArchivo(file);
+        const { detalles, totalesRpt } = procesarTextoRPT(texto);
+
+        if (!detalles.length) {
+          setStatus("No se detectaron líneas válidas en el archivo.", "error");
+          return;
+        }
+
+        if (!$("fechaTrabajo").value && detalles[0]?.Fecha) {
+          $("fechaTrabajo").value = fechaReporteAInput(detalles[0].Fecha);
+        }
+
+        validarYPreparar(detalles, totalesRpt);
+        renderTodo();
+
+        const resumenRechazo = lineasRechazadas.length
+          ? ` Se rechazaron ${lineasRechazadas.length} líneas candidatas.`
+          : "";
+
+        setStatus(
+          `Archivo procesado: ${detalles.length} líneas interpretadas y ${ticketsProcesados.length} tickets detectados.${resumenRechazo}`,
+          (anomaliasGlobales.length || lineasRechazadas.length) ? "warn" : "ok"
+        );
+      } catch (error) {
+        console.error(error);
+        setStatus("Error al procesar archivo: " + error.message, "error");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function construirPayloadFirebase(linea, fechaAsignada) {
+      return {
+        Fecha: fechaAsignada,
+        Venta: linea.Venta,
+        Codigo: linea.Codigo,
+        descripcion: linea.descripcion,
+        "Cantidad vendida": Number(linea["Cantidad vendida"]),
+        "Costo compra": Number(linea["Costo compra"]),
+        "Costo total": Number(linea["Costo total"]),
+        "IVA ventas": Number(linea["IVA ventas"]),
+        "Venta pieza": Number(linea["Venta pieza"]),
+        "venta Total": Number(linea["venta Total"]),
+        Cliente: Number(linea.Cliente),
+        "nombre cliente": linea["nombre cliente"],
+        Departamento: linea.Departamento || "",
+        "Utilidad rpt": Number(linea["Utilidad rpt"]),
+        "% utilidad rpt": Number(linea["% utilidad rpt"]),
+        archivo_origen: linea.archivo_origen,
+        linea_origen: Number(linea.linea_origen || 0),
+        sucursal: SUCURSAL,
+        ajustado_manual: !!linea.ajustado_manual,
+        motivo_ajuste: linea.motivo_ajuste || "",
+        fecha_origen_rpt: linea.Fecha,
+        cargado_en: serverTimestamp()
+      };
+    }
+
+    async function contarExistentesPorFecha(sucursal, fechaAsignada) {
+      const refVentas = collection(db, "TIENDAS", sucursal, "ventas");
+      const q = query(refVentas, where("Fecha", "==", fechaAsignada));
+      return await getDocs(q);
+    }
+
+    async function borrarExistentesPorFecha(sucursal, fechaAsignada) {
+      const snap = await contarExistentesPorFecha(sucursal, fechaAsignada);
+      if (snap.empty) return 0;
+
+      const docs = snap.docs;
+      let borrados = 0;
+
+      for (let i = 0; i < docs.length; i += 400) {
+        const chunk = docs.slice(i, i + 400);
+        const batch = writeBatch(db);
+        for (const d of chunk) {
+          batch.delete(d.ref);
+          borrados++;
+        }
+        await batch.commit();
+      }
+
+      return borrados;
+    }
+
+    function construirResumenCarga({
+      sucursal,
+      fechaAsignada,
+      modoCarga,
+      borrados,
+      lineasValidas,
+      ticketsValidos
+    }) {
+      const totalSubido = Number(lineasValidas.reduce((acc, x) => acc + x["venta Total"], 0).toFixed(2));
+      const ticketsAnomalia = ticketsProcesados.filter(t => t.estatus === "ANOMALIA").length;
+      const diferencia = Number((totalSubido - totalRptArchivo).toFixed(2));
+
+      return {
+        archivo: archivoNombreActual,
+        sucursal,
+        fechaAsignada,
+        fechaOrigenDetectada: ticketsProcesados[0]?.fecha || "",
+        modoCarga,
+        borrados,
+        ticketsDetectados: ticketsProcesados.length,
+        lineasCandidatas: lineasCandidatasDetalle,
+        lineasDetectadas: lineasPreparadas.length,
+        lineasRechazadas: lineasRechazadas.length,
+        ticketsValidos: ticketsValidos.length,
+        ticketsAnomalia,
+        lineasSubidas: lineasValidas.length,
+        totalRpt: Number(totalRptArchivo.toFixed(2)),
+        totalSubido,
+        diferencia,
+        resumenDeptos: [...resumenDeptos]
+      };
+    }
+
+    function generarPDFResumen(resumen = null) {
+      const data = resumen || ultimoResumenCarga;
+
+      if (!data) {
+        alert("Todavía no hay un resumen final para PDF.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("p", "mm", "a4");
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let y = 14;
+
+      doc.setFillColor(0, 65, 106);
+      doc.rect(0, 0, pageWidth, 24, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Resumen de Carga RPT - PROVSOFT", 14, 15);
+
+      doc.setFontSize(9);
+      doc.text("Resultado final de validación y subida", 14, 20);
+
+      doc.setTextColor(0, 0, 0);
+      y = 32;
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Datos generales", 14, y);
+      y += 6;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Archivo: ${data.archivo || "-"}`, 14, y); y += 5;
+      doc.text(`Sucursal: ${data.sucursal || "-"}`, 14, y); y += 5;
+      doc.text(`Fecha asignada: ${data.fechaAsignada || "-"}`, 14, y); y += 5;
+      doc.text(`Fecha origen detectada: ${data.fechaOrigenDetectada || "-"}`, 14, y); y += 5;
+      doc.text(`Modo de carga: ${data.modoCarga || "-"}`, 14, y); y += 8;
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumen numérico", 14, y);
+      y += 4;
+
+      doc.autoTable({
+        startY: y,
+        head: [["Concepto", "Valor"]],
+        body: [
+          ["Tickets detectados", String(data.ticketsDetectados)],
+          ["Líneas candidatas", String(data.lineasCandidatas || 0)],
+          ["Líneas detectadas", String(data.lineasDetectadas)],
+          ["Líneas rechazadas", String(data.lineasRechazadas || 0)],
+          ["Tickets válidos", String(data.ticketsValidos)],
+          ["Tickets con anomalía", String(data.ticketsAnomalia)],
+          ["Registros borrados", String(data.borrados)],
+          ["Líneas subidas", String(data.lineasSubidas)],
+          ["Total RPT", money(data.totalRpt)],
+          ["Total subido", money(data.totalSubido)],
+          ["Diferencia", money(data.diferencia)]
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [12, 108, 189] },
+        styles: { fontSize: 9 }
+      });
+
+      y = doc.lastAutoTable.finalY + 8;
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumen por departamento", 14, y);
+      y += 4;
+
+const deptos = data.resumenDeptos || [];
+
+const totalLineas = deptos.reduce((acc, d) => acc + Number(d.lineas || 0), 0);
+const totalCantidad = deptos.reduce((acc, d) => acc + Number(d.cantidad || 0), 0);
+const totalVenta = deptos.reduce((acc, d) => acc + Number(d.venta || 0), 0);
+const totalCosto = deptos.reduce((acc, d) => acc + Number(d.costo || 0), 0);
+
+const deptRows = deptos.map(d => [
+  d.departamento,
+  String(d.lineas),
+  cantidadBonita(d.cantidad),
+  money(d.venta),
+  money(d.costo)
+]);
+
+deptRows.push([
+  "TOTAL GENERAL",
+  String(totalLineas),
+  cantidadBonita(totalCantidad),
+  money(totalVenta),
+  money(totalCosto)
+]);
+
+doc.autoTable({
+  startY: y,
+  head: [["Departamento", "Líneas", "Cantidad", "Venta", "Costo"]],
+  body: deptRows.length ? deptRows : [["Sin datos", "", "", "", ""]],
+  theme: "grid",
+  headStyles: { fillColor: [0, 65, 106] },
+  styles: { fontSize: 8 },
+  didParseCell: function (hookData) {
+    const row = hookData.row.index;
+    const lastRow = deptRows.length - 1;
+
+    if (row === lastRow && hookData.section === "body") {
+      hookData.cell.styles.fontStyle = "bold";
+      hookData.cell.styles.fillColor = [230, 240, 255];
+      hookData.cell.styles.textColor = [0, 0, 0];
+    }
+  }
+});
+
+      y = doc.lastAutoTable.finalY + 8;
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Observaciones", 14, y);
+      y += 6;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const obs = [
+        `El sistema detectó ${data.lineasCandidatas || data.lineasDetectadas} líneas candidatas y logró interpretar ${data.lineasDetectadas}.`,
+        `Se rechazaron ${data.lineasRechazadas || 0} líneas candidatas durante el parseo.`,
+        `Se subieron ${data.lineasSubidas} líneas válidas a Firebase.`,
+        `La carga fue realizada sobre la ruta TIENDAS/${data.sucursal}/ventas.`,
+        `Este PDF se generó automáticamente al finalizar la carga.`
+      ];
+      doc.text(obs, 14, y);
+
+      const nombre = `resumen_carga_${nombreArchivoSeguro(data.sucursal || "sucursal")}_${(data.fechaAsignada || "sin_fecha").replace(/\//g, "-")}.pdf`;
+      doc.save(nombre);
+    }
+
+    async function subirValidosAFirebase() {
+      if (isBusy) return;
+      setBusy(true);
+      try {
+        if (!ticketsProcesados.length) {
+          alert("Primero procesa un archivo.");
+          return;
+        }
+
+        if (!$("fechaTrabajo").value) {
+          alert("Indica la fecha de asignación.");
+          return;
+        }
+
+        const ticketsValidos = ticketsProcesados.filter(t => t.estatus === "VALIDO");
+        if (!ticketsValidos.length) {
+          alert("No hay tickets válidos para subir.");
+          return;
+        }
+
+        const sucursal = SUCURSAL;
+        const fechaAsignada = fechaInputAReporte($("fechaTrabajo").value);
+        const lineasValidas = ticketsValidos.flatMap(t => t.lineas);
+
+        setStatus("Validando existencia previa en Firebase...", "warn");
+        const existentesSnap = await contarExistentesPorFecha(sucursal, fechaAsignada);
+
+        let modoCarga = "NUEVA";
+        let borrados = 0;
+
+        if (!existentesSnap.empty) {
+          const respuesta = confirm(
+            `Ya existen ${existentesSnap.size} registros para ${sucursal} en la fecha ${fechaAsignada}.\n\n` +
+            `Aceptar = sustituir esa fecha completa.\n` +
+            `Cancelar = no subir nada.`
+          );
+
+          if (!respuesta) {
+            setStatus("Carga cancelada por el usuario.", "warn");
+            return;
+          }
+
+          setStatus(`Borrando ${existentesSnap.size} registros existentes de ${fechaAsignada}...`, "warn");
+          borrados = await borrarExistentesPorFecha(sucursal, fechaAsignada);
+          modoCarga = "REEMPLAZO";
+        }
+
+        setStatus(`Subiendo ${lineasValidas.length} líneas válidas a Firebase...`, "warn");
+
+        for (let i = 0; i < lineasValidas.length; i += 400) {
+          const chunk = lineasValidas.slice(i, i + 400);
+          const batch = writeBatch(db);
+
+          for (const linea of chunk) {
+            const docId = `${fechaAsignada}_${linea.Venta}_${linea.Codigo}_${linea.linea_origen}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+            const ref = doc(db, "TIENDAS", sucursal, "ventas", docId);
+            batch.set(ref, construirPayloadFirebase(linea, fechaAsignada), { merge: true });
+          }
+
+          await batch.commit();
+        }
+
+        ultimoResumenCarga = construirResumenCarga({
+          sucursal,
+          fechaAsignada,
+          modoCarga,
+          borrados,
+          lineasValidas,
+          ticketsValidos
+        });
+
+        setStatus(
+          `Carga terminada. Subidas ${ultimoResumenCarga.lineasSubidas} líneas válidas para ${fechaAsignada}. Modo: ${modoCarga}. Generando PDF...`,
+          "ok"
+        );
+
+        generarPDFResumen(ultimoResumenCarga);
+
+        alert(
+          `Carga finalizada.\n\n` +
+          `Sucursal: ${ultimoResumenCarga.sucursal}\n` +
+          `Fecha asignada: ${ultimoResumenCarga.fechaAsignada}\n` +
+          `Modo: ${ultimoResumenCarga.modoCarga}\n` +
+          `Registros borrados: ${ultimoResumenCarga.borrados}\n` +
+          `Líneas subidas: ${ultimoResumenCarga.lineasSubidas}\n` +
+          `Total subido: ${money(ultimoResumenCarga.totalSubido)}\n\n` +
+          `El PDF ya fue generado.`
+        );
+      } catch (error) {
+        console.error(error);
+        setStatus("Error al subir a Firebase: " + error.message, "error");
+        alert("No fue posible subir a Firebase: " + error.message);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function exportarJSON() {
+      if (!lineasPreparadas.length) {
+        alert("No hay información procesada para exportar.");
+        return;
+      }
+
+      const payload = {
+        archivo: archivoNombreActual,
+        sucursal: SUCURSAL,
+        fecha_asignada: $("fechaTrabajo").value ? fechaInputAReporte($("fechaTrabajo").value) : "",
+        resumen: {
+          lineas_candidatas: lineasCandidatasDetalle,
+          tickets_detectados: ticketsProcesados.length,
+          lineas_detectadas: lineasPreparadas.length,
+          lineas_rechazadas: lineasRechazadas.length,
+          total_rpt: totalRptArchivo,
+          total_interpretado: Number(lineasPreparadas.reduce((acc, x) => acc + x["venta Total"], 0).toFixed(2))
+        },
+        departamentos: resumenDeptos,
+        tickets: ticketsProcesados,
+        lineas_rechazadas: lineasRechazadas,
+        lineas: lineasPreparadas
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${nombreArchivoSeguro(archivoNombreActual || "rpt_procesado")}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    $("btnProcesar").addEventListener("click", procesarArchivo);
+    $("btnSubir").addEventListener("click", subirValidosAFirebase);
+    $("btnExportar").addEventListener("click", exportarJSON);
+    $("btnPDF").addEventListener("click", () => generarPDFResumen());
+
+    $("btnCerrarModal").addEventListener("click", cerrarModal);
+    $("btnGuardarModal").addEventListener("click", guardarAjusteModal);
+    $("editCantidad").addEventListener("input", recalcularModal);
+    $("editTotal").addEventListener("input", recalcularModal);
+    $("editCosto").addEventListener("input", recalcularModal);
+
+    modalEditar.addEventListener("click", (e) => {
+      if (e.target === modalEditar) cerrarModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modalEditar.classList.contains("show")) {
+        cerrarModal();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1769,6 +1769,13 @@ function normalizarEquivalentes(raw) {
 
   return [];
 }
+function textoCodigosEquivalentes(raw) {
+  const equivalentes = normalizarEquivalentes(raw);
+
+  if (!equivalentes.length) return '';
+
+  return `Equiv: ${equivalentes.join(', ')}`;
+}
 
 function normalizarProductoCatalogo(data) {
   return {
@@ -1943,9 +1950,25 @@ function renderDetalle() {
       <tr class="${classes}">
         <td>${visibleIndex + 1}</td>
 
-        <td>
-          <div class="code">${escapeHtml(linea.codigo)}</div>
-        </td>
+<td>
+  <div class="code">${escapeHtml(linea.codigo)}</div>
+
+  ${
+    textoCodigosEquivalentes(linea.codigosEquivalentes)
+      ? `
+        <div style="
+          margin-top:4px;
+          font-size:11px;
+          color:#6b7280;
+          line-height:1.3;
+          font-weight:700;
+        ">
+          ${escapeHtml(textoCodigosEquivalentes(linea.codigosEquivalentes))}
+        </div>
+      `
+      : ''
+  }
+</td>
 
         <td>
           <div>
@@ -3150,20 +3173,25 @@ async function generarPdfSurtido(payload) {
       .replace(/_+/g, '_');
   }
 
-  function conceptoPdfLimpio(item) {
-    const nombre =
-      item.nombre ||
-      item.concepto ||
-      '';
+function conceptoPdfLimpio(item) {
+  const nombre =
+    item.nombre ||
+    item.concepto ||
+    '';
 
-    const comentario =
-      String(item.comentario || '').trim();
+  const comentario =
+    String(item.comentario || '').trim();
 
-    return comentario
-      ? `${nombre}\nComentario: ${comentario}`
-      : nombre;
-  }
+  const equivalentes =
+    textoCodigosEquivalentes(item.codigosEquivalentes);
 
+  return [
+    nombre,
+    equivalentes,
+    comentario ? `Comentario: ${comentario}` : ''
+  ].filter(Boolean).join('\n');
+}
+  
   function estadoLinea(item) {
     if (item.agregado_en_surtido === true) {
       return 'AGREGADO';

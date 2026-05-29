@@ -1285,6 +1285,7 @@ async function cargarProvTrans() {
 
   snap.forEach(doc => {
     const data = doc.data() || {};
+    console.log(doc.id, data);
 
     const estatus = String(data.estatus || data.status || "").trim().toUpperCase();
     const almacenOrigen = String(data.almacen_origen || "").trim().toUpperCase();
@@ -1292,7 +1293,7 @@ async function cargarProvTrans() {
 
     if (!["SURTIDO", "CORREGIDO"].includes(estatus)) return;
     if (almacenOrigen !== "CEDIS MATRIZ") return;
-    if (sucursalDestino !== "CENTRAL") return;
+    if (sucursalDestino !== "MONTEMORELOS") return;
 
     const fecha = normalizarFecha(
       data.fecha_surtido ||

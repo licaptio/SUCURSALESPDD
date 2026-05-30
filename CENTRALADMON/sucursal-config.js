@@ -21,7 +21,7 @@ export const CONFIG_SUCURSAL = {
 
   INDEXEDDB: {
     DB_NAME: "PROVSOFT_PDD_MOVIL",
-    DB_VERSION: 2,
+    DB_VERSION: 3,
     STORE_PRODUCTOS: "catalogo_productos_completo",
     STORE_META: "metadata"
   },

@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<title>Transferencia Solicitud - PROVSOFT</title>
+<title>Transferencia Solicitud - PROVEEDORA ALLENDE</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -719,10 +719,10 @@ const SUCURSAL = "ALLENDE 1";
 const RUTA_TRANSFERENCIAS = "transferencias1";
 
 const DB_NAME = "PROVSOFT_PDD_MOVIL";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_PRODUCTOS = "catalogo_productos_completo";
 const STORE_META = "metadata";
-
+const STORE_FOTOS_META = "productos_fotos_meta";
 const CLAVE_ULTIMA_DESCARGA = "ultima_descarga_catalogo";
 
 let catalogo = [];
@@ -778,6 +778,10 @@ function abrirDB(){
       if(!dbi.objectStoreNames.contains(STORE_META)){
         dbi.createObjectStore(STORE_META,{ keyPath:"key" });
       }
+      if(!dbi.objectStoreNames.contains(STORE_FOTOS_META)){
+  dbi.createObjectStore(STORE_FOTOS_META,{ keyPath:"codigoBarra" });
+}
+      
 
     };
 
@@ -1240,7 +1244,7 @@ window.confirmarCantidad = function(){
 
 }
 
-window.confirmarComentario = function(){
+window.confirmarComentario = async function(){
 
   if(!productoTemporal) return;
 
@@ -1249,6 +1253,13 @@ window.confirmarComentario = function(){
     .value
     .trim();
 
+  const fotosMeta = await leerFotosMeta(productoTemporal.codigoBarra);
+
+const urlsFotos =
+  fotosMeta && Array.isArray(fotosMeta.urlsFotos)
+  ? fotosMeta.urlsFotos
+  : [];
+  
   const existente =
     carrito.find(x=>x.id === productoTemporal.id);
 
@@ -1276,6 +1287,8 @@ window.confirmarComentario = function(){
       precio:Number(productoTemporal.precioPublico || 0),
       activo:productoTemporal.activo === true,
       comentario:comentario
+      fotos: urlsFotos,
+      tieneFotos: urlsFotos.length > 0
 
     });
 
@@ -1344,29 +1357,58 @@ function actualizarUI(){
 
             <br>
 
-            <small>
+<small>
 
-              ${escapeHtml(item.codigo)}
+  ${escapeHtml(item.codigo)}
 
-              ${
-                item.activo
-                ? '<span class="badge-activo">ACTIVO</span>'
-                : '<span class="badge-inactivo">INACTIVO</span>'
-              }
+  ${
+    item.activo
+    ? '<span class="badge-activo">ACTIVO</span>'
+    : '<span class="badge-inactivo">INACTIVO</span>'
+  }
 
-            </small>
+</small>
 
-            ${
-              item.comentario
-              ? `<div class="comentario-preview">📝 ${escapeHtml(item.comentario)}</div>`
-              : ""
-            }
+${
+  item.comentario
+  ? `<div class="comentario-preview">📝 ${escapeHtml(item.comentario)}</div>`
+  : ""
+}
 
-          </div>
+${
+  item.tieneFotos
+  ? `
+    <div class="comentario-preview">
 
-          <div style="text-align:center; font-weight:900;">
-            ${item.cantidad}
-          </div>
+      ${item.fotos.map((url,n)=>`
+
+        <button
+          onclick="abrirFoto('${url}')"
+          style="
+            border:none;
+            background:#e2e8f0;
+            border-radius:8px;
+            padding:4px 7px;
+            margin-right:4px;
+            cursor:pointer;
+          "
+        >
+          📷 ${n+1}
+        </button>
+
+      `).join("")}
+
+    </div>
+  `
+  : ""
+}
+
+</div>
+
+<div style="text-align:center; font-weight:900;">
+  ${item.cantidad}
+</div>
+
 
           <div style="text-align:right; font-weight:700;">
             $${subtotal.toFixed(2)}
@@ -1392,17 +1434,19 @@ function actualizarUI(){
 
   document.getElementById("countPiezas").innerText =
     piezas;
-
-  document.getElementById("totalEfectivo").innerText =
-    `$${total.toFixed(2)}`;
-
-}
-
 window.eliminar = function(idx){
 
   carrito.splice(idx,1);
 
   actualizarUI();
+
+}
+
+window.abrirFoto = function(url){
+
+  if(!url) return;
+
+  window.open(url,"_blank");
 
 }
 
@@ -1412,7 +1456,7 @@ FINALIZAR
 
 document.getElementById("btnFinalizar")
 .onclick = async ()=>{
-
+  
   if(!carrito.length){
     alert("No hay artículos.");
     return;
@@ -1536,7 +1580,10 @@ async function iniciar(){
   setTimeout(()=>{
     ocultarLoading();
   },500);
-
+setTimeout(()=>{
+  descargarFotosMetaSegundoPlano();
+},1200);
+  
 }
 
 document.getElementById("btnAbrirAgregar")
@@ -1545,7 +1592,80 @@ document.getElementById("btnAbrirAgregar")
   abrirModal("modalMenu");
 
 };
+async function guardarFotosMeta(data){
 
+  const dbi = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbi.transaction(STORE_FOTOS_META,"readwrite");
+    const store = tx.objectStore(STORE_FOTOS_META);
+
+    store.clear();
+
+    data.forEach(f=>store.put(f));
+
+    tx.oncomplete = ()=>{
+      dbi.close();
+      resolve();
+    };
+
+    tx.onerror = ()=>{
+      dbi.close();
+      reject(tx.error);
+    };
+
+  });
+
+}
+
+async function leerFotosMeta(codigoBarra){
+
+  const dbi = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbi.transaction(STORE_FOTOS_META,"readonly");
+    const req = tx.objectStore(STORE_FOTOS_META).get(String(codigoBarra || ""));
+
+    req.onsuccess = ()=>{
+      dbi.close();
+      resolve(req.result || null);
+    };
+
+    req.onerror = ()=>{
+      dbi.close();
+      reject(req.error);
+    };
+
+  });
+
+}
+
+async function descargarFotosMetaSegundoPlano(){
+
+  try{
+
+    const snap = await getDocs(
+      collection(db,"productos_fotos_meta")
+    );
+
+    const data = snap.docs.map(d=>({
+      codigoBarra:String(d.id),
+      ...d.data()
+    }));
+
+    await guardarFotosMeta(data);
+
+    console.log("Fotos meta actualizadas:",data.length);
+
+  }catch(e){
+
+    console.warn("No se pudo actualizar fotos meta:",e);
+
+  }
+
+}
 await iniciar();
 
 </script>

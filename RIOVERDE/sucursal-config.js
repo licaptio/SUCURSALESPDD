@@ -11,7 +11,7 @@ export const CONFIG_SUCURSAL = {
 
   LOGO: "logo.jfif",
 
-  PREFIJO_FOLIO: "RIOTRA",
+  PREFIJO_FOLIO: "RIOTRANSF",
   ZONA: "ZONA1",
 
   FIREBASE: {
@@ -24,9 +24,10 @@ export const CONFIG_SUCURSAL = {
 
   INDEXEDDB: {
     DB_NAME: "PROVSOFT_PDD_MOVIL",
-    DB_VERSION: 2,
+    DB_VERSION: 3,
     STORE_PRODUCTOS: "catalogo_productos_completo",
-    STORE_META: "metadata"
+    STORE_META: "metadata",
+    STORE_FOTOS_META: "fotos_productos_meta"
   },
 
   CLAVES: {

@@ -15,15 +15,16 @@ export const CONFIG_SUCURSAL = {
     RAIZ_TIENDAS: "TIENDAS",
     SUCURSAL: "ALLENDE 2",
     COLECCION_TRANSFERENCIAS: "SOLTRAN",
-    COLECCION_FOTOS_META: "fotos_productos_meta",
+    COLECCION_FOTOS_META: "productos_fotos_meta",
     COLECCION_PRODUCTOS: "productos"
   },
 
   INDEXEDDB: {
     DB_NAME: "PROVSOFT_PDD_MOVIL",
-    DB_VERSION: 2,
+    DB_VERSION: 3,
     STORE_PRODUCTOS: "catalogo_productos_completo",
     STORE_META: "metadata",
+    STORE_FOTOS_META: "fotos_productos_meta",
     STORE_BORRADOR: "borrador_transferencia"
   },
 

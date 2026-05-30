@@ -1,0 +1,38 @@
+export const CONFIG_SUCURSAL = {
+
+  SUCURSAL: "ALLENDE 2",
+  RUTA_TRANSFERENCIAS: "SOLTRAN",
+
+  TITULO_APP: "SOLICITUD DE TRANSFERENCIA",
+  TITULO_NAVEGADOR: "SOLCITUD MERCANCIA MATRIZ",
+  SUCURSAL_HEADER: "ALLENDE 2",
+
+  LOGO: "logo.jfif",
+
+  PREFIJO_FOLIO: "ALL2",
+
+  FIREBASE: {
+    RAIZ_TIENDAS: "TIENDAS",
+    SUCURSAL: "ALLENDE 2",
+    COLECCION_TRANSFERENCIAS: "SOLTRAN",
+    COLECCION_FOTOS_META: "productos_fotos_meta",
+    COLECCION_PRODUCTOS: "productos"
+  },
+
+  INDEXEDDB: {
+    DB_NAME: "PROVSOFT_PDD_MOVIL",
+    DB_VERSION: 3,
+    STORE_PRODUCTOS: "catalogo_productos_completo",
+    STORE_META: "metadata",
+    STORE_FOTOS_META: "fotos_productos_meta",
+    STORE_BORRADOR: "borrador_transferencia"
+  },
+
+  CLAVES: {
+    ULTIMA_DESCARGA_CATALOGO: "ultima_descarga_catalogo",
+    BORRADOR: "borrador_actual"
+  },
+
+  HORAS_ENTRE_DESCARGAS: 48
+
+};

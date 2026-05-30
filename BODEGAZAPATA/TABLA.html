@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tabla Salidas Zapata - PROVSOFT</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+</head>
+
+<body>
+  <div id="loader" class="app-loader">
+    <div class="loader-box">
+      <img src="logo.jfif" class="loader-logo" alt="Logo empresa" onerror="this.style.display='none'" />
+      <h2 class="loader-title">PROVEEDORA DE DULCES Y DESECHABLES</h2>
+      <div class="loader-subtitle">ALMACÉN ZAPATA · SALIDAS</div>
+      <div class="progress-shell">
+        <div id="loaderBar" class="progress-bar"></div>
+      </div>
+      <p id="loaderMsg" class="loader-msg">Preparando consulta...</p>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section class="card">
+      <header class="topbar">
+        <div>
+          <h1>Tabla Salidas Zapata</h1>
+          <p>Periodo fijo desde 01/01/2026. Ruta: /almacenes/almacen_zapata/salidas1.0</p>
+        </div>
+
+        <div class="actions">
+          <label>
+            Fecha inicio
+            <input id="fechaInicio" type="date" min="2026-01-01" value="2026-01-01" />
+          </label>
+
+          <label>
+            Fecha fin
+            <input id="fechaFin" type="date" />
+          </label>
+
+          <input id="busqueda" type="search" placeholder="Buscar código, nombre, folio..." />
+
+          <button id="btnRecargar">Recargar</button>
+          <button id="btnExportar">Exportar Excel</button>
+        </div>
+      </header>
+
+      <section class="tabs">
+        <button id="tabResumen" class="active">Resumen por código</button>
+        <button id="tabDetalle">Detalle por salida</button>
+      </section>
+
+      <section class="table-wrap">
+        <table id="tabla">
+          <thead></thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </section>
+
+      <p id="status" class="status">Listo.</p>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

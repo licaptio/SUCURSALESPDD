@@ -15,6 +15,7 @@ export const CONFIG_SUCURSAL = {
     RAIZ_TIENDAS: "TIENDAS",
     SUCURSAL: "ALLENDE 2",
     COLECCION_TRANSFERENCIAS: "SOLTRAN",
+    COLECCION_FOTOS_META: "fotos_productos_meta",
     COLECCION_PRODUCTOS: "productos"
   },
 

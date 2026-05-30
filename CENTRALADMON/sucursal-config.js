@@ -1,36 +1,33 @@
 export const CONFIG_SUCURSAL = {
 
-  SUCURSAL: "ALLENDE 2",
+  SUCURSAL: "CENTRAL",
   RUTA_TRANSFERENCIAS: "SOLTRAN",
 
   TITULO_APP: "SOLICITUD DE TRANSFERENCIA",
-  TITULO_NAVEGADOR: "SOLCITUD MERCANCIA MATRIZ",
-  SUCURSAL_HEADER: "ALLENDE 2",
+  TITULO_NAVEGADOR: "Transferencia Solicitud - PROVSOFT",
+  SUCURSAL_HEADER: "SUCURSAL CENTRAL",
 
   LOGO: "logo.jfif",
 
-  PREFIJO_FOLIO: "ALL2",
+  PREFIJO_FOLIO: "SOL",
 
   FIREBASE: {
     RAIZ_TIENDAS: "TIENDAS",
-    SUCURSAL: "ALLENDE 2",
+    SUCURSAL: "CENTRAL",
     COLECCION_TRANSFERENCIAS: "SOLTRAN",
-    COLECCION_FOTOS_META: "productos_fotos_meta",
-    COLECCION_PRODUCTOS: "productos"
+    COLECCION_PRODUCTOS: "productos",
+    COLECCION_FOTOS_META: "productos_fotos_meta"
   },
 
   INDEXEDDB: {
     DB_NAME: "PROVSOFT_PDD_MOVIL",
-    DB_VERSION: 3,
+    DB_VERSION: 2,
     STORE_PRODUCTOS: "catalogo_productos_completo",
-    STORE_META: "metadata",
-    STORE_FOTOS_META: "fotos_productos_meta",
-    STORE_BORRADOR: "borrador_transferencia"
+    STORE_META: "metadata"
   },
 
   CLAVES: {
-    ULTIMA_DESCARGA_CATALOGO: "ultima_descarga_catalogo",
-    BORRADOR: "borrador_actual"
+    ULTIMA_DESCARGA_CATALOGO: "ultima_descarga_catalogo"
   },
 
   HORAS_ENTRE_DESCARGAS: 48

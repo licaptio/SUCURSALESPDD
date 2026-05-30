@@ -1,19 +1,20 @@
 export const CONFIG_SUCURSAL = {
 
-  SUCURSAL: "CENTRAL",
+  SUCURSAL: "OSITO",
   RUTA_TRANSFERENCIAS: "SOLTRAN",
 
-  TITULO_APP: "SOLICITUD DE TRANSFERENCIA",
-  TITULO_NAVEGADOR: "Transferencia Solicitud - PROVSOFT",
-  SUCURSAL_HEADER: "SUCURSAL CENTRAL",
+  TITULO_APP: "SOLICITUD DE MERCANCÍA",
+  TITULO_NAVEGADOR: "Solicitud Mercancía OSITO - PROVSOFT",
+  SUCURSAL_HEADER: "SUCURSAL OSITO",
 
   LOGO: "logo.jfif",
 
-  PREFIJO_FOLIO: "SOL",
+  PREFIJO_FOLIO: "OSITO",
+  ZONA: "ZONA1",
 
   FIREBASE: {
     RAIZ_TIENDAS: "TIENDAS",
-    SUCURSAL: "CENTRAL",
+    SUCURSAL: "OSITO",
     COLECCION_TRANSFERENCIAS: "SOLTRAN",
     COLECCION_PRODUCTOS: "productos",
     COLECCION_FOTOS_META: "productos_fotos_meta"
@@ -21,13 +22,15 @@ export const CONFIG_SUCURSAL = {
 
   INDEXEDDB: {
     DB_NAME: "PROVSOFT_PDD_MOVIL",
-    DB_VERSION: 2,
+    DB_VERSION: 3,
     STORE_PRODUCTOS: "catalogo_productos_completo",
-    STORE_META: "metadata"
+    STORE_META: "metadata",
+    STORE_BORRADOR: "borrador_transferencia"
   },
 
   CLAVES: {
-    ULTIMA_DESCARGA_CATALOGO: "ultima_descarga_catalogo"
+    ULTIMA_DESCARGA_CATALOGO: "ultima_descarga_catalogo",
+    BORRADOR: "borrador_actual_osito"
   },
 
   HORAS_ENTRE_DESCARGAS: 48

@@ -9,7 +9,7 @@ export const CONFIG_SUCURSAL = {
 
   LOGO: "logo.jfif",
 
-  PREFIJO_FOLIO: "SOL",
+  PREFIJO_FOLIO: "CEN-TRA",
 
   FIREBASE: {
     RAIZ_TIENDAS: "TIENDAS",

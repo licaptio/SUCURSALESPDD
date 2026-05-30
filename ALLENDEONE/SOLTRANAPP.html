@@ -536,10 +536,8 @@ html,body{
 
     <div class="loading-title">Cargando Aplicación</div>
 
-    <div class="loading-frase">
-      "La limpieza es nuestra carta de presentación;<br>
-      el buen trato, nuestra garantía."
-    </div>
+<div class="loading-frase" id="loadingFrase"></div>
+    
 
     <div id="loadingPct">0%</div>
 
@@ -1675,8 +1673,29 @@ function generarPDF(folio){
 /* =========================
 INICIO
 ========================= */
+const FRASES_CARGA = [
 
+  "La limpieza es nuestra carta de presentación; el buen trato, nuestra garantía.",
+
+  "Una buena comunicación es el puente entre la confusión y la claridad.",
+
+  "La calidad se recuerda mucho después de que el precio se olvida.",
+
+  "El servicio al cliente no es un departamento; es toda la empresa.",
+
+  "Cada detalle cuenta cuando se busca la excelencia."
+
+];
 async function iniciar(){
+
+  const inicioCarga = Date.now();
+
+  const frase =
+    FRASES_CARGA[
+      Math.floor(Math.random() * FRASES_CARGA.length)
+    ];
+
+  document.getElementById("loadingFrase").innerHTML = frase;
 
   setLoading("Generando folio...",5);
 
@@ -1688,14 +1707,26 @@ async function iniciar(){
 
   setLoading("Aplicación lista.",100);
 
+  const tiempoMinimo = 5000;
+
+  const transcurrido =
+    Date.now() - inicioCarga;
+
+  const restante =
+    Math.max(0, tiempoMinimo - transcurrido);
+
   setTimeout(()=>{
+
     ocultarLoading();
-  },500);
-setTimeout(()=>{
-  descargarFotosMetaSegundoPlano();
-},1200);
-  
+
+    setTimeout(()=>{
+      descargarFotosMetaSegundoPlano();
+    },1200);
+
+  }, restante);
+
 }
+  
 
 document.getElementById("btnAbrirAgregar")
 .onclick = ()=>{

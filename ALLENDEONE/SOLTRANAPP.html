@@ -3,6 +3,7 @@
 <head>	
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -18,15 +19,23 @@
 }
 
 :root{
-  --azul:#00416A;
-  --azul-oscuro:#003366;
+  --amarillo:#facc15;
+  --amarillo-oscuro:#eab308;
+  --amarillo-claro:#fef9c3;
+
   --rojo:#e31b23;
   --verde:#16a34a;
-  --gris:#f4f7fa;
-  --border:#d1d9e0;
-  --texto:#1f2937;
-}
 
+  --blanco:#ffffff;
+  --gris:#f8fafc;
+  --border:#e5e7eb;
+
+  --texto:#1f2937;
+
+  --azul:var(--amarillo);
+  --azul-oscuro:var(--amarillo-oscuro);
+}
+  
 html,body{
   margin:0;
   width:100%;
@@ -98,34 +107,52 @@ html,body{
 }
 
 .titulo-app{
-  background:var(--azul-oscuro);
-  color:white;
-  text-align:center;
-  padding:6px;
-  font-size:13px;
+  background:linear-gradient(
+    90deg,
+    #facc15,
+    #fbbf24
+  );
+  color:#7c2d12;
   font-weight:900;
+  border-bottom:3px solid #eab308;
 }
+  
 
 .top-header{
-  height:60px;
-  background:white;
+  height:75px;
+  background:#ffffff;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:0 10px;
-  gap:10px;
+  padding:0 15px;
+  gap:15px;
+
+  border-bottom:4px solid #facc15;
+
+  box-shadow:
+    0 3px 12px rgba(0,0,0,.08);
+
+  position:relative;
+  z-index:10;
 }
 
 .logo-area img{
-  max-height:42px;
+  max-height:60px;
+  width:auto;
+
+  filter:
+    drop-shadow(0 3px 6px rgba(0,0,0,.20));
 }
+  
 
 .sucursal-header{
   flex:1;
   text-align:center;
-  font-size:12px;
+  font-size:16px;
   font-weight:900;
-  color:var(--azul-oscuro);
+  color:#92400e;
+  text-transform:uppercase;
+  letter-spacing:1px;
 }
 
 .folio-header{
@@ -426,15 +453,93 @@ html,body{
   font-size:11px;
   line-height:1.3;
 }
+.loading{
+  background:
+    radial-gradient(circle at top,#ffffff 0%,#fff7f7 35%,#b91c1c 100%);
+}
+
+.loading-proveedora{
+  max-width:460px;
+  background:rgba(255,255,255,.96);
+  border:3px solid var(--rojo);
+  box-shadow:0 25px 60px rgba(0,0,0,.28);
+  color:var(--azul-oscuro);
+}
+
+.loading-logo-dance{
+  width:100%;
+  max-width:360px;
+  margin:0 auto 18px;
+  display:block;
+  animation:logoBaile 1.15s ease-in-out infinite;
+  filter:drop-shadow(0 12px 18px rgba(0,0,0,.25));
+}
+
+.loading-title{
+  color:var(--rojo);
+  text-transform:uppercase;
+  letter-spacing:.8px;
+}
+
+.loading-frase{
+  margin-top:12px;
+  font-size:14px;
+  font-weight:800;
+  color:var(--azul-oscuro);
+  line-height:1.4;
+}
+
+.progress-wrap{
+  background:#fee2e2;
+}
+
+.progress-bar{
+  background:linear-gradient(90deg,var(--rojo),#ff3b3b);
+}
+
+#loadingPct{
+  color:var(--rojo);
+}
+
+#loadingText{
+  color:#374151;
+  font-weight:700;
+}
+
+@keyframes logoBaile{
+  0%{
+    transform:translateY(0) rotate(0deg) scale(1);
+  }
+  25%{
+    transform:translateY(-8px) rotate(-2deg) scale(1.03);
+  }
+  50%{
+    transform:translateY(0) rotate(0deg) scale(1);
+  }
+  75%{
+    transform:translateY(-6px) rotate(2deg) scale(1.03);
+  }
+  100%{
+    transform:translateY(0) rotate(0deg) scale(1);
+  }
+}
+  
 </style>
 </head>
 
 <body>
 
 <div class="loading" id="loading">
-  <div class="loading-card">
-    <div class="loading-title">PROVSOFT</div>
-    <div class="loading-sub">Preparando solicitud...</div>
+  <div class="loading-card loading-proveedora">
+
+    <img class="loading-logo-dance" src="logo.jfif" alt="PROVEEDORA">
+
+    <div class="loading-title">Cargando Aplicación</div>
+
+    <div class="loading-frase">
+      "La limpieza es nuestra carta de presentación;<br>
+      el buen trato, nuestra garantía."
+    </div>
 
     <div id="loadingPct">0%</div>
 
@@ -442,10 +547,11 @@ html,body{
       <div id="loadingBar" class="progress-bar"></div>
     </div>
 
-    <div id="loadingText">Iniciando...</div>
+    <div id="loadingText">Preparando sistema...</div>
+
   </div>
 </div>
-
+  
 <div class="titulo-app">
   SOLICITUD DE TRANSFERENCIA
 </div>

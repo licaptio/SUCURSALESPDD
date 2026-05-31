@@ -31,9 +31,40 @@ const DB_NAME="PROVSOFT_SALIDAS_ZAPATA",DB_VERSION=1,STORE_KV="kv",STORE_HIST="h
 let idb=null,guia=null,catalogo=[],catalogoMap=new Map(),salida=nuevaSalida(),stack=[],guardando=false;
 const $=id=>document.getElementById(id);
 
-document.addEventListener("DOMContentLoaded",async()=>{bind();setLoad("Abriendo base local...",10);idb=await openIDB();setLoad("Cargando cache local...",20);guia=await getKV("guia");catalogo=await getKV("catalogo")||[];buildCatalogo();setLoad("Descargando configuración...",35);await sync();setLoad("Revisando borrador...",85);const b=await getKV("borrador");if(b&&b.iniciado&&confirm("Hay una salida pendiente. ¿Deseas continuarla?"))salida=b;else if(b)await delKV("borrador");updateUI();setLoad("Listo.",100);setTimeout(()=>$('loader').classList.add('hidden'),250)});
+document.addEventListener("DOMContentLoaded",async()=>{
+  bind();
+  setLoad("Abriendo base local...",10);
+  idb=await openIDB();
+  setLoad("Cargando cache local...",20);
+  guia=await getKV("guia");
+  catalogo=await getKV("catalogo")||[];
+  buildCatalogo();
+  setLoad("Descargando configuración...",35);
+  await sync();
+  setLoad("Revisando borrador...",85);
+  const b=await getKV("borrador");
+  if(b&&b.iniciado&&confirm("Hay una salida pendiente. ¿Deseas continuarla?"))salida=b;
+  else if(b)await delKV("borrador");
+  updateUI();
+  setLoad("Listo.",100);
+  setTimeout(()=>$('loader').classList.add('hidden'),250);
+});
 
-function nuevaSalida(){return{iniciado:false,fecha:hoy(),folioTemporal:"",entrega:"",recibe:"",destino:"",placas:"",notasGenerales:"",articulos:[],firmaEntrega:"",firmaRecibe:""}}
+function nuevaSalida(){
+  return{
+    iniciado:false,
+    fecha:hoy(),
+    folioTemporal:"",
+    entrega:"",
+    recibe:"",
+    destino:"",
+    placas:"",
+    notasGenerales:"",
+    articulos:[],
+    firmaEntrega:"",
+    firmaRecibe:""
+  };
+}
 
 function hoy(){return new Date().toISOString().slice(0,10)}
 function ymd(d){return`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`}
@@ -47,33 +78,256 @@ function escA(t){return esc(t).replace(/`/g,"")}
 function slug(t){return String(t||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')}
 function normCod(v){const s=String(v??"").trim(),d=s.replace(/\D/g,"");return d?(d.replace(/^0+/,"")||"0"):s.toLowerCase()}
 
-function openIDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE_KV))d.createObjectStore(STORE_KV);if(!d.objectStoreNames.contains(STORE_HIST))d.createObjectStore(STORE_HIST,{keyPath:'folio'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-function getKV(k){return new Promise((res,rej)=>{const tx=idb.transaction(STORE_KV,'readonly'),r=tx.objectStore(STORE_KV).get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-function setKV(k,v){return new Promise((res,rej)=>{const tx=idb.transaction(STORE_KV,'readwrite');tx.objectStore(STORE_KV).put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
-function delKV(k){return new Promise((res,rej)=>{const tx=idb.transaction(STORE_KV,'readwrite');tx.objectStore(STORE_KV).delete(k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
-function putHist(v){return new Promise((res,rej)=>{const tx=idb.transaction(STORE_HIST,'readwrite');tx.objectStore(STORE_HIST).put(v);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
-function getHist(){return new Promise((res,rej)=>{const tx=idb.transaction(STORE_HIST,'readonly'),r=tx.objectStore(STORE_HIST).getAll();r.onsuccess=()=>res((r.result||[]).sort((a,b)=>String(b.fechaGuardado).localeCompare(String(a.fechaGuardado))).slice(0,20));r.onerror=()=>rej(r.error)})}
+function openIDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,DB_VERSION);
+    r.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains(STORE_KV))d.createObjectStore(STORE_KV);
+      if(!d.objectStoreNames.contains(STORE_HIST))d.createObjectStore(STORE_HIST,{keyPath:'folio'});
+    };
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
 
-async function sync(){let ok=false;try{const d=await RUTAS.CONFIG_DOC.get();if(d.exists){guia=normalizeGuia(d.data());await setKV('guia',guia);ok=true}}catch(e){console.warn(e)}try{const s=await RUTAS.PRODUCTOS_REF.where('activo','==',true).get();catalogo=[];s.forEach(d=>catalogo.push({id:d.id,...d.data()}));buildCatalogo();await setKV('catalogo',catalogo);ok=true}catch(e){console.warn(e)}$('estadoConexion').textContent=ok?'Sincronizado':'Modo local'}
+function getKV(k){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_KV,'readonly'),r=tx.objectStore(STORE_KV).get(k);
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
 
-function normalizeGuia(raw){const arts=Array.isArray(raw.articulos)?raw.articulos:[];if(Array.isArray(raw.departamentos)&&raw.departamentos.length){return{...raw,departamentos:raw.departamentos.map((d,i)=>({id:slug(d.id||d.nombre),nombre:d.nombre||'SIN DEPTO',icono:d.icono||'📦',activo:d.activo!==false,orden:+(d.orden||i+1),familias:(d.familias||[]).map((f,j)=>({id:slug(f.id||f.nombre),nombre:f.nombre||'SIN FAMILIA',icono:f.icono||'📁',activo:f.activo!==false,orden:+(f.orden||j+1),articulos:(f.articulos||[]).map((a,k)=>({codigo:String(a.codigo||'').trim(),concepto:a.concepto||a.nombre||'',icono:a.icono||'📦',activo:a.activo!==false,orden:+(a.orden||k+1)}))}))}))}}const map=new Map();arts.forEach((a,i)=>{const dep=a.departamento||'SIN DEPARTAMENTO',fam=a.familia||'SIN FAMILIA',dk=slug(dep),fk=slug(fam);if(!map.has(dk))map.set(dk,{id:dk,nombre:dep,icono:'📦',activo:true,orden:i+1,familiasMap:new Map()});const d=map.get(dk);if(!d.familiasMap.has(fk))d.familiasMap.set(fk,{id:fk,nombre:fam,icono:'📁',activo:true,orden:i+1,articulos:[]});d.familiasMap.get(fk).articulos.push({codigo:String(a.codigo||'').trim(),concepto:a.concepto||'',icono:'📦',activo:a.activo!==false,orden:+(a.orden||i+1)})});const departamentos=[...map.values()].map(d=>{const familias=[...d.familiasMap.values()].map(f=>({...f,articulos:f.articulos.sort((a,b)=>a.orden-b.orden)})).sort((a,b)=>a.orden-b.orden);delete d.familiasMap;return{...d,familias}}).sort((a,b)=>a.orden-b.orden);return{...raw,departamentos,articulos:arts}}
+function setKV(k,v){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_KV,'readwrite');
+    tx.objectStore(STORE_KV).put(v,k);
+    tx.oncomplete=res;
+    tx.onerror=()=>rej(tx.error);
+  });
+}
 
-function buildCatalogo(){catalogoMap=new Map();catalogo.forEach(p=>[p.codigo,p.Codigo,p.CODIGO,p.codigoBarra,p.codigo_barra,p.id].filter(Boolean).forEach(c=>catalogoMap.set(normCod(c),p)))}
+function delKV(k){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_KV,'readwrite');
+    tx.objectStore(STORE_KV).delete(k);
+    tx.oncomplete=res;
+    tx.onerror=()=>rej(tx.error);
+  });
+}
+
+function putHist(v){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_HIST,'readwrite');
+    tx.objectStore(STORE_HIST).put(v);
+    tx.oncomplete=res;
+    tx.onerror=()=>rej(tx.error);
+  });
+}
+
+function getHist(){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_HIST,'readonly'),r=tx.objectStore(STORE_HIST).getAll();
+    r.onsuccess=()=>res((r.result||[]).sort((a,b)=>String(b.fechaGuardado).localeCompare(String(a.fechaGuardado))).slice(0,20));
+    r.onerror=()=>rej(r.error);
+  });
+}
+
+async function sync(){
+  let ok=false;
+  try{
+    const d=await RUTAS.CONFIG_DOC.get();
+    if(d.exists){
+      guia=normalizeGuia(d.data());
+      await setKV('guia',guia);
+      ok=true;
+    }
+  }catch(e){console.warn(e)}
+
+  try{
+    const s=await RUTAS.PRODUCTOS_REF.where('activo','==',true).get();
+    catalogo=[];
+    s.forEach(d=>catalogo.push({id:d.id,...d.data()}));
+    buildCatalogo();
+    await setKV('catalogo',catalogo);
+    ok=true;
+  }catch(e){console.warn(e)}
+
+  $('estadoConexion').textContent=ok?'Sincronizado':'Modo local';
+}
+
+function normalizeGuia(raw){
+  const arts=Array.isArray(raw.articulos)?raw.articulos:[];
+
+  if(Array.isArray(raw.departamentos)&&raw.departamentos.length){
+    return{
+      ...raw,
+      departamentos:raw.departamentos.map((d,i)=>({
+        id:slug(d.id||d.nombre),
+        nombre:d.nombre||'SIN DEPTO',
+        icono:d.icono||'📦',
+        activo:d.activo!==false,
+        orden:+(d.orden||i+1),
+        familias:(d.familias||[]).map((f,j)=>({
+          id:slug(f.id||f.nombre),
+          nombre:f.nombre||'SIN FAMILIA',
+          icono:f.icono||'📁',
+          activo:f.activo!==false,
+          orden:+(f.orden||j+1),
+          articulos:(f.articulos||[]).map((a,k)=>({
+            codigo:String(a.codigo||'').trim(),
+            concepto:a.concepto||a.nombre||'',
+            icono:a.icono||'📦',
+            activo:a.activo!==false,
+            orden:+(a.orden||k+1)
+          }))
+        }))
+      }))
+    };
+  }
+
+  const map=new Map();
+
+  arts.forEach((a,i)=>{
+    const dep=a.departamento||'SIN DEPARTAMENTO';
+    const fam=a.familia||'SIN FAMILIA';
+    const dk=slug(dep);
+    const fk=slug(fam);
+
+    if(!map.has(dk)){
+      map.set(dk,{
+        id:dk,
+        nombre:dep,
+        icono:'📦',
+        activo:true,
+        orden:i+1,
+        familiasMap:new Map()
+      });
+    }
+
+    const d=map.get(dk);
+
+    if(!d.familiasMap.has(fk)){
+      d.familiasMap.set(fk,{
+        id:fk,
+        nombre:fam,
+        icono:'📁',
+        activo:true,
+        orden:i+1,
+        articulos:[]
+      });
+    }
+
+    d.familiasMap.get(fk).articulos.push({
+      codigo:String(a.codigo||'').trim(),
+      concepto:a.concepto||'',
+      icono:'📦',
+      activo:a.activo!==false,
+      orden:+(a.orden||i+1)
+    });
+  });
+
+  const departamentos=[...map.values()].map(d=>{
+    const familias=[...d.familiasMap.values()]
+      .map(f=>({...f,articulos:f.articulos.sort((a,b)=>a.orden-b.orden)}))
+      .sort((a,b)=>a.orden-b.orden);
+
+    delete d.familiasMap;
+
+    return{...d,familias};
+  }).sort((a,b)=>a.orden-b.orden);
+
+  return{...raw,departamentos,articulos:arts};
+}
+
+function buildCatalogo(){
+  catalogoMap=new Map();
+  catalogo.forEach(p=>[
+    p.codigo,
+    p.Codigo,
+    p.CODIGO,
+    p.codigoBarra,
+    p.codigo_barra,
+    p.id
+  ].filter(Boolean).forEach(c=>catalogoMap.set(normCod(c),p)));
+}
+
 function prodByCod(c){return catalogoMap.get(normCod(c))}
 function codProd(p){return String(p.codigo||p.Codigo||p.CODIGO||p.codigoBarra||p.id||'').trim()}
 function nomProd(p,fb=''){return String(p.concepto||p.Concepto||p.descripcion||p.nombre||p.Nombre||fb||'').trim()}
 
-function bind(){$('btnNuevaSalida').onclick=abrirDatos;$('btnAgregarProducto').onclick=()=>abrirDepartamentos();$('btnBuscarProducto').onclick=abrirBusqueda;$('btnCarrito').onclick=abrirCarrito;$('btnConfig').onclick=abrirConfig;$('btnHistorial').onclick=abrirHistorial;$('btnContinuarNotas').onclick=abrirNotas;$('btnClose').onclick=cerrarModal;$('btnBack').onclick=backModal}
+function bind(){
+  $('btnNuevaSalida').onclick=abrirDatos;
+  $('btnAgregarProducto').onclick=()=>abrirDepartamentos();
+  $('btnBuscarProducto').onclick=abrirBusqueda;
+  $('btnCarrito').onclick=abrirCarrito;
+  $('btnConfig').onclick=abrirConfig;
+  $('btnHistorial').onclick=abrirHistorial;
+  $('btnContinuarNotas').onclick=abrirNotas;
+  $('btnClose').onclick=cerrarModal;
+  $('btnBack').onclick=backModal;
+}
 
-function updateUI(){const total=salida.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);$('badgeCarrito').textContent=salida.articulos.length;$('stArticulos').textContent=salida.articulos.length;$('stCantidad').textContent=fmt(total);$('stGuia').textContent=(guia?.articulos?.length)||contarGuia();$('stCatalogo').textContent=catalogo.length;if(!salida.iniciado){$('tituloEstado').textContent='Nueva salida';$('resumenSalida').textContent='Inicia una salida para comenzar.';$('panelAcciones').classList.add('hidden');$('btnNuevaSalida').classList.remove('hidden');return}$('tituloEstado').textContent=salida.folioTemporal;$('resumenSalida').innerHTML=`<b>Destino:</b> ${esc(salida.destino||'SIN DESTINO')}<br><b>Entrega:</b> ${esc(salida.entrega||'')} · <b>Chofer:</b> ${esc(salida.recibe||'')}<br><b>Artículos:</b> ${salida.articulos.length} · <b>Cantidad:</b> ${fmt(total)}`;$('panelAcciones').classList.remove('hidden');$('btnNuevaSalida').classList.add('hidden')}
+function updateUI(){
+  const total=salida.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
 
-function contarGuia(){return(guia?.departamentos||[]).flatMap(d=>d.familias||[]).flatMap(f=>f.articulos||[]).length}
+  $('badgeCarrito').textContent=salida.articulos.length;
+  $('stArticulos').textContent=salida.articulos.length;
+  $('stCantidad').textContent=fmt(total);
+  $('stGuia').textContent=(guia?.articulos?.length)||contarGuia();
+  $('stCatalogo').textContent=catalogo.length;
 
-function modal(title,html,back=false,push=true){$('modalTitle').textContent=title;$('modalBody').innerHTML=html;$('modal').classList.remove('hidden');$('btnBack').classList.toggle('hidden',!back);if(push)stack.push({title,html,back})}
-function cerrarModal(){$('modal').classList.add('hidden');$('modalBody').innerHTML='';stack=[]}
-function backModal(){stack.pop();const p=stack.pop();if(!p)return cerrarModal();modal(p.title,p.html,p.back,true)}
-function validarInicio(){if(!salida.iniciado){alert('Primero inicia una salida.');return false}return true}
-async function saveDraft(){if(salida.iniciado)await setKV('borrador',salida)}
+  if(!salida.iniciado){
+    $('tituloEstado').textContent='Nueva salida';
+    $('resumenSalida').textContent='Inicia una salida para comenzar.';
+    $('panelAcciones').classList.add('hidden');
+    $('btnNuevaSalida').classList.remove('hidden');
+    return;
+  }
+
+  $('tituloEstado').textContent=salida.folioTemporal;
+  $('resumenSalida').innerHTML=`<b>Destino:</b> ${esc(salida.destino||'SIN DESTINO')}<br><b>Entrega:</b> ${esc(salida.entrega||'')} · <b>Chofer:</b> ${esc(salida.recibe||'')}<br><b>Artículos:</b> ${salida.articulos.length} · <b>Cantidad:</b> ${fmt(total)}`;
+  $('panelAcciones').classList.remove('hidden');
+  $('btnNuevaSalida').classList.add('hidden');
+}
+
+function contarGuia(){
+  return(guia?.departamentos||[]).flatMap(d=>d.familias||[]).flatMap(f=>f.articulos||[]).length;
+}
+
+function modal(title,html,back=false,push=true){
+  $('modalTitle').textContent=title;
+  $('modalBody').innerHTML=html;
+  $('modal').classList.remove('hidden');
+  $('btnBack').classList.toggle('hidden',!back);
+  if(push)stack.push({title,html,back});
+}
+
+function cerrarModal(){
+  $('modal').classList.add('hidden');
+  $('modalBody').innerHTML='';
+  stack=[];
+}
+
+function backModal(){
+  stack.pop();
+  const p=stack.pop();
+  if(!p)return cerrarModal();
+  modal(p.title,p.html,p.back,true);
+}
+
+function validarInicio(){
+  if(!salida.iniciado){
+    alert('Primero inicia una salida.');
+    return false;
+  }
+  return true;
+}
+
+async function saveDraft(){
+  if(salida.iniciado)await setKV('borrador',salida);
+}
 
 function abrirDatos(){
   if(!salida.iniciado){
@@ -130,44 +384,252 @@ window.guardarDatos=async()=>{
   updateUI();
   cerrarModal();
   setTimeout(abrirDepartamentos,100);
+};
+
+function deps(){
+  return(guia?.departamentos||[]).filter(d=>d.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0));
 }
 
-function deps(){return(guia?.departamentos||[]).filter(d=>d.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0))}
+function abrirDepartamentos(){
+  if(!validarInicio())return;
+  const d=deps();
 
-function abrirDepartamentos(){if(!validarInicio())return;const d=deps();modal('Departamento',d.length?`<div class="grid">${d.map(x=>`<button class="tile" onclick="abrirFamilias('${escA(x.id)}')"><span class="ico">${esc(x.icono||'📦')}</span><span>${esc(x.nombre)}</span></button>`).join('')}</div>`:`<div class="empty">Sin departamentos activos.</div>`,false,false)}
+  modal(
+    'Departamento',
+    d.length
+      ? `<div class="grid">${d.map(x=>`<button class="tile" onclick="abrirFamilias('${escA(x.id)}')"><span class="ico">${esc(x.icono||'📦')}</span><span>${esc(x.nombre)}</span></button>`).join('')}</div>`
+      : `<div class="empty">Sin departamentos activos.</div>`,
+    false,
+    false
+  );
+}
 
-window.abrirFamilias=id=>{const d=deps().find(x=>x.id===id);const f=(d?.familias||[]).filter(x=>x.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0));modal(d?.nombre||'Familia',f.length?`<div class="grid">${f.map(x=>`<button class="tile" onclick="abrirProductos('${escA(d.id)}','${escA(x.id)}')"><span class="ico">${esc(x.icono||'📁')}</span><span>${esc(x.nombre)}</span><small>${(x.articulos||[]).filter(a=>a.activo!==false).length} productos</small></button>`).join('')}</div>`:`<div class="empty">Sin familias activas.</div>`,true)};
+window.abrirFamilias=id=>{
+  const d=deps().find(x=>x.id===id);
+  const f=(d?.familias||[]).filter(x=>x.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0));
 
-window.abrirProductos=(depId,famId)=>{const d=deps().find(x=>x.id===depId),f=d?.familias?.find(x=>x.id===famId);const arts=(f?.articulos||[]).filter(a=>a.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0));modal(f?.nombre||'Productos',arts.length?arts.map(a=>prodBtn(a.codigo,a.concepto)).join(''):`<div class="empty">Sin productos.</div>`,true)}
+  modal(
+    d?.nombre||'Familia',
+    f.length
+      ? `<div class="grid">${f.map(x=>`<button class="tile" onclick="abrirProductos('${escA(d.id)}','${escA(x.id)}')"><span class="ico">${esc(x.icono||'📁')}</span><span>${esc(x.nombre)}</span><small>${(x.articulos||[]).filter(a=>a.activo!==false).length} productos</small></button>`).join('')}</div>`
+      : `<div class="empty">Sin familias activas.</div>`,
+    true
+  );
+};
 
-function prodBtn(c,n){const p=prodByCod(c);const nombre=p?nomProd(p,n):n;return`<button class="item" onclick="abrirCantidad('${escA(c)}','${escA(nombre)}')"><h4>${esc(nombre)}</h4><p>Código: <b>${esc(c)}</b></p></button>`}
+window.abrirProductos=(depId,famId)=>{
+  const d=deps().find(x=>x.id===depId);
+  const f=d?.familias?.find(x=>x.id===famId);
+  const arts=(f?.articulos||[]).filter(a=>a.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0));
 
-window.abrirCantidad=(c,n)=>{modal('Cantidad',`<div class="item"><h4>${esc(n)}</h4><p>Código: <b>${esc(c)}</b></p></div><div class="field"><label>Cantidad</label><input id="cant" type="number" min="0.01" step="0.01" inputmode="decimal"></div><button class="btn green" onclick="addCart('${escA(c)}','${escA(n)}')">Agregar</button>`,true);setTimeout(()=>$('cant')?.focus(),100)}
+  modal(
+    f?.nombre||'Productos',
+    arts.length
+      ? arts.map(a=>prodBtn(a.codigo,a.concepto)).join('')
+      : `<div class="empty">Sin productos.</div>`,
+    true
+  );
+};
 
-window.addCart=async(c,n)=>{const q=Number($('cant').value||0);if(q<=0)return alert('Cantidad inválida.');const i=salida.articulos.findIndex(a=>normCod(a.codigo)===normCod(c));if(i>=0)salida.articulos[i].cantidad=Number(salida.articulos[i].cantidad||0)+q;else salida.articulos.push({codigo:c,nombre:n,cantidad:q});await saveDraft();updateUI();modal('Agregado',`<div class="notice">Producto agregado.</div><button class="btn green" onclick="abrirDepartamentos()">Agregar otro</button><button class="btn blue" onclick="abrirCarrito()">Ver carrito</button><button class="btn gray" onclick="cerrarModal()">Cerrar</button>`,false,false)}
+function prodBtn(c,n){
+  const p=prodByCod(c);
+  const nombre=p?nomProd(p,n):n;
 
-function abrirBusqueda(){if(!validarInicio())return;modal('Buscar producto',`<input id="buscar" class="search" placeholder="Código o nombre..." oninput="renderBuscar()"><div id="resBuscar" class="empty">Escribe para buscar.</div>`,false,false)}
+  return`<button class="item" onclick="abrirCantidad('${escA(c)}','${escA(nombre)}')"><h4>${esc(nombre)}</h4><p>Código: <b>${esc(c)}</b></p></button>`;
+}
 
-window.renderBuscar=()=>{const q=$('buscar').value.trim().toLowerCase();if(q.length<2){$('resBuscar').innerHTML=`<div class="empty">Escribe mínimo 2 caracteres.</div>`;return}const r=catalogo.filter(p=>codProd(p).toLowerCase().includes(q)||nomProd(p).toLowerCase().includes(q)).slice(0,40);$('resBuscar').innerHTML=r.length?r.map(p=>prodBtn(codProd(p),nomProd(p))).join(''):`<div class="empty">Sin resultados.</div>`}
+window.abrirCantidad=(c,n)=>{
+  modal(
+    'Cantidad',
+    `<div class="item"><h4>${esc(n)}</h4><p>Código: <b>${esc(c)}</b></p></div><div class="field"><label>Cantidad</label><input id="cant" type="number" min="0.01" step="0.01" inputmode="decimal"></div><button class="btn green" onclick="addCart('${escA(c)}','${escA(n)}')">Agregar</button>`,
+    true
+  );
 
-function abrirCarrito(){if(!validarInicio())return;modal('Carrito',salida.articulos.length?salida.articulos.map((a,i)=>`<div class="item"><h4>${esc(a.nombre)}</h4><p>Código: <b>${esc(a.codigo)}</b></p><div class="cart-controls"><button onclick="chgQty(${i},-1)">−</button><div class="qty">${fmt(a.cantidad)}</div><button onclick="chgQty(${i},1)">+</button><button onclick="delItem(${i})">🗑️</button></div></div>`).join('')+`<button class="btn green" onclick="abrirDepartamentos()">Agregar otro</button><button class="btn primary" onclick="abrirNotas()">Continuar</button>`:`<div class="empty">Carrito vacío.</div><button class="btn green" onclick="abrirDepartamentos()">Agregar producto</button>`,false,false)}
+  setTimeout(()=>$('cant')?.focus(),100);
+};
 
-window.chgQty=async(i,d)=>{if(!salida.articulos[i])return;const n=Number(salida.articulos[i].cantidad||0)+d;if(n<=0){if(!confirm('¿Eliminar artículo?'))return;salida.articulos.splice(i,1)}else salida.articulos[i].cantidad=n;await saveDraft();updateUI();abrirCarrito()}
-window.delItem=async i=>{if(!confirm('¿Eliminar artículo?'))return;salida.articulos.splice(i,1);await saveDraft();updateUI();abrirCarrito()}
+window.addCart=async(c,n)=>{
+  const q=Number($('cant').value||0);
 
-function abrirNotas(){if(!salida.articulos.length)return alert('Agrega mínimo un artículo.');modal('Notas generales',`<div class="field"><label>Notas generales</label><textarea id="notas">${esc(salida.notasGenerales)}</textarea></div><button class="btn primary" onclick="saveNotas()">Siguiente: firmas</button>`,false,false)}
+  if(q<=0)return alert('Cantidad inválida.');
 
-window.saveNotas=async()=>{salida.notasGenerales=$('notas').value.trim();await saveDraft();abrirFirma('entrega')}
+  const i=salida.articulos.findIndex(a=>normCod(a.codigo)===normCod(c));
 
-function abrirFirma(tipo){modal(tipo==='entrega'?'Firma entrega':'Firma chofer',`<div class="sigbox"><canvas id="sig"></canvas></div><button class="btn gray" onclick="clearSig()">Limpiar</button><button class="btn primary" onclick="saveSig('${tipo}')">${tipo==='entrega'?'Siguiente':'Guardar salida'}</button>`,false,false);setTimeout(initSig,80)}
+  if(i>=0)salida.articulos[i].cantidad=Number(salida.articulos[i].cantidad||0)+q;
+  else salida.articulos.push({codigo:c,nombre:n,cantidad:q});
+
+  await saveDraft();
+  updateUI();
+
+  modal(
+    'Agregado',
+    `<div class="notice">Producto agregado.</div><button class="btn green" onclick="abrirDepartamentos()">Agregar otro</button><button class="btn blue" onclick="abrirCarrito()">Ver carrito</button><button class="btn gray" onclick="cerrarModal()">Cerrar</button>`,
+    false,
+    false
+  );
+};
+
+function abrirBusqueda(){
+  if(!validarInicio())return;
+
+  modal(
+    'Buscar producto',
+    `<input id="buscar" class="search" placeholder="Código o nombre..." oninput="renderBuscar()"><div id="resBuscar" class="empty">Escribe para buscar.</div>`,
+    false,
+    false
+  );
+}
+
+window.renderBuscar=()=>{
+  const q=$('buscar').value.trim().toLowerCase();
+
+  if(q.length<2){
+    $('resBuscar').innerHTML=`<div class="empty">Escribe mínimo 2 caracteres.</div>`;
+    return;
+  }
+
+  const r=catalogo.filter(p=>codProd(p).toLowerCase().includes(q)||nomProd(p).toLowerCase().includes(q)).slice(0,40);
+
+  $('resBuscar').innerHTML=r.length
+    ? r.map(p=>prodBtn(codProd(p),nomProd(p))).join('')
+    : `<div class="empty">Sin resultados.</div>`;
+};
+
+function abrirCarrito(){
+  if(!validarInicio())return;
+
+  modal(
+    'Carrito',
+    salida.articulos.length
+      ? salida.articulos.map((a,i)=>`<div class="item"><h4>${esc(a.nombre)}</h4><p>Código: <b>${esc(a.codigo)}</b></p><div class="cart-controls"><button onclick="chgQty(${i},-1)">−</button><div class="qty">${fmt(a.cantidad)}</div><button onclick="chgQty(${i},1)">+</button><button onclick="delItem(${i})">🗑️</button></div></div>`).join('')+`<button class="btn green" onclick="abrirDepartamentos()">Agregar otro</button><button class="btn primary" onclick="abrirNotas()">Continuar</button>`
+      : `<div class="empty">Carrito vacío.</div><button class="btn green" onclick="abrirDepartamentos()">Agregar producto</button>`,
+    false,
+    false
+  );
+}
+
+window.chgQty=async(i,d)=>{
+  if(!salida.articulos[i])return;
+
+  const n=Number(salida.articulos[i].cantidad||0)+d;
+
+  if(n<=0){
+    if(!confirm('¿Eliminar artículo?'))return;
+    salida.articulos.splice(i,1);
+  }else{
+    salida.articulos[i].cantidad=n;
+  }
+
+  await saveDraft();
+  updateUI();
+  abrirCarrito();
+};
+
+window.delItem=async i=>{
+  if(!confirm('¿Eliminar artículo?'))return;
+  salida.articulos.splice(i,1);
+  await saveDraft();
+  updateUI();
+  abrirCarrito();
+};
+
+function abrirNotas(){
+  if(!salida.articulos.length)return alert('Agrega mínimo un artículo.');
+
+  modal(
+    'Notas generales',
+    `<div class="field"><label>Notas generales</label><textarea id="notas">${esc(salida.notasGenerales)}</textarea></div><button class="btn primary" onclick="saveNotas()">Siguiente: firmas</button>`,
+    false,
+    false
+  );
+}
+
+window.saveNotas=async()=>{
+  salida.notasGenerales=$('notas').value.trim();
+  await saveDraft();
+  abrirFirma('entrega');
+};
+
+function abrirFirma(tipo){
+  modal(
+    tipo==='entrega'?'Firma entrega':'Firma chofer',
+    `<div class="sigbox"><canvas id="sig"></canvas></div><button class="btn gray" onclick="clearSig()">Limpiar</button><button class="btn primary" onclick="saveSig('${tipo}')">${tipo==='entrega'?'Siguiente':'Guardar salida'}</button>`,
+    false,
+    false
+  );
+
+  setTimeout(initSig,80);
+}
 
 let ctx,drawing=false,hasSig=false;
 
-function initSig(){const c=$('sig'),r=c.getBoundingClientRect();c.width=r.width*devicePixelRatio;c.height=r.height*devicePixelRatio;ctx=c.getContext('2d');ctx.scale(devicePixelRatio,devicePixelRatio);ctx.lineWidth=2.3;ctx.lineCap='round';ctx.strokeStyle='#111827';const pos=e=>{const rr=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:t.clientX-rr.left,y:t.clientY-rr.top}};const st=e=>{e.preventDefault();drawing=true;hasSig=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)};const mv=e=>{if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke()};const en=e=>{e.preventDefault();drawing=false};['mousedown','touchstart'].forEach(ev=>c.addEventListener(ev,st,{passive:false}));['mousemove','touchmove'].forEach(ev=>c.addEventListener(ev,mv,{passive:false}));['mouseup','mouseleave','touchend'].forEach(ev=>c.addEventListener(ev,en,{passive:false}))}
+function initSig(){
+  const c=$('sig');
+  const r=c.getBoundingClientRect();
 
-window.clearSig=()=>{const c=$('sig');ctx.clearRect(0,0,c.width,c.height);hasSig=false}
+  c.width=r.width*devicePixelRatio;
+  c.height=r.height*devicePixelRatio;
 
-window.saveSig=async tipo=>{if(!hasSig)return alert('Firma obligatoria.');const data=$('sig').toDataURL('image/png');if(tipo==='entrega'){salida.firmaEntrega=data;await saveDraft();abrirFirma('recibe')}else{salida.firmaRecibe=data;await saveDraft();guardarFinal()}}
+  ctx=c.getContext('2d');
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.lineWidth=2.3;
+  ctx.lineCap='round';
+  ctx.strokeStyle='#111827';
+
+  const pos=e=>{
+    const rr=c.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    return{x:t.clientX-rr.left,y:t.clientY-rr.top};
+  };
+
+  const st=e=>{
+    e.preventDefault();
+    drawing=true;
+    hasSig=true;
+    const p=pos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x,p.y);
+  };
+
+  const mv=e=>{
+    if(!drawing)return;
+    e.preventDefault();
+    const p=pos(e);
+    ctx.lineTo(p.x,p.y);
+    ctx.stroke();
+  };
+
+  const en=e=>{
+    e.preventDefault();
+    drawing=false;
+  };
+
+  ['mousedown','touchstart'].forEach(ev=>c.addEventListener(ev,st,{passive:false}));
+  ['mousemove','touchmove'].forEach(ev=>c.addEventListener(ev,mv,{passive:false}));
+  ['mouseup','mouseleave','touchend'].forEach(ev=>c.addEventListener(ev,en,{passive:false}));
+}
+
+window.clearSig=()=>{
+  const c=$('sig');
+  ctx.clearRect(0,0,c.width,c.height);
+  hasSig=false;
+};
+
+window.saveSig=async tipo=>{
+  if(!hasSig)return alert('Firma obligatoria.');
+
+  const data=$('sig').toDataURL('image/png');
+
+  if(tipo==='entrega'){
+    salida.firmaEntrega=data;
+    await saveDraft();
+    abrirFirma('recibe');
+  }else{
+    salida.firmaRecibe=data;
+    await saveDraft();
+    guardarFinal();
+  }
+};
 
 async function guardarFinal(){
   if(guardando)return;
@@ -229,10 +691,6 @@ async function guardarFinal(){
 
     generarPDF(payloadLocal);
 
-    setTimeout(()=>{
-      imprimirRawBT(payloadLocal);
-    },1500);
-
     salida=nuevaSalida();
     updateUI();
 
@@ -240,7 +698,7 @@ async function guardarFinal(){
       <div class="notice">
         Salida guardada.<br>
         <b>${folio}</b><br><br>
-        PDF descargado y ticket enviado a RawBT.
+        PDF generado y abierto. Desde el visor del PDF usa Compartir → RawBT para imprimir con firmas.
       </div>
       <button class="btn green" onclick="cerrarModal()">Terminar</button>
     `,false,false);
@@ -288,89 +746,82 @@ function generarPDF(p){
     doc.text('Firma chofer',125,y+34);
   }catch(e){}
 
-  doc.save(`${p.folio}.pdf`);
+  const blob=doc.output('blob');
+  const url=URL.createObjectURL(blob);
+
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${p.folio}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  setTimeout(()=>{
+    window.open(url,'_blank');
+  },700);
 }
 
-function limpiarTicketRaw(t){
-  return String(t||'')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^\x20-\x7E\n\r]/g,'');
+async function abrirHistorial(){
+  const h=await getHist();
+
+  modal(
+    'Historial',
+    h.length
+      ? h.map(x=>`<div class="item"><h4>${esc(x.folio)}</h4><p>${esc(x.fecha)} · ${esc(x.destino)} · ${x.totalArticulos} artículos</p><button class="btn blue" onclick="pdfHist('${escA(x.folio)}')">PDF</button></div>`).join('')
+      : `<div class="empty">Sin historial local.</div>`,
+    false,
+    false
+  );
 }
 
-function crearTicketRawBT(p){
-  const totalCantidad=p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
-
-  let txt='';
-  txt+='================================\n';
-  txt+='        SALIDA ZAPATA\n';
-  txt+='================================\n\n';
-  txt+=`FOLIO: ${p.folio}\n`;
-  txt+=`FECHA: ${p.fecha}\n`;
-  txt+=`DESTINO: ${p.destino}\n`;
-  txt+=`ENTREGA: ${p.entrega}\n`;
-  txt+=`CHOFER: ${p.recibe}\n`;
-  txt+=`PLACAS: ${p.placas||''}\n\n`;
-  txt+='--------------------------------\n';
-
-txt+='CODIGO   CONCEPTO              CANT\n';
-txt+='--------------------------------\n';
-
-p.articulos.forEach(a=>{
-  const codigo = String(a.codigo || '').substring(0,8).padEnd(8,' ');
-  const nombre = limpiarTicketRaw(a.nombre || '').substring(0,20).padEnd(20,' ');
-  const cant = String(a.cantidad || '').substring(0,4).padStart(4,' ');
-
-  txt+=`${codigo} ${nombre} ${cant}\n`;
-});
-  
-  txt+=`\nTOTAL ARTICULOS: ${p.articulos.length}\n`;
-  txt+=`TOTAL PIEZAS: ${totalCantidad}\n\n`;
-
-  if(p.notasGenerales){
-    txt+='NOTAS:\n';
-    txt+=`${p.notasGenerales}\n\n`;
-  }
-
-txt+='FIRMA ENTREGA: VER PDF\n';
-txt+='FIRMA CHOFER: VER PDF\n\n';
-  txt+='================================\n';
-  txt+='PROVSOFT\n';
-  txt+='================================\n\n\n\n';
-
-  return limpiarTicketRaw(txt);
-}
-
-function imprimirRawBT(p){
-  const ticket=crearTicketRawBT(p);
-  const b64=btoa(unescape(encodeURIComponent(ticket)));
-  window.location.href='rawbt:base64,'+b64;
-}
-
-
-async function abrirHistorial(){const h=await getHist();modal('Historial',h.length?h.map(x=>`<div class="item"><h4>${esc(x.folio)}</h4><p>${esc(x.fecha)} · ${esc(x.destino)} · ${x.totalArticulos} artículos</p><button class="btn blue" onclick="pdfHist('${escA(x.folio)}')">PDF</button></div>`).join(''):`<div class="empty">Sin historial local.</div>`,false,false)}
-
-window.pdfHist = async(folio)=>{
-
-  const h = await getHist();
-
-  const it = h.find(x=>x.folio===folio);
+window.pdfHist=async(folio)=>{
+  const h=await getHist();
+  const it=h.find(x=>x.folio===folio);
 
   if(!it){
     return alert('No está en historial local.');
   }
 
   generarPDF(it.payloadLocal);
+};
 
+function abrirConfig(){
+  const all=guia?.departamentos||[];
+
+  modal(
+    'Configuración',
+    all.length
+      ? `<div class="notice">Activa/desactiva departamentos. Se guarda en Firestore.</div>`+all.map((d,i)=>`<div class="item"><div class="switch"><div><h4>${esc(d.icono||'📦')} ${esc(d.nombre)}</h4><p>${(d.familias||[]).length} familias</p></div><button class="${d.activo===false?'off':''}" onclick="toggleDep(${i})">${d.activo===false?'OFF':'ON'}</button></div><button class="btn gray" onclick="abrirConfigFamilias(${i})">Familias</button></div>`).join('')
+      : `<div class="empty">Sin configuración.</div>`,
+    false,
+    false
+  );
 }
 
+window.toggleDep=async i=>{
+  guia.departamentos[i].activo=guia.departamentos[i].activo===false;
+  await saveConfig();
+  abrirConfig();
+};
 
-function abrirConfig(){const all=guia?.departamentos||[];modal('Configuración',all.length?`<div class="notice">Activa/desactiva departamentos. Se guarda en Firestore.</div>`+all.map((d,i)=>`<div class="item"><div class="switch"><div><h4>${esc(d.icono||'📦')} ${esc(d.nombre)}</h4><p>${(d.familias||[]).length} familias</p></div><button class="${d.activo===false?'off':''}" onclick="toggleDep(${i})">${d.activo===false?'OFF':'ON'}</button></div><button class="btn gray" onclick="abrirConfigFamilias(${i})">Familias</button></div>`).join(''):`<div class="empty">Sin configuración.</div>`,false,false)}
+window.abrirConfigFamilias=i=>{
+  const d=guia.departamentos[i];
 
-window.toggleDep=async i=>{guia.departamentos[i].activo=guia.departamentos[i].activo===false;await saveConfig();abrirConfig()}
+  modal(
+    d.nombre,
+    (d.familias||[]).map((f,j)=>`<div class="item"><div class="switch"><div><h4>${esc(f.icono||'📁')} ${esc(f.nombre)}</h4><p>${(f.articulos||[]).length} productos</p></div><button class="${f.activo===false?'off':''}" onclick="toggleFam(${i},${j})">${f.activo===false?'OFF':'ON'}</button></div></div>`).join(''),
+    true
+  );
+};
 
-window.abrirConfigFamilias=i=>{const d=guia.departamentos[i];modal(d.nombre,(d.familias||[]).map((f,j)=>`<div class="item"><div class="switch"><div><h4>${esc(f.icono||'📁')} ${esc(f.nombre)}</h4><p>${(f.articulos||[]).length} productos</p></div><button class="${f.activo===false?'off':''}" onclick="toggleFam(${i},${j})">${f.activo===false?'OFF':'ON'}</button></div></div>`).join(''),true)}
+window.toggleFam=async(i,j)=>{
+  guia.departamentos[i].familias[j].activo=guia.departamentos[i].familias[j].activo===false;
+  await saveConfig();
+  abrirConfigFamilias(i);
+};
 
-window.toggleFam=async(i,j)=>{guia.departamentos[i].familias[j].activo=guia.departamentos[i].familias[j].activo===false;await saveConfig();abrirConfigFamilias(i)}
-
-async function saveConfig(){await RUTAS.CONFIG_DOC.set({...guia,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});await setKV('guia',guia);updateUI()}
+async function saveConfig(){
+  await RUTAS.CONFIG_DOC.set({...guia,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+  await setKV('guia',guia);
+  updateUI();
+}

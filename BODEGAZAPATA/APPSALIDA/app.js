@@ -313,13 +313,17 @@ function crearTicketRawBT(p){
   txt+=`PLACAS: ${p.placas||''}\n\n`;
   txt+='--------------------------------\n';
 
-  p.articulos.forEach(a=>{
-    txt+=`${a.codigo}\n`;
-    txt+=`${a.nombre}\n`;
-    txt+=`CANT: ${a.cantidad}\n`;
-    txt+='--------------------------------\n';
-  });
+txt+='CODIGO   CONCEPTO              CANT\n';
+txt+='--------------------------------\n';
 
+p.articulos.forEach(a=>{
+  const codigo = String(a.codigo || '').substring(0,8).padEnd(8,' ');
+  const nombre = limpiarTicketRaw(a.nombre || '').substring(0,20).padEnd(20,' ');
+  const cant = String(a.cantidad || '').substring(0,4).padStart(4,' ');
+
+  txt+=`${codigo} ${nombre} ${cant}\n`;
+});
+  
   txt+=`\nTOTAL ARTICULOS: ${p.articulos.length}\n`;
   txt+=`TOTAL PIEZAS: ${totalCantidad}\n\n`;
 
@@ -328,8 +332,8 @@ function crearTicketRawBT(p){
     txt+=`${p.notasGenerales}\n\n`;
   }
 
-  txt+='FIRMA ENTREGA: CAPTURADA\n';
-  txt+='FIRMA CHOFER: CAPTURADA\n\n';
+txt+='FIRMA ENTREGA: VER PDF\n';
+txt+='FIRMA CHOFER: VER PDF\n\n';
   txt+='================================\n';
   txt+='PROVSOFT\n';
   txt+='================================\n\n\n\n';

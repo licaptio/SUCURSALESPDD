@@ -169,7 +169,180 @@ window.clearSig=()=>{const c=$('sig');ctx.clearRect(0,0,c.width,c.height);hasSig
 
 window.saveSig=async tipo=>{if(!hasSig)return alert('Firma obligatoria.');const data=$('sig').toDataURL('image/png');if(tipo==='entrega'){salida.firmaEntrega=data;await saveDraft();abrirFirma('recibe')}else{salida.firmaRecibe=data;await saveDraft();guardarFinal()}}
 
-async function guardarFinal(){if(guardando)return;if(!salida.firmaEntrega||!salida.firmaRecibe)return alert('Faltan firmas.');guardando=true;try{const folio=folioFinal();const arts=salida.articulos.map(a=>({codigo:String(a.codigo).trim(),nombre:String(a.nombre).trim(),cantidad:Number(a.cantidad||0)})).filter(a=>a.codigo&&a.nombre&&a.cantidad>0);const user=auth?.currentUser||null;const payload={folio,fecha:hoy(),timestamp:firebase.firestore.FieldValue.serverTimestamp(),entrega:salida.entrega,recibe:salida.recibe,destino:salida.destino,placas:salida.placas||'',notasGenerales:salida.notasGenerales||'',articulos:arts,firmaEntrega:salida.firmaEntrega,firmaRecibe:salida.firmaRecibe,estado:'GUARDADA',origenApp:'APP_SALIDAS_ZAPATA_MOVIL',versionApp:APP_VERSION,dispositivo:navigator.userAgent,capturadoPorUid:user?.uid||'',capturadoPorEmail:user?.email||'',creadoEn:firebase.firestore.FieldValue.serverTimestamp()};await RUTAS.SALIDAS_REF.doc(folio).set(payload);await putHist({folio,fecha:payload.fecha,destino:payload.destino,entrega:payload.entrega,recibe:payload.recibe,totalArticulos:arts.length,totalCantidad:arts.reduce((s,a)=>s+a.cantidad,0),fechaGuardado:new Date().toISOString(),payloadLocal:{...payload,timestamp:null,creadoEn:null}});await delKV('borrador');salida=nuevaSalida();updateUI();modal('Guardada',`<div class="notice">Salida guardada.<br><b>${folio}</b></div><button class="btn blue" onclick="pdfHist('${folio}')">Ver PDF</button><button class="btn green" onclick="cerrarModal()">Terminar</button>`,false,false)}catch(e){alert('Error al guardar: '+e.message)}finally{guardando=false}}
+async function guardarFinal(){
+  if(guardando)return;
+  if(!salida.firmaEntrega||!salida.firmaRecibe)return alert('Faltan firmas.');
+
+  guardando=true;
+
+  try{
+    const folio=folioFinal();
+
+    const arts=salida.articulos
+      .map(a=>({
+        codigo:String(a.codigo).trim(),
+        nombre:String(a.nombre).trim(),
+        cantidad:Number(a.cantidad||0)
+      }))
+      .filter(a=>a.codigo&&a.nombre&&a.cantidad>0);
+
+    const user=auth?.currentUser||null;
+
+    const payload={
+      folio,
+      fecha:hoy(),
+      timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+      entrega:salida.entrega,
+      recibe:salida.recibe,
+      destino:salida.destino,
+      placas:salida.placas||'',
+      notasGenerales:salida.notasGenerales||'',
+      articulos:arts,
+      firmaEntrega:salida.firmaEntrega,
+      firmaRecibe:salida.firmaRecibe,
+      estado:'GUARDADA',
+      origenApp:'APP_SALIDAS_ZAPATA_MOVIL',
+      versionApp:APP_VERSION,
+      dispositivo:navigator.userAgent,
+      capturadoPorUid:user?.uid||'',
+      capturadoPorEmail:user?.email||'',
+      creadoEn:firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const payloadLocal={...payload,timestamp:null,creadoEn:null};
+
+    await RUTAS.SALIDAS_REF.doc(folio).set(payload);
+
+    await putHist({
+      folio,
+      fecha:payload.fecha,
+      destino:payload.destino,
+      entrega:payload.entrega,
+      recibe:payload.recibe,
+      totalArticulos:arts.length,
+      totalCantidad:arts.reduce((s,a)=>s+a.cantidad,0),
+      fechaGuardado:new Date().toISOString(),
+      payloadLocal
+    });
+
+    await delKV('borrador');
+
+    descargarPDFSalida(payloadLocal);
+
+    setTimeout(()=>{
+      imprimirRawBT(payloadLocal);
+    },700);
+
+    salida=nuevaSalida();
+    updateUI();
+
+    modal('Guardada',`
+      <div class="notice">
+        Salida guardada.<br>
+        <b>${folio}</b><br><br>
+        PDF descargado y ticket enviado a RawBT.
+      </div>
+      <button class="btn green" onclick="cerrarModal()">Terminar</button>
+    `,false,false);
+
+  }catch(e){
+    alert('Error al guardar: '+e.message);
+  }finally{
+    guardando=false;
+  }
+}
+
+function descargarPDFSalida(p){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+
+  doc.setFontSize(14);
+  doc.text('SALIDA ZAPATA',14,14);
+
+  doc.setFontSize(10);
+  doc.text(`Folio: ${p.folio}`,14,24);
+  doc.text(`Fecha: ${p.fecha}`,14,30);
+  doc.text(`Destino: ${p.destino}`,14,36);
+  doc.text(`Entrega: ${p.entrega}`,14,42);
+  doc.text(`Chofer: ${p.recibe}`,14,48);
+  doc.text(`Placas: ${p.placas||''}`,14,54);
+
+  doc.autoTable({
+    startY:62,
+    head:[["Código","Nombre","Cantidad"]],
+    body:p.articulos.map(a=>[a.codigo,a.nombre,a.cantidad])
+  });
+
+  let y=doc.lastAutoTable.finalY+12;
+
+  if(p.notasGenerales){
+    doc.text('Notas:',14,y);
+    doc.text(String(p.notasGenerales),14,y+6,{maxWidth:180});
+    y+=22;
+  }
+
+  try{
+    doc.addImage(p.firmaEntrega,'PNG',14,y,70,28);
+    doc.addImage(p.firmaRecibe,'PNG',115,y,70,28);
+    doc.text('Firma entrega',22,y+34);
+    doc.text('Firma chofer',125,y+34);
+  }catch(e){}
+
+  doc.save(`${p.folio}.pdf`);
+}
+
+function limpiarTicketRaw(t){
+  return String(t||'')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^\x20-\x7E\n\r]/g,'');
+}
+
+function crearTicketRawBT(p){
+  const totalCantidad=p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
+
+  let txt='';
+  txt+='================================\n';
+  txt+='        SALIDA ZAPATA\n';
+  txt+='================================\n\n';
+  txt+=`FOLIO: ${p.folio}\n`;
+  txt+=`FECHA: ${p.fecha}\n`;
+  txt+=`DESTINO: ${p.destino}\n`;
+  txt+=`ENTREGA: ${p.entrega}\n`;
+  txt+=`CHOFER: ${p.recibe}\n`;
+  txt+=`PLACAS: ${p.placas||''}\n\n`;
+  txt+='--------------------------------\n';
+
+  p.articulos.forEach(a=>{
+    txt+=`${a.codigo}\n`;
+    txt+=`${a.nombre}\n`;
+    txt+=`CANT: ${a.cantidad}\n`;
+    txt+='--------------------------------\n';
+  });
+
+  txt+=`\nTOTAL ARTICULOS: ${p.articulos.length}\n`;
+  txt+=`TOTAL PIEZAS: ${totalCantidad}\n\n`;
+
+  if(p.notasGenerales){
+    txt+='NOTAS:\n';
+    txt+=`${p.notasGenerales}\n\n`;
+  }
+
+  txt+='FIRMA ENTREGA: CAPTURADA\n';
+  txt+='FIRMA CHOFER: CAPTURADA\n\n';
+  txt+='================================\n';
+  txt+='PROVSOFT\n';
+  txt+='================================\n\n\n\n';
+
+  return limpiarTicketRaw(txt);
+}
+
+function imprimirRawBT(p){
+  const ticket=crearTicketRawBT(p);
+  const b64=btoa(unescape(encodeURIComponent(ticket)));
+  window.location.href='rawbt:base64,'+b64;
+}
+
 
 async function abrirHistorial(){const h=await getHist();modal('Historial',h.length?h.map(x=>`<div class="item"><h4>${esc(x.folio)}</h4><p>${esc(x.fecha)} · ${esc(x.destino)} · ${x.totalArticulos} artículos</p><button class="btn blue" onclick="pdfHist('${escA(x.folio)}')">PDF</button></div>`).join(''):`<div class="empty">Sin historial local.</div>`,false,false)}
 

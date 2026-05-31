@@ -231,7 +231,7 @@ async function guardarFinal(){
 
     setTimeout(()=>{
       imprimirRawBT(payloadLocal);
-    },700);
+    },1500);
 
     salida=nuevaSalida();
     updateUI();

@@ -712,39 +712,95 @@ async function guardarFinal(){
 
 function generarPDF(p){
   const {jsPDF}=window.jspdf;
-  const doc=new jsPDF();
 
-  doc.setFontSize(14);
-  doc.text('SALIDA ZAPATA',14,14);
+  const totalCantidad=p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
+  const altoBase=115;
+  const altoArticulos=p.articulos.length*7;
+  const altoNotas=p.notasGenerales?25:0;
+  const altoTotal=altoBase+altoArticulos+altoNotas;
 
-  doc.setFontSize(10);
-  doc.text(`Folio: ${p.folio}`,14,24);
-  doc.text(`Fecha: ${p.fecha}`,14,30);
-  doc.text(`Destino: ${p.destino}`,14,36);
-  doc.text(`Entrega: ${p.entrega}`,14,42);
-  doc.text(`Chofer: ${p.recibe}`,14,48);
-  doc.text(`Placas: ${p.placas||''}`,14,54);
-
-  doc.autoTable({
-    startY:62,
-    head:[["Código","Nombre","Cantidad"]],
-    body:p.articulos.map(a=>[a.codigo,a.nombre,a.cantidad])
+  const doc=new jsPDF({
+    orientation:'p',
+    unit:'mm',
+    format:[altoTotal,88]
   });
 
-  let y=doc.lastAutoTable.finalY+12;
+  let y=8;
+
+  doc.setFontSize(11);
+  doc.setFont(undefined,'bold');
+  doc.text('SALIDA ZAPATA',44,y,{align:'center'});
+  y+=6;
+
+  doc.setFontSize(7);
+  doc.setFont(undefined,'normal');
+  doc.text(`FOLIO: ${p.folio}`,4,y); y+=4;
+  doc.text(`FECHA: ${p.fecha}`,4,y); y+=4;
+  doc.text(`DESTINO: ${p.destino||''}`,4,y); y+=4;
+  doc.text(`ENTREGA: ${p.entrega||''}`,4,y); y+=4;
+  doc.text(`CHOFER: ${p.recibe||''}`,4,y); y+=4;
+  doc.text(`PLACAS: ${p.placas||''}`,4,y); y+=5;
+
+  doc.line(4,y,84,y);
+  y+=4;
+
+  doc.setFont(undefined,'bold');
+  doc.text('CODIGO',4,y);
+  doc.text('CONCEPTO',24,y);
+  doc.text('CANT',78,y,{align:'right'});
+  y+=3;
+
+  doc.line(4,y,84,y);
+  y+=4;
+
+  doc.setFont(undefined,'normal');
+
+  p.articulos.forEach(a=>{
+    const codigo=String(a.codigo||'').substring(0,12);
+    const nombre=String(a.nombre||'').substring(0,34);
+    const cantidad=String(a.cantidad||'');
+
+    doc.text(codigo,4,y);
+    doc.text(nombre,24,y,{maxWidth:48});
+    doc.text(cantidad,84,y,{align:'right'});
+    y+=7;
+  });
+
+  y+=2;
+  doc.line(4,y,84,y);
+  y+=5;
+
+  doc.setFont(undefined,'bold');
+  doc.text(`TOTAL ARTICULOS: ${p.articulos.length}`,4,y);
+  y+=4;
+  doc.text(`TOTAL PIEZAS: ${totalCantidad}`,4,y);
+  y+=6;
 
   if(p.notasGenerales){
-    doc.text('Notas:',14,y);
-    doc.text(String(p.notasGenerales),14,y+6,{maxWidth:180});
-    y+=22;
+    doc.setFont(undefined,'bold');
+    doc.text('NOTAS:',4,y);
+    y+=4;
+    doc.setFont(undefined,'normal');
+    doc.text(String(p.notasGenerales),4,y,{maxWidth:80});
+    y+=18;
   }
 
+  doc.setFont(undefined,'normal');
+
   try{
-    doc.addImage(p.firmaEntrega,'PNG',14,y,70,28);
-    doc.addImage(p.firmaRecibe,'PNG',115,y,70,28);
-    doc.text('Firma entrega',22,y+34);
-    doc.text('Firma chofer',125,y+34);
+    doc.addImage(p.firmaEntrega,'PNG',6,y,32,14);
+    doc.addImage(p.firmaRecibe,'PNG',50,y,32,14);
+    y+=17;
+    doc.setFontSize(6);
+    doc.text('Firma entrega',22,y,{align:'center'});
+    doc.text('Firma chofer',66,y,{align:'center'});
   }catch(e){}
+
+  y+=7;
+
+  doc.setFontSize(7);
+  doc.setFont(undefined,'bold');
+  doc.text('PROVSOFT',44,y,{align:'center'});
 
   const blob=doc.output('blob');
   const url=URL.createObjectURL(blob);
@@ -755,8 +811,6 @@ function generarPDF(p){
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-
-
 }
 
 async function abrirHistorial(){

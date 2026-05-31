@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Salidas Zapata - PROVSOFT</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+  <div id="loader" class="loader"><div class="loader-box"><img src="logo.jfif" onerror="this.style.display='none'"><h1>PROVSOFT</h1><p>SALIDAS ZAPATA</p><div class="bar-bg"><div id="loaderBar" class="bar"></div></div><small id="loaderMsg">Iniciando...</small></div></div>
+  <main class="app">
+    <header class="topbar"><div class="brand"><img src="logo.jfif" onerror="this.style.display='none'"><div><h1>Salidas Zapata</h1><p id="estadoConexion">Preparando...</p></div></div><div class="icons"><button id="btnHistorial">📄</button><button id="btnConfig">⚙️</button><button id="btnCarrito">🛒 <span id="badgeCarrito">0</span></button></div></header>
+    <section class="card hero"><h2 id="tituloEstado">Nueva salida</h2><p id="resumenSalida">Inicia una salida para comenzar.</p><button id="btnNuevaSalida" class="btn primary">➕ Nueva salida</button></section>
+    <section id="panelAcciones" class="card hidden"><button id="btnAgregarProducto" class="btn green">📦 Agregar producto</button><button id="btnBuscarProducto" class="btn blue">🔎 Buscar producto</button><button id="btnContinuarNotas" class="btn primary">✅ Continuar</button></section>
+    <section class="card stats"><div><b id="stArticulos">0</b><span>Artículos</span></div><div><b id="stCantidad">0</b><span>Cantidad</span></div><div><b id="stGuia">0</b><span>Guía</span></div><div><b id="stCatalogo">0</b><span>Catálogo</span></div></section>
+  </main>
+  <div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><button id="btnBack" class="ghost hidden">←</button><h2 id="modalTitle">Modal</h2><button id="btnClose" class="ghost">×</button></div><div id="modalBody" class="modal-body"></div></div></div>
+  <script src="config.js"></script><script src="app.js"></script>
+</body>
+</html>

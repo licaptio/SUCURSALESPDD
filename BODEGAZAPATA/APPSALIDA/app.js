@@ -689,7 +689,7 @@ async function guardarFinal(){
 
     await delKV('borrador');
 
-    generarPDF(payloadLocal);
+    generarImagenTicket(payloadLocal);
 
     salida=nuevaSalida();
     updateUI();
@@ -698,7 +698,7 @@ async function guardarFinal(){
       <div class="notice">
         Salida guardada.<br>
         <b>${folio}</b><br><br>
-        PDF descargado. Toca "Abrir" en la barra de descarga y luego Compartir → RawBT.
+        Imagen de ticket generada. Ábrela y compártela a RawBT para imprimir con firmas.
       </div>
       <button class="btn green" onclick="cerrarModal()">Terminar</button>
     `,false,false);
@@ -710,112 +710,105 @@ async function guardarFinal(){
   }
 }
 
-function generarPDF(p){
-  const {jsPDF}=window.jspdf;
-
+async function generarImagenTicket(p){
   const totalCantidad=p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
-  const altoBase=115;
-  const altoArticulos=p.articulos.length*7;
-  const altoNotas=p.notasGenerales?25:0;
-  const altoTotal=altoBase+altoArticulos+altoNotas;
 
-  const doc=new jsPDF({
-    orientation:'p',
-    unit:'mm',
-    format:[altoTotal,88]
+  const ticket=document.createElement('div');
+  ticket.style.position='fixed';
+  ticket.style.left='-9999px';
+  ticket.style.top='0';
+  ticket.style.width='320px';
+  ticket.style.background='#fff';
+  ticket.style.color='#000';
+  ticket.style.fontFamily='Arial, sans-serif';
+  ticket.style.padding='14px';
+  ticket.style.fontSize='12px';
+  ticket.style.lineHeight='1.25';
+
+  ticket.innerHTML=`
+    <div style="text-align:center;font-weight:900;font-size:16px;margin-bottom:8px;">
+      SALIDA ZAPATA
+    </div>
+
+    <div><b>FOLIO:</b> ${esc(p.folio)}</div>
+    <div><b>FECHA:</b> ${esc(p.fecha)}</div>
+    <div><b>DESTINO:</b> ${esc(p.destino||'')}</div>
+    <div><b>ENTREGA:</b> ${esc(p.entrega||'')}</div>
+    <div><b>CHOFER:</b> ${esc(p.recibe||'')}</div>
+    <div><b>PLACAS:</b> ${esc(p.placas||'')}</div>
+
+    <hr>
+
+    <table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;border-bottom:1px solid #000;">CODIGO</th>
+          <th style="text-align:left;border-bottom:1px solid #000;">CONCEPTO</th>
+          <th style="text-align:right;border-bottom:1px solid #000;">CANT</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${p.articulos.map(a=>`
+          <tr>
+            <td style="padding:4px 0;vertical-align:top;">${esc(a.codigo)}</td>
+            <td style="padding:4px 0;vertical-align:top;">${esc(a.nombre)}</td>
+            <td style="padding:4px 0;text-align:right;vertical-align:top;">${esc(a.cantidad)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+
+    <hr>
+
+    <div><b>TOTAL ARTICULOS:</b> ${p.articulos.length}</div>
+    <div><b>TOTAL PIEZAS:</b> ${totalCantidad}</div>
+
+    ${
+      p.notasGenerales
+      ? `<hr><div><b>NOTAS:</b></div><div>${esc(p.notasGenerales)}</div>`
+      : ''
+    }
+
+    <div style="display:flex;gap:12px;margin-top:18px;">
+      <div style="width:50%;text-align:center;">
+        <img src="${p.firmaEntrega}" style="width:120px;height:52px;object-fit:contain;">
+        <div style="border-top:1px solid #000;font-size:10px;">Firma entrega</div>
+      </div>
+      <div style="width:50%;text-align:center;">
+        <img src="${p.firmaRecibe}" style="width:120px;height:52px;object-fit:contain;">
+        <div style="border-top:1px solid #000;font-size:10px;">Firma chofer</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-weight:900;margin-top:16px;font-size:12px;">
+      PROVSOFT
+    </div>
+  `;
+
+  document.body.appendChild(ticket);
+
+  const canvas=await html2canvas(ticket,{
+    backgroundColor:'#ffffff',
+    scale:2,
+    useCORS:true
   });
 
-  let y=8;
+  document.body.removeChild(ticket);
 
-  doc.setFontSize(11);
-  doc.setFont(undefined,'bold');
-  doc.text('SALIDA ZAPATA',44,y,{align:'center'});
-  y+=6;
+  canvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
 
-  doc.setFontSize(7);
-  doc.setFont(undefined,'normal');
-  doc.text(`FOLIO: ${p.folio}`,4,y); y+=4;
-  doc.text(`FECHA: ${p.fecha}`,4,y); y+=4;
-  doc.text(`DESTINO: ${p.destino||''}`,4,y); y+=4;
-  doc.text(`ENTREGA: ${p.entrega||''}`,4,y); y+=4;
-  doc.text(`CHOFER: ${p.recibe||''}`,4,y); y+=4;
-  doc.text(`PLACAS: ${p.placas||''}`,4,y); y+=5;
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`${p.folio}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
-  doc.line(4,y,84,y);
-  y+=4;
-
-  doc.setFont(undefined,'bold');
-  doc.text('CODIGO',4,y);
-  doc.text('CONCEPTO',24,y);
-  doc.text('CANT',78,y,{align:'right'});
-  y+=3;
-
-  doc.line(4,y,84,y);
-  y+=4;
-
-  doc.setFont(undefined,'normal');
-
-  p.articulos.forEach(a=>{
-    const codigo=String(a.codigo||'').substring(0,12);
-    const nombre=String(a.nombre||'').substring(0,34);
-    const cantidad=String(a.cantidad||'');
-
-    doc.text(codigo,4,y);
-    doc.text(nombre,24,y,{maxWidth:48});
-    doc.text(cantidad,84,y,{align:'right'});
-    y+=7;
-  });
-
-  y+=2;
-  doc.line(4,y,84,y);
-  y+=5;
-
-  doc.setFont(undefined,'bold');
-  doc.text(`TOTAL ARTICULOS: ${p.articulos.length}`,4,y);
-  y+=4;
-  doc.text(`TOTAL PIEZAS: ${totalCantidad}`,4,y);
-  y+=6;
-
-  if(p.notasGenerales){
-    doc.setFont(undefined,'bold');
-    doc.text('NOTAS:',4,y);
-    y+=4;
-    doc.setFont(undefined,'normal');
-    doc.text(String(p.notasGenerales),4,y,{maxWidth:80});
-    y+=18;
-  }
-
-  doc.setFont(undefined,'normal');
-
-  try{
-    doc.addImage(p.firmaEntrega,'PNG',6,y,32,14);
-    doc.addImage(p.firmaRecibe,'PNG',50,y,32,14);
-    y+=17;
-    doc.setFontSize(6);
-    doc.text('Firma entrega',22,y,{align:'center'});
-    doc.text('Firma chofer',66,y,{align:'center'});
-  }catch(e){}
-
-  y+=7;
-
-  doc.setFontSize(7);
-  doc.setFont(undefined,'bold');
-  doc.text('PROVSOFT',44,y,{align:'center'});
-
-const blob=doc.output('blob');
-const url=URL.createObjectURL(blob);
-
-const a=document.createElement('a');
-a.href=url;
-a.download=`${p.folio}.pdf`;
-document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
-
-setTimeout(()=>{
-  window.open(url,'_blank');
-},700);
-  
+    setTimeout(()=>{
+      window.open(url,'_blank');
+    },700);
+  },'image/png');
 }
 
 async function abrirHistorial(){
@@ -839,7 +832,7 @@ window.pdfHist=async(folio)=>{
     return alert('No está en historial local.');
   }
 
-  generarPDF(it.payloadLocal);
+  generarImagenTicket(it.payloadLocal);
 };
 
 function abrirConfig(){

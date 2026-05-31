@@ -227,7 +227,7 @@ async function guardarFinal(){
 
     await delKV('borrador');
 
-    descargarPDFSalida(payloadLocal);
+    generarPDF(payloadLocal);
 
     setTimeout(()=>{
       imprimirRawBT(payloadLocal);
@@ -252,7 +252,7 @@ async function guardarFinal(){
   }
 }
 
-function descargarPDFSalida(p){
+function generarPDF(p){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF();
 
@@ -346,7 +346,20 @@ function imprimirRawBT(p){
 
 async function abrirHistorial(){const h=await getHist();modal('Historial',h.length?h.map(x=>`<div class="item"><h4>${esc(x.folio)}</h4><p>${esc(x.fecha)} · ${esc(x.destino)} · ${x.totalArticulos} artículos</p><button class="btn blue" onclick="pdfHist('${escA(x.folio)}')">PDF</button></div>`).join(''):`<div class="empty">Sin historial local.</div>`,false,false)}
 
-window.pdfHist=async folio=>{const h=await getHist(),it=h.find(x=>x.folio===folio);if(!it)return alert('No está en historial local.');const p=it.payloadLocal,{jsPDF}=window.jspdf,doc=new jsPDF();doc.setFontSize(14);doc.text('SALIDA ZAPATA',14,14);doc.setFontSize(10);doc.text(`Folio: ${p.folio}`,14,24);doc.text(`Fecha: ${p.fecha}`,14,30);doc.text(`Destino: ${p.destino}`,14,36);doc.text(`Entrega: ${p.entrega}`,14,42);doc.text(`Chofer: ${p.recibe}`,14,48);doc.text(`Placas: ${p.placas||''}`,14,54);doc.autoTable({startY:62,head:[["Código","Nombre","Cantidad"]],body:p.articulos.map(a=>[a.codigo,a.nombre,a.cantidad])});let y=doc.lastAutoTable.finalY+12;if(p.notasGenerales){doc.text('Notas:',14,y);doc.text(String(p.notasGenerales),14,y+6,{maxWidth:180});y+=22}try{doc.addImage(p.firmaEntrega,'PNG',14,y,70,28);doc.addImage(p.firmaRecibe,'PNG',115,y,70,28);doc.text('Firma entrega',22,y+34);doc.text('Firma chofer',125,y+34)}catch(e){}doc.save(`${p.folio}.pdf`)}
+window.pdfHist = async(folio)=>{
+
+  const h = await getHist();
+
+  const it = h.find(x=>x.folio===folio);
+
+  if(!it){
+    return alert('No está en historial local.');
+  }
+
+  generarPDF(it.payloadLocal);
+
+}
+
 
 function abrirConfig(){const all=guia?.departamentos||[];modal('Configuración',all.length?`<div class="notice">Activa/desactiva departamentos. Se guarda en Firestore.</div>`+all.map((d,i)=>`<div class="item"><div class="switch"><div><h4>${esc(d.icono||'📦')} ${esc(d.nombre)}</h4><p>${(d.familias||[]).length} familias</p></div><button class="${d.activo===false?'off':''}" onclick="toggleDep(${i})">${d.activo===false?'OFF':'ON'}</button></div><button class="btn gray" onclick="abrirConfigFamilias(${i})">Familias</button></div>`).join(''):`<div class="empty">Sin configuración.</div>`,false,false)}
 

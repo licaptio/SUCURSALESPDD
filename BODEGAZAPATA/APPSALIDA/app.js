@@ -802,15 +802,20 @@ function generarPDF(p){
   doc.setFont(undefined,'bold');
   doc.text('PROVSOFT',44,y,{align:'center'});
 
-  const blob=doc.output('blob');
-  const url=URL.createObjectURL(blob);
+const blob=doc.output('blob');
+const url=URL.createObjectURL(blob);
 
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=`${p.folio}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+const a=document.createElement('a');
+a.href=url;
+a.download=`${p.folio}.pdf`;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+
+setTimeout(()=>{
+  window.open(url,'_blank');
+},700);
+  
 }
 
 async function abrirHistorial(){

@@ -698,7 +698,7 @@ async function guardarFinal(){
       <div class="notice">
         Salida guardada.<br>
         <b>${folio}</b><br><br>
-        PDF generado y abierto. Desde el visor del PDF usa Compartir → RawBT para imprimir con firmas.
+        PDF descargado. Toca "Abrir" en la barra de descarga y luego Compartir → RawBT.
       </div>
       <button class="btn green" onclick="cerrarModal()">Terminar</button>
     `,false,false);
@@ -756,9 +756,7 @@ function generarPDF(p){
   a.click();
   document.body.removeChild(a);
 
-  setTimeout(()=>{
-    window.open(url,'_blank');
-  },700);
+
 }
 
 async function abrirHistorial(){

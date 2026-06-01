@@ -3968,12 +3968,18 @@ function conceptoPdfLimpio(item) {
     0
   );
 
-  pdf.text(
-    `FOLIO: ${payload.folio_surtido || '-'}`,
-    10,
-    y
-  );
+pdf.text(
+  `FOLIO: ${payload.folio_surtido || '-'}`,
+  10,
+  y
+);
 
+pdf.text(
+  `SUCURSAL DESTINO: ${payload.sucursal_destino || '-'}`,
+  105,
+  y
+);
+  
   y += 10;
 
   const detallePdf = Array.isArray(payload.detalle)

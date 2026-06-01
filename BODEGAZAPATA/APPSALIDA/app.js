@@ -723,7 +723,7 @@ async function guardarFinal(){
 
     await delKV('borrador');
 
-    generarImagenTicket(payloadLocal);
+    imprimirRawBT(payloadLocal);
 
     salida=nuevaSalida();
     updateUI();
@@ -732,7 +732,7 @@ async function guardarFinal(){
       <div class="notice">
         Salida guardada.<br>
         <b>${folio}</b><br><br>
-        Imagen de ticket generada. Ábrela y compártela a RawBT para imprimir con firmas.
+        Ticket enviado a RawBT. Las firmas quedan guardadas en la base de datos.
       </div>
       <button class="btn green" onclick="cerrarModal()">Terminar</button>
     `,false,false);
@@ -742,6 +742,69 @@ async function guardarFinal(){
   }finally{
     guardando=false;
   }
+}
+function imprimirRawBT(p){
+  const totalCantidad = p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
+
+  let txt = "";
+
+  txt += "        SALIDA ZAPATA\n";
+  txt += "--------------------------------\n";
+  txt += "FOLIO: " + p.folio + "\n";
+  txt += "FECHA: " + p.fecha + "\n";
+  txt += "DESTINO: " + (p.destino || "") + "\n";
+  txt += "ENTREGA: " + (p.entrega || "") + "\n";
+  txt += "CHOFER: " + (p.recibe || "") + "\n";
+  txt += "PLACAS: " + (p.placas || "") + "\n";
+  txt += "--------------------------------\n";
+  txt += "CODIGO      CANT  CONCEPTO\n";
+  txt += "--------------------------------\n";
+
+p.articulos.forEach(a=>{
+
+  txt += "================================\n";
+
+  txt += String(a.codigo || "") + "\n";
+
+  txt += String(a.nombre || "") + "\n";
+
+  txt += "CANTIDAD: " + String(a.cantidad || 0) + "\n";
+
+  txt += "================================\n\n";
+
+});
+  
+  txt += "--------------------------------\n";
+  txt += "TOTAL ARTICULOS: " + p.articulos.length + "\n";
+  txt += "TOTAL PIEZAS: " + totalCantidad + "\n";
+
+  if(p.notasGenerales){
+    txt += "--------------------------------\n";
+    txt += "NOTAS:\n";
+    txt += p.notasGenerales + "\n";
+  }
+
+  txt += "--------------------------------\n\n";
+
+txt += "ENTREGO:\n";
+txt += (p.entrega || "SIN DATO") + "\n";
+txt += "(FIRMA DIGITAL RESGUARDADA EN BD)\n\n";
+
+txt += "RECIBIO:\n";
+txt += (p.recibe || "SIN DATO") + "\n";
+txt += "(FIRMA DIGITAL RESGUARDADA EN BD)\n\n";
+
+txt += "--------------------------------\n";  txt += "          PROVSOFT\n\n\n\n";
+
+  const encoded = encodeURIComponent(txt);
+
+  window.location.href =
+    "intent:#Intent;" +
+    "action=android.intent.action.SEND;" +
+    "type=text/plain;" +
+    "S.android.intent.extra.TEXT=" + encoded + ";" +
+    "package=ru.a402d.rawbtprinter;" +
+    "end";
 }
 
 async function generarImagenTicket(p){

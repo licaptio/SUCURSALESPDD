@@ -285,8 +285,6 @@ function updateUI(){
   const total=salida.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
 
   $('badgeCarrito').textContent=salida.articulos.length;
-  $('stArticulos').textContent=salida.articulos.length;
-  $('stCantidad').textContent=fmt(total);
 
   if(!salida.iniciado){
     $('tituloEstado').textContent='Nueva salida';

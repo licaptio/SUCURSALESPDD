@@ -14,9 +14,21 @@ const QUIEN_ENTREGA = [
 ];
 
 const DESTINOS = [
+  "BODEGA MATRIZ MADERO 690",
+  "SUCURSAL GUADALUPE B41",
+  "SUCURSAL MONTEMORELOS",
+  "SUCURSAL ALLENDE 1",
+  "SUCURSAL ALLENDE 2",
+  "SUPER TIENDAS RICO",
+  "ROBERTO YADO",
+  "COMERCIALIZADORA CAVAZOS",
   "EL PARIENTE ALIMENTOS",
-  "LA MISION SUPERMERCADO",
-  "BODEGA CENTRAL MATRIZ"
+  "LA MISION SUC DIAZ ORDAZ",
+  "LA MISION SUC VILLEGAS",
+  "LA MISION SUC PETACA",
+  "LA MISION SUC ARBOLEDAS",
+  "LA MISION SUC MORELOS"
+  "LA MISION SUC ALLENDE"
 ];
 
 function opcionesSelect(lista, valorActual = "") {
@@ -800,17 +812,12 @@ txt += "PROVEEDORA DE DULCES\n";
 txt += "Y DESECHABLES\n";
 txt += "================================\n\n\n";
 
-  const encoded = encodeURIComponent(txt);
+const encoded = encodeURIComponent(txt);
 
-  window.location.href =
-    "intent:#Intent;" +
-    "action=android.intent.action.SEND;" +
-    "type=text/plain;" +
-    "S.android.intent.extra.TEXT=" + encoded + ";" +
-    "package=ru.a402d.rawbtprinter;" +
-    "end";
-}
-
+window.location.href =
+  "intent:" + encoded +
+  "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+  
 async function generarImagenTicket(p){
   const totalCantidad=p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
 

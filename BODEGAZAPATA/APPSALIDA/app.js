@@ -287,8 +287,6 @@ function updateUI(){
   $('badgeCarrito').textContent=salida.articulos.length;
   $('stArticulos').textContent=salida.articulos.length;
   $('stCantidad').textContent=fmt(total);
-  $('stGuia').textContent=(guia?.articulos?.length)||contarGuia();
-  $('stCatalogo').textContent=catalogo.length;
 
   if(!salida.iniciado){
     $('tituloEstado').textContent='Nueva salida';

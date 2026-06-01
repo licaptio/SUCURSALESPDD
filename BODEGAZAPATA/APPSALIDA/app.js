@@ -441,11 +441,45 @@ function prodBtn(c,n){
 window.abrirCantidad=(c,n)=>{
   modal(
     'Cantidad',
-    `<div class="item"><h4>${esc(n)}</h4><p>Código: <b>${esc(c)}</b></p></div><div class="field"><label>Cantidad</label><input id="cant" type="number" min="0.01" step="0.01" inputmode="decimal"></div><button class="btn green" onclick="addCart('${escA(c)}','${escA(n)}')">Agregar</button>`,
+    `<div class="item">
+        <h4>${esc(n)}</h4>
+        <p>Código: <b>${esc(c)}</b></p>
+     </div>
+
+     <div class="field">
+        <label>Cantidad</label>
+        <input
+          id="cant"
+          type="number"
+          min="0.01"
+          step="0.01"
+          inputmode="decimal">
+     </div>
+
+     <button class="btn green"
+       onclick="addCart('${escA(c)}','${escA(n)}')">
+       Agregar
+     </button>`,
     true
   );
 
-  setTimeout(()=>$('cant')?.focus(),100);
+  setTimeout(()=>{
+    const input=$('cant');
+
+    if(input){
+
+      input.addEventListener('focus',()=>{
+        $('modal').classList.add('teclado-activo');
+      });
+
+      input.addEventListener('blur',()=>{
+        $('modal').classList.remove('teclado-activo');
+      });
+
+      input.focus();
+    }
+
+  },100);
 };
 
 window.addCart=async(c,n)=>{

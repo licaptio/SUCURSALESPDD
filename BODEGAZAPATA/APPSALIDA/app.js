@@ -748,16 +748,16 @@ function imprimirRawBT(p){
 
   let txt = "";
 
-  txt += "        SALIDA ZAPATA\n";
-  txt += "--------------------------------\n";
+txt += "\n";
+txt += "================================\n";
+txt += "         SALIDA ZAPATA\n";
+txt += "================================\n";
   txt += "FOLIO: " + p.folio + "\n";
   txt += "FECHA: " + p.fecha + "\n";
   txt += "DESTINO: " + (p.destino || "") + "\n";
   txt += "ENTREGA: " + (p.entrega || "") + "\n";
   txt += "CHOFER: " + (p.recibe || "") + "\n";
   txt += "PLACAS: " + (p.placas || "") + "\n";
-  txt += "--------------------------------\n";
-  txt += "CODIGO      CANT  CONCEPTO\n";
   txt += "--------------------------------\n";
 
 p.articulos.forEach(a=>{
@@ -794,7 +794,11 @@ txt += "RECIBIO:\n";
 txt += (p.recibe || "SIN DATO") + "\n";
 txt += "(FIRMA DIGITAL RESGUARDADA EN BD)\n\n";
 
-txt += "--------------------------------\n";  txt += "          PROVSOFT\n\n\n\n";
+txt += "\n";
+txt += "================================\n";
+txt += "PROVEEDORA DE DULCES\n";
+txt += "Y DESECHABLES\n";
+txt += "================================\n\n\n";
 
   const encoded = encodeURIComponent(txt);
 

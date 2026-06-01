@@ -817,6 +817,7 @@ const encoded = encodeURIComponent(txt);
 window.location.href =
   "intent:" + encoded +
   "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+  }
   
 async function generarImagenTicket(p){
   const totalCantidad=p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);

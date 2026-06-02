@@ -1,0 +1,39 @@
+export const CONFIG_SUCURSAL = {
+
+  SUCURSAL: "PROVILEON",
+  SUCURSAL_FIREBASE: "PROVILEON",
+
+  RUTA_TRANSFERENCIAS: "SOLTRAN",
+
+  TITULO_APP: "SOLICITUD DE TRANSFERENCIA",
+  TITULO_NAVEGADOR: "Transferencia Solicitud Provileon - PROVEEDORA",
+  SUCURSAL_HEADER: "PROVILEON",
+
+  LOGO: "logo.jfif",
+
+  PREFIJO_FOLIO: "PROPDD,
+  ZONA: "ZONA1",
+
+  FIREBASE: {
+    RAIZ_TIENDAS: "TIENDAS",
+    SUCURSAL: "PROVILEON",
+    COLECCION_TRANSFERENCIAS: "SOLTRAN",
+    COLECCION_PRODUCTOS: "productos",
+    COLECCION_FOTOS_META: "productos_fotos_meta"
+  },
+
+  INDEXEDDB: {
+    DB_NAME: "PROVSOFT_PDD_MOVIL",
+    DB_VERSION: 3,
+    STORE_PRODUCTOS: "catalogo_productos_completo",
+    STORE_META: "metadata",
+    STORE_FOTOS_META: "fotos_productos_meta"
+  },
+
+  CLAVES: {
+    ULTIMA_DESCARGA_CATALOGO: "ultima_descarga_catalogo"
+  },
+
+  HORAS_ENTRE_DESCARGAS: 48
+
+};

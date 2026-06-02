@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Tabla Salidas Zapata - PROVSOFT</title>
+
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css" />
 
@@ -13,12 +15,23 @@
 <body>
   <div id="loader" class="app-loader">
     <div class="loader-box">
-      <img src="logo.jfif" class="loader-logo" alt="Logo empresa" onerror="this.style.display='none'" />
+      <img
+        src="logo.jfif"
+        class="loader-logo"
+        alt="Logo empresa"
+        onerror="this.style.display='none'"
+      />
+
       <h2 class="loader-title">PROVEEDORA DE DULCES Y DESECHABLES</h2>
-      <div class="loader-subtitle">ALMACÉN ZAPATA · SALIDAS · INVENTARIO INICIAL</div>
+
+      <div class="loader-subtitle">
+        ALMACÉN ZAPATA · SALIDAS · INVENTARIO SEMANAL
+      </div>
+
       <div class="progress-shell">
         <div id="loaderBar" class="progress-bar"></div>
       </div>
+
       <p id="loaderMsg" class="loader-msg">Preparando consulta...</p>
     </div>
   </div>
@@ -28,27 +41,49 @@
       <header class="topbar">
         <div>
           <h1>Tabla Salidas Zapata</h1>
+
           <p>
             Inventario inicial tomado de:
             /almacenes/almacen_zapata/Inventarios/ZAPATA010626/USUARIOS/{usuarioId}/PARTIDAS
           </p>
+
           <p>
-            Fecha base del pivot: 25/05/2026 · Fórmula: INVINI - SALIDAS = EXISTENCIA
+            Base original: 25/05/2026 · Vista semanal domingo a sábado ·
+            Inventario inicial visible = existencia final de la semana anterior.
           </p>
         </div>
 
         <div class="actions">
           <label>
+            Semana
+            <input id="selectorSemana" type="week" />
+          </label>
+
+          <label>
             Fecha inicio
-            <input id="fechaInicio" type="date" min="2026-05-25" value="2026-05-25" />
+            <input
+              id="fechaInicio"
+              type="date"
+              min="2026-05-25"
+              value="2026-05-25"
+              readonly
+            />
           </label>
 
           <label>
             Fecha fin
-            <input id="fechaFin" type="date" />
+            <input
+              id="fechaFin"
+              type="date"
+              readonly
+            />
           </label>
 
-          <input id="busqueda" type="search" placeholder="Buscar código, nombre, folio..." />
+          <input
+            id="busqueda"
+            type="search"
+            placeholder="Buscar código, nombre, folio..."
+          />
 
           <button id="btnRecargar">Recargar</button>
           <button id="btnExportar">Exportar Excel</button>
@@ -56,8 +91,8 @@
       </header>
 
       <section class="tabs">
-        <button id="tabResumen" class="active">Pivot INVINI - Salidas</button>
-        <button id="tabDetalle">Detalle por salida</button>
+        <button id="tabResumen" class="active">Pivot semanal</button>
+        <button id="tabDetalle">Detalle semana</button>
       </section>
 
       <section class="table-wrap">
@@ -69,7 +104,7 @@
       </section>
 
       <p id="status" class="status">
-        Listo. El inventario inicial debe leerse recorriendo todos los documentos dentro de USUARIOS.
+        Listo. El inventario inicial se calcula recorriendo todos los usuarios del conteo.
       </p>
     </section>
   </main>

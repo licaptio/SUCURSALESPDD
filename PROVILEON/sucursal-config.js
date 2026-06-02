@@ -11,7 +11,7 @@ export const CONFIG_SUCURSAL = {
 
   LOGO: "logo.jfif",
 
-  PREFIJO_FOLIO: "PROPDD,
+  PREFIJO_FOLIO: "PROPDD",
   ZONA: "ZONA1",
 
   FIREBASE: {

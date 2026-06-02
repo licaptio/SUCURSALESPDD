@@ -7,8 +7,8 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const FECHA_INICIO_MINIMA = "2026-05-25";
 const FECHA_BASE_INVENTARIO = "2026-05-25";
+const FECHA_INICIO_MINIMA = "2026-05-25";
 const CONTEO_ID_INVENTARIO = "ZAPATA010626";
 
 const REF_SALIDAS_ZAPATA = collection(
@@ -29,14 +29,38 @@ const REF_USUARIOS_INVENTARIO = collection(
 
 const $ = (id) => document.getElementById(id);
 
-let registrosDetalle = [];
+let registrosDetalleSemana = [];
+let registrosDetalleAcumuladoAnterior = [];
 let registrosPivot = [];
 let fechasColumnas = [];
-let inventarioInicial = {};
+let inventarioInicialOriginal = {};
 let vistaActual = "resumen";
+let rangoSemanaActual = {
+  inicio: FECHA_BASE_INVENTARIO,
+  fin: FECHA_BASE_INVENTARIO,
+  acumuladoAnteriorFin: ""
+};
 
 function hoyISO() {
-  return new Date().toISOString().slice(0, 10);
+  return fechaISOLocal(new Date());
+}
+
+function fechaISOLocal(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function crearFechaLocal(fechaISO) {
+  const [yyyy, mm, dd] = String(fechaISO).split("-").map(Number);
+  return new Date(yyyy, mm - 1, dd);
+}
+
+function sumarDias(fechaISO, dias) {
+  const d = crearFechaLocal(fechaISO);
+  d.setDate(d.getDate() + dias);
+  return fechaISOLocal(d);
 }
 
 function normalizarFecha(valor) {
@@ -60,11 +84,11 @@ function normalizarFecha(valor) {
   }
 
   if (valor && typeof valor.toDate === "function") {
-    return valor.toDate().toISOString().slice(0, 10);
+    return fechaISOLocal(valor.toDate());
   }
 
   if (valor && typeof valor.seconds === "number") {
-    return new Date(valor.seconds * 1000).toISOString().slice(0, 10);
+    return fechaISOLocal(new Date(valor.seconds * 1000));
   }
 
   return String(valor).trim();
@@ -129,17 +153,89 @@ function ocultarLoader() {
   if (loader) loader.classList.add("hide");
 }
 
-function obtenerRangoFechas() {
-  let inicio = $("fechaInicio")?.value || FECHA_INICIO_MINIMA;
-  let fin = $("fechaFin")?.value || hoyISO();
+function obtenerSemanaActualInput() {
+  const hoy = new Date();
+  const fecha = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+  const dia = fecha.getDay();
+  const jueves = new Date(fecha);
+  jueves.setDate(fecha.getDate() + (4 - (dia || 7)));
+
+  const inicioAnio = new Date(jueves.getFullYear(), 0, 1);
+  const semana = Math.ceil((((jueves - inicioAnio) / 86400000) + 1) / 7);
+
+  return `${jueves.getFullYear()}-W${String(semana).padStart(2, "0")}`;
+}
+
+function obtenerRangoDomingoSabadoDesdeWeek(valorWeek) {
+  if (!valorWeek) {
+    return {
+      inicio: FECHA_BASE_INVENTARIO,
+      fin: sumarDias(FECHA_BASE_INVENTARIO, 6)
+    };
+  }
+
+  const [anioTexto, semanaTexto] = valorWeek.split("-W");
+  const anio = Number(anioTexto);
+  const semana = Number(semanaTexto);
+
+  const enero4 = new Date(anio, 0, 4);
+  const diaSemana = enero4.getDay() || 7;
+
+  const lunesSemana1 = new Date(enero4);
+  lunesSemana1.setDate(enero4.getDate() - diaSemana + 1);
+
+  const lunes = new Date(lunesSemana1);
+  lunes.setDate(lunesSemana1.getDate() + (semana - 1) * 7);
+
+  const domingo = new Date(lunes);
+  domingo.setDate(lunes.getDate() - 1);
+
+  const sabado = new Date(domingo);
+  sabado.setDate(domingo.getDate() + 6);
+
+  let inicio = fechaISOLocal(domingo);
+  let fin = fechaISOLocal(sabado);
 
   if (inicio < FECHA_INICIO_MINIMA) inicio = FECHA_INICIO_MINIMA;
   if (fin < inicio) fin = inicio;
 
-  $("fechaInicio").value = inicio;
-  $("fechaFin").value = fin;
-
   return { inicio, fin };
+}
+
+function obtenerRangoSemana() {
+  const selectorSemana = $("selectorSemana");
+  const valorWeek = selectorSemana?.value || obtenerSemanaActualInput();
+
+  if (selectorSemana && !selectorSemana.value) {
+    selectorSemana.value = valorWeek;
+  }
+
+  const rango = obtenerRangoDomingoSabadoDesdeWeek(valorWeek);
+  const acumuladoAnteriorFin = sumarDias(rango.inicio, -1);
+
+  rangoSemanaActual = {
+    inicio: rango.inicio,
+    fin: rango.fin,
+    acumuladoAnteriorFin
+  };
+
+  if ($("fechaInicio")) $("fechaInicio").value = rango.inicio;
+  if ($("fechaFin")) $("fechaFin").value = rango.fin;
+
+  return rangoSemanaActual;
+}
+
+function crearFechasSemana(inicio, fin) {
+  const fechas = [];
+  let actual = inicio;
+
+  while (actual <= fin) {
+    fechas.push(actual);
+    actual = sumarDias(actual, 1);
+  }
+
+  return fechas;
 }
 
 async function cargarInventarioInicial() {
@@ -188,12 +284,12 @@ async function cargarInventarioInicial() {
           codigo: codigoOriginal,
           codigoKey,
           nombre,
-          invini: 0,
+          inviniOriginal: 0,
           fechaBase: FECHA_BASE_INVENTARIO
         };
       }
 
-      inventario[key].invini += cantidad;
+      inventario[key].inviniOriginal += cantidad;
 
       if (!inventario[key].codigo && codigoOriginal) {
         inventario[key].codigo = codigoOriginal;
@@ -207,7 +303,7 @@ async function cargarInventarioInicial() {
     });
   }
 
-  inventarioInicial = inventario;
+  inventarioInicialOriginal = inventario;
 
   setStatus(
     `Inventario inicial cargado. Usuarios: ${usuariosLeidos}. Partidas: ${partidasLeidas}.`
@@ -216,71 +312,104 @@ async function cargarInventarioInicial() {
   return inventario;
 }
 
+async function consultarSalidas(inicio, fin) {
+  if (fin < inicio) return [];
+
+  const q = query(
+    REF_SALIDAS_ZAPATA,
+    where("fecha", ">=", inicio),
+    where("fecha", "<=", fin),
+    orderBy("fecha", "desc")
+  );
+
+  const snap = await getDocs(q);
+  const detalle = [];
+  const docsVistos = new Set();
+
+  snap.forEach((documento) => {
+    const data = documento.data() || {};
+    docsVistos.add(documento.id);
+
+    const fecha = normalizarFecha(data.fecha || data.timestamp || "");
+    if (!fecha || fecha < FECHA_INICIO_MINIMA) return;
+
+    const articulos = Array.isArray(data.articulos) ? data.articulos : [];
+
+    articulos.forEach((art, idx) => {
+      const codigoOriginal = String(art.codigo ?? "").trim();
+      const codigoKey = normalizarCodigo(codigoOriginal);
+      const nombre = String(art.nombre ?? "").trim();
+      const cantidad = Number(art.cantidad || 0);
+
+      if (!codigoKey && !nombre && !cantidad) return;
+
+      detalle.push({
+        docId: documento.id,
+        partida: idx + 1,
+        folio: String(data.folio || documento.id || "").trim(),
+        fecha,
+        destino: String(data.destino || "").trim(),
+        entrega: String(data.entrega || "").trim(),
+        recibe: String(data.recibe || "").trim(),
+        folioCincho: String(data.folioCincho || "").trim(),
+        codigo: codigoOriginal,
+        codigoKey,
+        nombre,
+        cantidad
+      });
+    });
+  });
+
+  return {
+    detalle,
+    totalDocs: docsVistos.size
+  };
+}
+
 async function cargarSalidasZapata() {
   try {
-    const { inicio, fin } = obtenerRangoFechas();
+    const rango = obtenerRangoSemana();
 
     await cargarInventarioInicial();
 
-    setStatus(`Consultando salidas Zapata del ${inicio} al ${fin}...`);
+    setStatus(
+      `Consultando semana ${rango.inicio} a ${rango.fin}. Acumulado anterior hasta ${rango.acumuladoAnteriorFin}...`
+    );
     setProgress(25);
 
-    const q = query(
-      REF_SALIDAS_ZAPATA,
-      where("fecha", ">=", inicio),
-      where("fecha", "<=", fin),
-      orderBy("fecha", "desc")
+    const consultaSemana = await consultarSalidas(rango.inicio, rango.fin);
+    setProgress(55);
+
+    let consultaAcumuladoAnterior = {
+      detalle: [],
+      totalDocs: 0
+    };
+
+    if (rango.acumuladoAnteriorFin >= FECHA_BASE_INVENTARIO) {
+      consultaAcumuladoAnterior = await consultarSalidas(
+        FECHA_BASE_INVENTARIO,
+        rango.acumuladoAnteriorFin
+      );
+    }
+
+    setProgress(75);
+
+    registrosDetalleSemana = consultaSemana.detalle;
+    registrosDetalleAcumuladoAnterior = consultaAcumuladoAnterior.detalle;
+
+    construirPivot(
+      registrosDetalleSemana,
+      registrosDetalleAcumuladoAnterior,
+      rango.inicio,
+      rango.fin
     );
 
-    const snap = await getDocs(q);
-    setProgress(65);
-
-    const detalle = [];
-    const docsVistos = new Set();
-
-    snap.forEach((documento) => {
-      const data = documento.data() || {};
-      docsVistos.add(documento.id);
-
-      const fecha = normalizarFecha(data.fecha || data.timestamp || "");
-      if (!fecha || fecha < FECHA_INICIO_MINIMA) return;
-
-      const articulos = Array.isArray(data.articulos) ? data.articulos : [];
-
-      articulos.forEach((art, idx) => {
-        const codigoOriginal = String(art.codigo ?? "").trim();
-        const codigoKey = normalizarCodigo(codigoOriginal);
-        const nombre = String(art.nombre ?? "").trim();
-        const cantidad = Number(art.cantidad || 0);
-
-        if (!codigoKey && !nombre && !cantidad) return;
-
-        detalle.push({
-          docId: documento.id,
-          partida: idx + 1,
-          folio: String(data.folio || documento.id || "").trim(),
-          fecha,
-          destino: String(data.destino || "").trim(),
-          entrega: String(data.entrega || "").trim(),
-          recibe: String(data.recibe || "").trim(),
-          folioCincho: String(data.folioCincho || "").trim(),
-          codigo: codigoOriginal,
-          codigoKey,
-          nombre,
-          cantidad
-        });
-      });
-    });
-
-    registrosDetalle = detalle;
-    construirPivot(detalle);
-
-    actualizarResumenSuperior(docsVistos.size);
+    actualizarResumenSuperior(consultaSemana.totalDocs);
     pintarTabla();
 
     setProgress(100);
     setStatus(
-      `Consulta lista. Documentos: ${docsVistos.size}. Partidas salidas: ${detalle.length}. Días: ${fechasColumnas.length}. Inventario base: ${FECHA_BASE_INVENTARIO}.`
+      `Consulta lista. Semana: ${fechaCorta(rango.inicio)} a ${fechaCorta(rango.fin)}. Partidas semana: ${registrosDetalleSemana.length}. Acumulado anterior: ${registrosDetalleAcumuladoAnterior.length}.`
     );
 
     ocultarLoader();
@@ -291,27 +420,28 @@ async function cargarSalidasZapata() {
   }
 }
 
-function construirPivot(detalle) {
-  const fechasSet = new Set();
+function construirPivot(detalleSemana, detalleAcumuladoAnterior, inicioSemana, finSemana) {
   const mapa = new Map();
 
-  Object.keys(inventarioInicial).forEach((key) => {
-    const inv = inventarioInicial[key];
+  fechasColumnas = crearFechasSemana(inicioSemana, finSemana);
+
+  Object.keys(inventarioInicialOriginal).forEach((key) => {
+    const inv = inventarioInicialOriginal[key];
 
     mapa.set(key, {
       codigo: inv.codigo,
       codigoKey: inv.codigoKey,
       nombre: inv.nombre,
-      invini: Number(inv.invini || 0),
+      inviniOriginal: Number(inv.inviniOriginal || 0),
+      salidasAcumuladasAnteriores: 0,
+      inviniSemana: Number(inv.inviniOriginal || 0),
       porFecha: {},
-      total: 0,
-      existencia: Number(inv.invini || 0)
+      totalSemana: 0,
+      existenciaFinalSemana: Number(inv.inviniOriginal || 0)
     });
   });
 
-  detalle.forEach((item) => {
-    fechasSet.add(item.fecha);
-
+  detalleAcumuladoAnterior.forEach((item) => {
     const key = item.codigoKey || item.nombre.toLowerCase();
 
     if (!mapa.has(key)) {
@@ -319,10 +449,45 @@ function construirPivot(detalle) {
         codigo: item.codigo,
         codigoKey: item.codigoKey,
         nombre: item.nombre,
-        invini: 0,
+        inviniOriginal: 0,
+        salidasAcumuladasAnteriores: 0,
+        inviniSemana: 0,
         porFecha: {},
-        total: 0,
-        existencia: 0
+        totalSemana: 0,
+        existenciaFinalSemana: 0
+      });
+    }
+
+    const row = mapa.get(key);
+
+    if (!row.codigo && item.codigo) row.codigo = item.codigo;
+    if (!row.nombre && item.nombre) row.nombre = item.nombre;
+
+    row.salidasAcumuladasAnteriores += Number(item.cantidad || 0);
+  });
+
+  mapa.forEach((row) => {
+    row.inviniSemana =
+      Number(row.inviniOriginal || 0) -
+      Number(row.salidasAcumuladasAnteriores || 0);
+
+    row.existenciaFinalSemana = row.inviniSemana;
+  });
+
+  detalleSemana.forEach((item) => {
+    const key = item.codigoKey || item.nombre.toLowerCase();
+
+    if (!mapa.has(key)) {
+      mapa.set(key, {
+        codigo: item.codigo,
+        codigoKey: item.codigoKey,
+        nombre: item.nombre,
+        inviniOriginal: 0,
+        salidasAcumuladasAnteriores: 0,
+        inviniSemana: 0,
+        porFecha: {},
+        totalSemana: 0,
+        existenciaFinalSemana: 0
       });
     }
 
@@ -334,25 +499,25 @@ function construirPivot(detalle) {
     row.porFecha[item.fecha] =
       Number(row.porFecha[item.fecha] || 0) + Number(item.cantidad || 0);
 
-    row.total += Number(item.cantidad || 0);
-    row.existencia = Number(row.invini || 0) - Number(row.total || 0);
-  });
+    row.totalSemana += Number(item.cantidad || 0);
 
-  fechasColumnas = Array.from(fechasSet).sort();
+    row.existenciaFinalSemana =
+      Number(row.inviniSemana || 0) - Number(row.totalSemana || 0);
+  });
 
   registrosPivot = Array.from(mapa.values())
     .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), "es"));
 }
 
-function actualizarResumenSuperior(totalDocs) {
-  const totalCantidad = registrosDetalle.reduce(
+function actualizarResumenSuperior(totalDocsSemana) {
+  const totalCantidadSemana = registrosDetalleSemana.reduce(
     (sum, x) => sum + Number(x.cantidad || 0),
     0
   );
 
-  if ($("totalDocs")) $("totalDocs").textContent = totalDocs;
-  if ($("totalPartidas")) $("totalPartidas").textContent = registrosDetalle.length;
-  if ($("totalCantidad")) $("totalCantidad").textContent = fmtNum(totalCantidad);
+  if ($("totalDocs")) $("totalDocs").textContent = totalDocsSemana;
+  if ($("totalPartidas")) $("totalPartidas").textContent = registrosDetalleSemana.length;
+  if ($("totalCantidad")) $("totalCantidad").textContent = fmtNum(totalCantidadSemana);
   if ($("totalCodigos")) $("totalCodigos").textContent = registrosPivot.length;
 }
 
@@ -388,11 +553,11 @@ function pintarTabla() {
   if (vistaActual === "detalle") {
     pintarDetalle();
   } else {
-    pintarPivotPorDia();
+    pintarPivotPorSemana();
   }
 }
 
-function pintarPivotPorDia() {
+function pintarPivotPorSemana() {
   const tabla = $("tabla");
   const thead = tabla.querySelector("thead");
   const tbody = tabla.querySelector("tbody");
@@ -404,10 +569,10 @@ function pintarPivotPorDia() {
     <tr>
       <th class="left">Código</th>
       <th class="left">Nombre</th>
-      <th>INVINI<br>${fechaCorta(FECHA_BASE_INVENTARIO)}</th>
+      <th>INVINI<br>SEMANA</th>
       ${fechasColumnas.map(f => `<th>SALIDA<br>${fechaCorta(f)}</th>`).join("")}
-      <th>TOTAL<br>SALIDAS</th>
-      <th>EXISTENCIA<br>ACTUAL</th>
+      <th>TOTAL<br>SEMANA</th>
+      <th>EXISTENCIA<br>FINAL</th>
     </tr>
   `;
 
@@ -415,13 +580,13 @@ function pintarPivotPorDia() {
     <tr>
       <td class="left codigo">${escapeHtml(r.codigo)}</td>
       <td class="left">${escapeHtml(r.nombre)}</td>
-      <td class="cantidad">${fmtNum(r.invini)}</td>
+      <td class="cantidad">${fmtNum(r.inviniSemana)}</td>
       ${fechasColumnas.map(f => {
         const val = Number(r.porFecha[f] || 0);
         return `<td class="${val ? "cantidad" : ""}">${fmtCelda(val)}</td>`;
       }).join("")}
-      <td class="cantidad">${fmtNum(r.total)}</td>
-      <td class="cantidad">${fmtNum(r.existencia)}</td>
+      <td class="cantidad">${fmtNum(r.totalSemana)}</td>
+      <td class="cantidad">${fmtNum(r.existenciaFinalSemana)}</td>
     </tr>
   `).join("");
 
@@ -434,17 +599,17 @@ function pintarPivotPorDia() {
     });
   });
 
-  const totalInvini = rows.reduce((sum, r) => sum + Number(r.invini || 0), 0);
-  const granTotalSalidas = rows.reduce((sum, r) => sum + Number(r.total || 0), 0);
-  const totalExistencia = rows.reduce((sum, r) => sum + Number(r.existencia || 0), 0);
+  const totalInviniSemana = rows.reduce((sum, r) => sum + Number(r.inviniSemana || 0), 0);
+  const granTotalSemana = rows.reduce((sum, r) => sum + Number(r.totalSemana || 0), 0);
+  const totalExistenciaFinal = rows.reduce((sum, r) => sum + Number(r.existenciaFinalSemana || 0), 0);
 
   tfoot.innerHTML = `
     <tr>
       <td class="left" colspan="2">TOTAL</td>
-      <td>${fmtNum(totalInvini)}</td>
+      <td>${fmtNum(totalInviniSemana)}</td>
       ${fechasColumnas.map(f => `<td>${fmtNum(totalPorFecha[f])}</td>`).join("")}
-      <td>${fmtNum(granTotalSalidas)}</td>
-      <td>${fmtNum(totalExistencia)}</td>
+      <td>${fmtNum(granTotalSemana)}</td>
+      <td>${fmtNum(totalExistenciaFinal)}</td>
     </tr>
   `;
 }
@@ -455,7 +620,7 @@ function pintarDetalle() {
   const tbody = tabla.querySelector("tbody");
   const tfoot = tabla.querySelector("tfoot");
 
-  const rows = registrosDetalle.filter(pasaFiltroDetalle);
+  const rows = registrosDetalleSemana.filter(pasaFiltroDetalle);
   const totalCantidad = rows.reduce((sum, x) => sum + Number(x.cantidad || 0), 0);
 
   thead.innerHTML = `
@@ -488,7 +653,7 @@ function pintarDetalle() {
 
   tfoot.innerHTML = `
     <tr>
-      <td class="left" colspan="8">TOTAL</td>
+      <td class="left" colspan="8">TOTAL SEMANA</td>
       <td>${fmtNum(totalCantidad)}</td>
     </tr>
   `;
@@ -498,7 +663,7 @@ function exportarExcel() {
   let rows;
 
   if (vistaActual === "detalle") {
-    rows = registrosDetalle.filter(pasaFiltroDetalle).map((r) => ({
+    rows = registrosDetalleSemana.filter(pasaFiltroDetalle).map((r) => ({
       Fecha: r.fecha,
       Folio: r.folio,
       Destino: r.destino,
@@ -514,15 +679,15 @@ function exportarExcel() {
       const obj = {
         Codigo: r.codigo,
         Nombre: r.nombre,
-        [`INVINI ${fechaCorta(FECHA_BASE_INVENTARIO)}`]: Number(r.invini || 0)
+        "INVINI SEMANA": Number(r.inviniSemana || 0)
       };
 
       fechasColumnas.forEach((f) => {
         obj[`SALIDA ${fechaCorta(f)}`] = Number(r.porFecha[f] || 0);
       });
 
-      obj["TOTAL SALIDAS"] = Number(r.total || 0);
-      obj["EXISTENCIA"] = Number(r.existencia || 0);
+      obj["TOTAL SEMANA"] = Number(r.totalSemana || 0);
+      obj["EXISTENCIA FINAL"] = Number(r.existenciaFinalSemana || 0);
 
       return obj;
     });
@@ -539,11 +704,13 @@ function exportarExcel() {
   XLSX.utils.book_append_sheet(
     wb,
     ws,
-    vistaActual === "detalle" ? "Detalle" : "INVINI menos Salidas"
+    vistaActual === "detalle" ? "Detalle semana" : "Pivot semana"
   );
 
-  const { inicio, fin } = obtenerRangoFechas();
-  XLSX.writeFile(wb, `salidas_zapata_${vistaActual}_${inicio}_a_${fin}.xlsx`);
+  XLSX.writeFile(
+    wb,
+    `salidas_zapata_${vistaActual}_${rangoSemanaActual.inicio}_a_${rangoSemanaActual.fin}.xlsx`
+  );
 }
 
 function cambiarVista(vista) {
@@ -555,24 +722,49 @@ function cambiarVista(vista) {
   pintarTabla();
 }
 
+function crearSelectorSemanaSiNoExiste() {
+  if ($("selectorSemana")) return;
+
+  const actions = document.querySelector(".actions");
+  if (!actions) return;
+
+  const label = document.createElement("label");
+  label.innerHTML = `
+    Semana
+    <input id="selectorSemana" type="week" />
+  `;
+
+  actions.insertBefore(label, actions.firstChild);
+}
+
 function inicializarEventos() {
-  $("fechaInicio").min = FECHA_INICIO_MINIMA;
-  $("fechaInicio").value = FECHA_INICIO_MINIMA;
-  $("fechaFin").value = hoyISO();
+  crearSelectorSemanaSiNoExiste();
+
+  if ($("selectorSemana")) {
+    $("selectorSemana").value = obtenerSemanaActualInput();
+    $("selectorSemana").addEventListener("change", cargarSalidasZapata);
+  }
+
+  if ($("fechaInicio")) {
+    $("fechaInicio").min = FECHA_INICIO_MINIMA;
+    $("fechaInicio").value = FECHA_INICIO_MINIMA;
+    $("fechaInicio").readOnly = true;
+  }
+
+  if ($("fechaFin")) {
+    $("fechaFin").value = hoyISO();
+    $("fechaFin").readOnly = true;
+  }
 
   $("btnRecargar").addEventListener("click", cargarSalidasZapata);
   $("btnExportar").addEventListener("click", exportarExcel);
   $("busqueda").addEventListener("input", pintarTabla);
 
-  $("tabResumen").textContent = "INVINI - Salidas";
+  $("tabResumen").textContent = "Pivot semanal";
   $("tabResumen").addEventListener("click", () => cambiarVista("resumen"));
-  $("tabDetalle").addEventListener("click", () => cambiarVista("detalle"));
 
-  $("fechaInicio").addEventListener("change", () => {
-    if ($("fechaInicio").value < FECHA_INICIO_MINIMA) {
-      $("fechaInicio").value = FECHA_INICIO_MINIMA;
-    }
-  });
+  $("tabDetalle").textContent = "Detalle semana";
+  $("tabDetalle").addEventListener("click", () => cambiarVista("detalle"));
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

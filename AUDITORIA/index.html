@@ -1024,8 +1024,8 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const CONTEO_ID = "ALLENDE_MAYO_2026";
-  const CONTEO_NOMBRE = "Conteo Allende Mayo 2026";
+  const CONTEO_ID = "ZAPATA010626";
+  const CONTEO_NOMBRE = "Inventario Zapata 01-06-2026";
   const DB_NAME = "PROVSOFT_CONTEO_ALLENDE_MAYO_2026";
   const DB_VERSION = 3;
   const SYNC_EVERY_ITEMS = 5;
@@ -1904,7 +1904,16 @@
     const partidas = await idbGetAll("partidas");
     const pendientes = partidas.filter(x => !x.sincronizado);
 
-    const userRef = doc(db, "CONTEOS_INVENTARIO", CONTEO_ID, "USUARIOS", currentUser.id);
+    const userRef = doc(
+  db,
+  "almacenes",
+  "almacen_zapata",
+  "Inventarios",
+  "ZAPATA010626",
+  "USUARIOS",
+  currentUser.id
+);
+    
 
     await setDoc(userRef, {
       usuarioId: currentUser.id,
@@ -1923,15 +1932,18 @@
     }, { merge:true });
 
     for(const p of pendientes){
-      const partRef = doc(
-        db,
-        "CONTEOS_INVENTARIO",
-        CONTEO_ID,
-        "USUARIOS",
-        currentUser.id,
-        "PARTIDAS",
-        p.id || p.codigo
-      );
+const partRef = doc(
+  db,
+  "almacenes",
+  "almacen_zapata",
+  "Inventarios",
+  "ZAPATA010626",
+  "USUARIOS",
+  currentUser.id,
+  "PARTIDAS",
+  p.id || p.codigo
+);
+      
 
       await setDoc(partRef, {
         ...p,
@@ -1954,7 +1966,16 @@
 
     await syncFirebase(false);
 
-    const userRef = doc(db, "CONTEOS_INVENTARIO", CONTEO_ID, "USUARIOS", currentUser.id);
+    const userRef = doc(
+  db,
+  "almacenes",
+  "almacen_zapata",
+  "Inventarios",
+  "ZAPATA010626",
+  "USUARIOS",
+  currentUser.id
+);
+    
 
     await setDoc(userRef, {
       estado: "FINALIZADO",

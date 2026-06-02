@@ -7,7 +7,9 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const FECHA_INICIO_MINIMA = "2026-01-01";
+const FECHA_INICIO_MINIMA = "2026-05-25";
+const FECHA_BASE_INVENTARIO = "2026-05-25";
+const CONTEO_ID_INVENTARIO = "ZAPATA010626";
 
 const REF_SALIDAS_ZAPATA = collection(
   db,
@@ -16,11 +18,21 @@ const REF_SALIDAS_ZAPATA = collection(
   "salidas1.0"
 );
 
+const REF_USUARIOS_INVENTARIO = collection(
+  db,
+  "almacenes",
+  "almacen_zapata",
+  "Inventarios",
+  CONTEO_ID_INVENTARIO,
+  "USUARIOS"
+);
+
 const $ = (id) => document.getElementById(id);
 
 let registrosDetalle = [];
 let registrosPivot = [];
 let fechasColumnas = [];
+let inventarioInicial = {};
 let vistaActual = "resumen";
 
 function hoyISO() {
@@ -130,12 +142,88 @@ function obtenerRangoFechas() {
   return { inicio, fin };
 }
 
+async function cargarInventarioInicial() {
+  const inventario = {};
+
+  setStatus(`Cargando inventario inicial ${CONTEO_ID_INVENTARIO}...`);
+  setProgress(8);
+
+  const usuariosSnap = await getDocs(REF_USUARIOS_INVENTARIO);
+
+  let usuariosLeidos = 0;
+  let partidasLeidas = 0;
+
+  for (const usuarioDoc of usuariosSnap.docs) {
+    usuariosLeidos++;
+
+    const refPartidas = collection(
+      db,
+      "almacenes",
+      "almacen_zapata",
+      "Inventarios",
+      CONTEO_ID_INVENTARIO,
+      "USUARIOS",
+      usuarioDoc.id,
+      "PARTIDAS"
+    );
+
+    const partidasSnap = await getDocs(refPartidas);
+
+    partidasSnap.forEach((docu) => {
+      const p = docu.data() || {};
+
+      if (p.eliminado === true) return;
+
+      const codigoOriginal = String(p.codigo || p.productoId || p.codigoOriginal || "").trim();
+      const codigoKey = normalizarCodigo(codigoOriginal);
+      const nombre = String(p.descripcion || p.nombre || "").trim();
+      const cantidad = Number(p.cantidad || 0);
+
+      if (!codigoKey && !nombre && !cantidad) return;
+
+      const key = codigoKey || nombre.toLowerCase();
+
+      if (!inventario[key]) {
+        inventario[key] = {
+          codigo: codigoOriginal,
+          codigoKey,
+          nombre,
+          invini: 0,
+          fechaBase: FECHA_BASE_INVENTARIO
+        };
+      }
+
+      inventario[key].invini += cantidad;
+
+      if (!inventario[key].codigo && codigoOriginal) {
+        inventario[key].codigo = codigoOriginal;
+      }
+
+      if (!inventario[key].nombre && nombre) {
+        inventario[key].nombre = nombre;
+      }
+
+      partidasLeidas++;
+    });
+  }
+
+  inventarioInicial = inventario;
+
+  setStatus(
+    `Inventario inicial cargado. Usuarios: ${usuariosLeidos}. Partidas: ${partidasLeidas}.`
+  );
+
+  return inventario;
+}
+
 async function cargarSalidasZapata() {
   try {
     const { inicio, fin } = obtenerRangoFechas();
 
+    await cargarInventarioInicial();
+
     setStatus(`Consultando salidas Zapata del ${inicio} al ${fin}...`);
-    setProgress(15);
+    setProgress(25);
 
     const q = query(
       REF_SALIDAS_ZAPATA,
@@ -145,7 +233,7 @@ async function cargarSalidasZapata() {
     );
 
     const snap = await getDocs(q);
-    setProgress(55);
+    setProgress(65);
 
     const detalle = [];
     const docsVistos = new Set();
@@ -191,7 +279,10 @@ async function cargarSalidasZapata() {
     pintarTabla();
 
     setProgress(100);
-    setStatus(`Consulta lista. Documentos: ${docsVistos.size}. Partidas: ${detalle.length}. Días: ${fechasColumnas.length}.`);
+    setStatus(
+      `Consulta lista. Documentos: ${docsVistos.size}. Partidas salidas: ${detalle.length}. Días: ${fechasColumnas.length}. Inventario base: ${FECHA_BASE_INVENTARIO}.`
+    );
+
     ocultarLoader();
   } catch (error) {
     console.error(error);
@@ -204,6 +295,20 @@ function construirPivot(detalle) {
   const fechasSet = new Set();
   const mapa = new Map();
 
+  Object.keys(inventarioInicial).forEach((key) => {
+    const inv = inventarioInicial[key];
+
+    mapa.set(key, {
+      codigo: inv.codigo,
+      codigoKey: inv.codigoKey,
+      nombre: inv.nombre,
+      invini: Number(inv.invini || 0),
+      porFecha: {},
+      total: 0,
+      existencia: Number(inv.invini || 0)
+    });
+  });
+
   detalle.forEach((item) => {
     fechasSet.add(item.fecha);
 
@@ -214,16 +319,23 @@ function construirPivot(detalle) {
         codigo: item.codigo,
         codigoKey: item.codigoKey,
         nombre: item.nombre,
+        invini: 0,
         porFecha: {},
-        total: 0
+        total: 0,
+        existencia: 0
       });
     }
 
     const row = mapa.get(key);
+
+    if (!row.codigo && item.codigo) row.codigo = item.codigo;
+    if (!row.nombre && item.nombre) row.nombre = item.nombre;
+
     row.porFecha[item.fecha] =
       Number(row.porFecha[item.fecha] || 0) + Number(item.cantidad || 0);
 
     row.total += Number(item.cantidad || 0);
+    row.existencia = Number(row.invini || 0) - Number(row.total || 0);
   });
 
   fechasColumnas = Array.from(fechasSet).sort();
@@ -243,7 +355,6 @@ function actualizarResumenSuperior(totalDocs) {
   if ($("totalCantidad")) $("totalCantidad").textContent = fmtNum(totalCantidad);
   if ($("totalCodigos")) $("totalCodigos").textContent = registrosPivot.length;
 }
-
 
 function getFiltroBusqueda() {
   return String($("busqueda")?.value || "").trim().toLowerCase();
@@ -293,8 +404,10 @@ function pintarPivotPorDia() {
     <tr>
       <th class="left">Código</th>
       <th class="left">Nombre</th>
+      <th>INVINI<br>${fechaCorta(FECHA_BASE_INVENTARIO)}</th>
       ${fechasColumnas.map(f => `<th>SALIDA<br>${fechaCorta(f)}</th>`).join("")}
       <th>TOTAL<br>SALIDAS</th>
+      <th>EXISTENCIA<br>ACTUAL</th>
     </tr>
   `;
 
@@ -302,11 +415,13 @@ function pintarPivotPorDia() {
     <tr>
       <td class="left codigo">${escapeHtml(r.codigo)}</td>
       <td class="left">${escapeHtml(r.nombre)}</td>
+      <td class="cantidad">${fmtNum(r.invini)}</td>
       ${fechasColumnas.map(f => {
         const val = Number(r.porFecha[f] || 0);
         return `<td class="${val ? "cantidad" : ""}">${fmtCelda(val)}</td>`;
       }).join("")}
       <td class="cantidad">${fmtNum(r.total)}</td>
+      <td class="cantidad">${fmtNum(r.existencia)}</td>
     </tr>
   `).join("");
 
@@ -319,13 +434,17 @@ function pintarPivotPorDia() {
     });
   });
 
-  const granTotal = rows.reduce((sum, r) => sum + Number(r.total || 0), 0);
+  const totalInvini = rows.reduce((sum, r) => sum + Number(r.invini || 0), 0);
+  const granTotalSalidas = rows.reduce((sum, r) => sum + Number(r.total || 0), 0);
+  const totalExistencia = rows.reduce((sum, r) => sum + Number(r.existencia || 0), 0);
 
   tfoot.innerHTML = `
     <tr>
       <td class="left" colspan="2">TOTAL</td>
+      <td>${fmtNum(totalInvini)}</td>
       ${fechasColumnas.map(f => `<td>${fmtNum(totalPorFecha[f])}</td>`).join("")}
-      <td>${fmtNum(granTotal)}</td>
+      <td>${fmtNum(granTotalSalidas)}</td>
+      <td>${fmtNum(totalExistencia)}</td>
     </tr>
   `;
 }
@@ -394,7 +513,8 @@ function exportarExcel() {
     rows = registrosPivot.filter(pasaFiltroPivot).map((r) => {
       const obj = {
         Codigo: r.codigo,
-        Nombre: r.nombre
+        Nombre: r.nombre,
+        [`INVINI ${fechaCorta(FECHA_BASE_INVENTARIO)}`]: Number(r.invini || 0)
       };
 
       fechasColumnas.forEach((f) => {
@@ -402,6 +522,7 @@ function exportarExcel() {
       });
 
       obj["TOTAL SALIDAS"] = Number(r.total || 0);
+      obj["EXISTENCIA"] = Number(r.existencia || 0);
 
       return obj;
     });
@@ -418,7 +539,7 @@ function exportarExcel() {
   XLSX.utils.book_append_sheet(
     wb,
     ws,
-    vistaActual === "detalle" ? "Detalle" : "Salidas por dia"
+    vistaActual === "detalle" ? "Detalle" : "INVINI menos Salidas"
   );
 
   const { inicio, fin } = obtenerRangoFechas();
@@ -443,7 +564,7 @@ function inicializarEventos() {
   $("btnExportar").addEventListener("click", exportarExcel);
   $("busqueda").addEventListener("input", pintarTabla);
 
-  $("tabResumen").textContent = "Tabla por día";
+  $("tabResumen").textContent = "INVINI - Salidas";
   $("tabResumen").addEventListener("click", () => cambiarVista("resumen"));
   $("tabDetalle").addEventListener("click", () => cambiarVista("detalle"));
 

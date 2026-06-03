@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PROVSOFT | Solicitud Conteo Diario</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+
+<style>
+body{font-family:Arial;background:#eef2f7;margin:0}
+.app{max-width:1100px;margin:auto;padding:20px}
+.header{background:#fff;padding:15px;border-radius:10px;margin-bottom:10px}
+.panel{background:#fff;padding:15px;border-radius:10px;margin-bottom:10px}
+button{padding:10px;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
+.btn-blue{background:#2563eb;color:#fff}
+.btn-green{background:#16a34a;color:#fff}
+.btn-gray{background:#e5e7eb}
+.btn-red{background:#dc2626;color:#fff}
+input,textarea{padding:10px;width:100%;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
+.table{width:100%;border-collapse:collapse}
+.table td,.table th{padding:8px;border-bottom:1px solid #ddd}
+.results{background:#fff;border:1px solid #ccc;position:absolute;width:100%;display:none;max-height:250px;overflow:auto;z-index:10}
+.result-item{padding:8px;cursor:pointer}
+.result-item:hover{background:#f1f5f9}
+.loader{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:999}
+.hide{display:none!important}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal.hide{display:none!important}
+.modal-box{background:white;padding:25px;border-radius:12px;width:90%;max-width:650px;box-shadow:0 12px 30px #0003}
+.actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+
+<body>
+
+<div id="loader" class="loader">
+  <h3>PROVSOFT · Cargando listado...</h3>
+</div>
+
+<div class="app">
+  <div class="header">
+    <b>PROVEEDORA DE DULCES Y DESECHABLES ALLENDE 1</b><br>
+    Solicita: AUDITORIA PDD
+  </div>
+
+  <div class="panel" style="position:relative">
+    <input id="buscador" placeholder="Buscar producto">
+    <div id="resultados" class="results"></div>
+
+    <div class="actions">
+      <button class="btn-blue" id="btnActualizar">Actualizar listado</button>
+      <button class="btn-green" id="btnSugeridos">Cargar sugeridos</button>
+      <button class="btn-gray" id="btnLimpiar">Limpiar</button>
+      <button class="btn-red" id="btnCrear">Crear solicitud</button>
+    </div>
+
+    <div id="status"></div>
+  </div>
+
+  <div class="panel">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th>Quitar</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="modalNotas" class="modal hide">
+  <div class="modal-box">
+    <h3>Notas de solicitud</h3>
+    <p>Escribe instrucciones para el conteo físico.</p>
+
+    <textarea id="notasSolicitud" rows="6"
+      placeholder="Ej. Contar cajas y piezas. Reportar un solo resultado en cajas. Revisar bodega, piso y exhibición."></textarea>
+
+    <div class="actions">
+      <button class="btn-gray" id="btnCancelarNotas">Cancelar</button>
+      <button class="btn-red" id="btnConfirmarFinal">Confirmar y guardar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { db } from "./config.js";
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const CONTEO_REF = collection(db, "TIENDAS", "ALLENDE 1", "CONTEO_DIARIO");
+
+let listado = [];
+let carrito = [];
+
+const sugeridos = [
+["75035259","CIGARROS MARLBORO BLANCO 100"],
+["75068738","CIGARROS MARLBORO BLANCO DURO"],
+["75068745","CIGARROS MARLBORO BLANCO SUAVE"],
+["75021597","CIGARROS MARLBORO ROJO 100"],
+["75001322","CIGARROS MARLBORO ROJO DURO"],
+["75001315","CIGARROS MARLBORO ROJO SUAVE"],
+["75068783","CIGARROS MARLBORO RUBY FUSION"],
+["75066345","CIGARROS MARLBORO VISTA SUMMER"],
+["08346917","CIGARROS PALL MALL BLANCO CLICK"],
+["75064648","CIGARROS PALL MALL MYKONOS"],
+["75052836","CIGARROS PALL MALL TOKYO"],
+["75071295","CIGARROS PALL MALL XL ALASKA"],
+["75080495","CIGARROS PALL MALL XL ISLAND"],
+["7689","REYMA CHAROLA 7X7 DIV C/200"],
+["7686","REYMA CHAROLA 7X7 LISA C/200"],
+["020270","REYMA CHAROLA 7X7 NEGRA C/200"],
+["364","REYMA CHAROLA 835 C/500"],
+["450065","REYMA CHAROLA 8X8 C/200 NEGRA"],
+["2096","REYMA CHAROLA 8X8 DIV C/200 BL"],
+["1886","REYMA CHAROLA 8X8 LISA C/200 B"],
+["0200154","REYMA CHAROLA 9H C/200 NEGRA"],
+["2097","REYMA CHAROLA 9X9 DIV C/200"],
+["1655","REYMA CHAROLA 9X9 LISA C/200"],
+["1901","REYMA CHAROLA HAMBURGUESERA C/500"],
+["352","REYMA CHAROLA HOAGIE C/10 torta"],
+["7016","MARIEL CHAROLA TERMICA 855 10 / 50 PZAS"],
+["7221","MARIEL CHAROLA TERMICA 066 10 PAQ/ 50 PZ"],
+["7506174512255","CHOCOLATE SNICKERS C/6"],
+["4451","BIG COLA 1.500 LTS C/12 PZAS."],
+["7750670000604","BIG COLA 1.500 LTS PZA"],
+["060028","BIG COLA 3 LTS C/6"],
+["7506241203888","BIG COLA 3 LTS PZA"],
+["7750670007047","BIG COLA 500 ML PZA"],
+["250010","BIG COLA 500ML C/12 PZAS."],
+["2382","AGUA GYM - STAR 12/1.5 lts"],
+["3062","AGUA GYM 24/500 ML"],
+["3217","AGUA GYM-STAR 12/ 1L"],
+["7501020540666","LECHE NUTRI LECHE 1 LTO (23703)"]
+];
+
+function pintarCarrito(){
+  const tb = document.getElementById("tbody");
+
+  if (!carrito.length) {
+    tb.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#777">Sin productos seleccionados</td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = carrito.map((p,i)=>`
+    <tr>
+      <td>${p.codigo}</td>
+      <td>${p.nombre}</td>
+      <td><button class="btn-red" onclick="quitar(${i})">X</button></td>
+    </tr>
+  `).join("");
+}
+
+window.quitar = i => {
+  carrito.splice(i,1);
+  pintarCarrito();
+};
+
+function agregar(p){
+  if (carrito.find(x => x.codigo === p.codigo)) return;
+  carrito.push(p);
+  pintarCarrito();
+}
+
+document.getElementById("btnSugeridos").onclick = () => {
+  sugeridos.forEach(([c,n]) => agregar({ codigo:c, nombre:n }));
+};
+
+document.getElementById("btnLimpiar").onclick = () => {
+  carrito = [];
+  pintarCarrito();
+};
+
+document.getElementById("btnCrear").onclick = () => {
+  if (!carrito.length) {
+    alert("No hay productos seleccionados.");
+    return;
+  }
+  document.getElementById("modalNotas").classList.remove("hide");
+};
+
+document.getElementById("btnCancelarNotas").onclick = () => {
+  document.getElementById("modalNotas").classList.add("hide");
+};
+
+document.getElementById("btnConfirmarFinal").onclick = async () => {
+  const notas = document.getElementById("notasSolicitud").value.trim();
+
+  if (!confirm("¿Confirmar guardado final de la solicitud?")) return;
+
+  const folio = "CD-" + Date.now();
+
+  await setDoc(doc(CONTEO_REF, folio), {
+    folio,
+    estatus:"PENDIENTE",
+    sucursal:"ALLENDE 1",
+    solicitadoPor:"AUDITORIA PDD",
+    fechaSolicitud:serverTimestamp(),
+    notasSolicitud:notas,
+    totalProductos:carrito.length,
+    productos:carrito
+  });
+
+  alert("Guardado: " + folio);
+
+  carrito = [];
+  pintarCarrito();
+  document.getElementById("notasSolicitud").value = "";
+  document.getElementById("modalNotas").classList.add("hide");
+};
+
+document.getElementById("buscador").oninput = e => {
+  const q = e.target.value.toLowerCase().trim();
+  const box = document.getElementById("resultados");
+
+  if (!q) {
+    box.style.display = "none";
+    return;
+  }
+
+  const res = listado.filter(p =>
+    p.nombre.toLowerCase().includes(q) ||
+    p.codigo.includes(q)
+  ).slice(0,20);
+
+  box.innerHTML = res.map(p=>`
+    <div class="result-item">${p.codigo} - ${p.nombre}</div>
+  `).join("");
+
+  box.style.display = res.length ? "block" : "none";
+
+  box.querySelectorAll(".result-item").forEach((el,i)=>{
+    el.onclick = () => {
+      agregar(res[i]);
+      box.style.display = "none";
+      document.getElementById("buscador").value = "";
+    };
+  });
+};
+
+async function cargar(){
+
+  const snap = await getDocs(
+
+    collection(
+      db,
+      "TIENDAS",
+      "ALLENDE 1",
+      "inventario1"
+    )
+  );
+
+  listado = [];
+
+  snap.forEach(doc=>{
+
+    const d = doc.data();
+
+    const codigo = String(
+      d.codigo ||
+      d.codigoBarra ||
+      d.codigobarra ||
+      ""
+    ).trim();
+
+    const nombre = String(
+      d.descripcion ||
+      d.concepto ||
+      d.nombre ||
+      ""
+    ).trim();
+
+    if(!codigo || !nombre) return;
+
+    listado.push({
+      codigo,
+      nombre
+    });
+
+  });
+
+  document.getElementById("status").innerText =
+    "Listado cargado: " + listado.length + " artículos";
+}
+
+document.getElementById("btnActualizar").onclick = cargar;
+
+pintarCarrito();
+await cargar();
+document.getElementById("loader").classList.add("hide");
+</script>
+
+</body>
+</html>

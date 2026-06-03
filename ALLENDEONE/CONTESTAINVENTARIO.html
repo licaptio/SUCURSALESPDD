@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PROVSOFT | Contestar Conteo Diario</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+
+<style>
+:root{
+  --rojo:#c00000;
+  --rojoOscuro:#8b0000;
+  --azul:#00416A;
+  --verde:#15803d;
+  --sombra:0 10px 25px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box}
+body{
+  font-family:Arial,sans-serif;
+  background:linear-gradient(135deg,#00416A,#dbe5ec);
+  margin:0;
+}
+.app{max-width:1200px;margin:auto;padding:20px}
+.header{
+  background:#fff;
+  padding:14px 18px;
+  border-radius:14px;
+  margin-bottom:14px;
+  box-shadow:var(--sombra);
+  border-bottom:4px solid var(--rojo);
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
+.logo{width:190px;max-height:82px;object-fit:contain}
+.header-title h1{margin:0;color:var(--rojoOscuro);font-size:22px;font-weight:900}
+.header-title p{margin:4px 0 0;color:#334155;font-weight:bold}
+.panel{
+  background:#fff;
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:14px;
+  box-shadow:var(--sombra);
+}
+button{padding:11px 15px;border:none;border-radius:10px;cursor:pointer;font-weight:bold}
+.btn-blue{background:var(--azul);color:white}
+.btn-green{background:var(--verde);color:white}
+.btn-gray{background:#e5e7eb;color:#111}
+.btn-red{background:#b91c1c;color:white}
+input,textarea{
+  padding:10px;
+  width:100%;
+  border:1px solid #ccc;
+  border-radius:8px;
+}
+.input-conteo{
+  width:80px !important;
+  max-width:80px !important;
+  height:26px !important;
+  padding:4px 6px !important;
+  font-size:13px !important;
+  text-align:right;
+  font-weight:bold;
+  background:#f8fafc;
+  border:1px solid #94a3b8;
+}
+.table{width:100%;border-collapse:collapse}
+.table td,.table th{padding:9px;border-bottom:1px solid #ddd}
+.table th{background:#f8fafc;text-align:left;color:#111}
+.loader{
+  position:fixed;inset:0;background:white;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;z-index:9999;
+}
+.loader-box{width:min(520px,90vw);text-align:center}
+.bar{height:12px;background:#fee2e2;border-radius:99px;overflow:hidden}
+.bar div{height:100%;width:0%;background:linear-gradient(90deg,var(--rojoOscuro),var(--rojo));transition:.25s}
+.hide{display:none!important}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#fee2e2;color:#991b1b;font-weight:bold;font-size:12px}
+.nota{background:#fff7ed;border:2px solid #fb923c;padding:14px;border-radius:8px;white-space:pre-wrap;font-size:15px;line-height:1.45}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal.hide{display:none!important}
+.modal-box{background:white;padding:25px;border-radius:12px;width:90%;max-width:600px;box-shadow:0 12px 30px #0003}
+.firma-shell{
+  width:min(95vw,900px);
+  height:min(78vh,520px);
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+  border-radius:14px;
+  overflow:hidden;
+}
+  
+.firma-head{padding:10px;background:#111;color:#fff;font-weight:bold}
+#canvasFirma{
+  flex:1;
+  min-height:180px;
+  max-height:320px;
+  background:#fff;
+  touch-action:none;
+  cursor:crosshair;
+}
+  
+.firma-actions{
+  padding:8px;
+  background:#f1f5f9;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+  
+  
+@media(max-width:700px){
+  .header{flex-direction:column;text-align:center}
+  .logo{width:220px}
+}
+@media print{
+  .actions,.modal,.loader{display:none!important}
+  body{background:#fff}
+  .panel,.header{box-shadow:none;border:1px solid #ddd}
+}
+</style>
+</head>
+
+<body>
+
+<div id="loader" class="loader">
+  <div class="loader-box">
+    <img src="./logo.jfif" style="width:230px;max-width:90%;margin-bottom:12px">
+    <h3>PROVSOFT · Cargando solicitud pendiente...</h3>
+    <p id="loaderMsg">Preparando datos...</p>
+    <div class="bar"><div id="loaderBar"></div></div>
+  </div>
+</div>
+
+<div class="app">
+
+  <div class="header">
+    <img src="./logo.jfif" class="logo">
+    <div class="header-title">
+      <h1>PROVEEDORA DE DULCES Y DESECHABLES ALLENDE 1</h1>
+      <p>PROVSOFT · Contestación de conteo físico · CONTEO_DIARIO</p>
+    </div>
+  </div>
+
+  <div id="panelSolicitud" class="panel hide">
+    <h3 id="tituloSolicitud"></h3>
+    <div id="infoSolicitud"></div>
+
+    <h3>Notas de la solicitud</h3>
+    <div id="notasSolicitud" class="nota"></div>
+
+    <h3>Conteo físico</h3>
+    <p><b>Contestado por:</b> ALLENDE 1</p>
+
+    <div class="actions">
+      <button class="btn-blue" id="btnImprimir">Imprimir solicitud</button>
+      <button class="btn-green" id="btnGuardarAvance">Guardar avance</button>
+      <button class="btn-red" id="btnFinalizar">Finalizar y firmar</button>
+    </div>
+
+    <br>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th>Conteo físico</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyProductos"></tbody>
+    </table>
+
+    <br>
+
+    <label>Comentario general de respuesta</label>
+    <textarea id="comentarioGeneral" rows="4" placeholder="Comentario general opcional."></textarea>
+  </div>
+
+  <div id="panelSinPendientes" class="panel hide">
+    <h3>No hay solicitudes pendientes</h3>
+    <p>Cuando auditoría genere una solicitud, esta app la abrirá automáticamente.</p>
+    <button class="btn-blue" onclick="location.reload()">Recargar</button>
+  </div>
+
+</div>
+
+<div id="modalFinal" class="modal hide">
+  <div class="modal-box">
+    <h3>Confirmación final</h3>
+    <p>Se abrirá la pantalla de firma y después la solicitud quedará <b>CONTESTADA</b>.</p>
+    <div class="actions">
+      <button class="btn-gray" id="btnCancelarFinal">Cancelar</button>
+      <button class="btn-red" id="btnIrFirma">Continuar a firma</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalFirma" class="modal hide">
+  <div class="firma-shell">
+    <div class="firma-head">FIRMA DEL RESPONSABLE · Pantalla completa</div>
+    <canvas id="canvasFirma"></canvas>
+    <div class="firma-actions">
+      <button class="btn-gray" id="btnLimpiarFirma">Limpiar firma</button>
+      <button class="btn-red" id="btnCancelarFirma">Cancelar</button>
+      <button class="btn-green" id="btnGuardarFirma">Guardar firma y finalizar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { db } from "./config.js";
+import {
+  collection, query, where, getDocs, doc, getDoc,
+  updateDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const CONTEO_REF = collection(db, "TIENDAS", "ALLENDE 1", "CONTEO_DIARIO");
+
+let solicitudActual = null;
+let solicitudActualId = null;
+let firmaCanvas, firmaCtx, dibujandoFirma = false, firmaTieneTrazos = false;
+
+const $ = id => document.getElementById(id);
+
+function loader(msg,pct){
+  $("loaderMsg").innerText = msg;
+  $("loaderBar").style.width = pct + "%";
+}
+
+function fmtFecha(ts){
+  try{
+    if(!ts) return "";
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleString("es-MX");
+  }catch{return ""}
+}
+
+function calcularMinutos(fechaSolicitud){
+  try{
+    const inicio = fechaSolicitud?.toDate ? fechaSolicitud.toDate() : new Date(fechaSolicitud);
+    return Math.round((Date.now() - inicio.getTime()) / 60000);
+  }catch{return null}
+}
+
+async function cargarUltimaPendiente(){
+  loader("Buscando solicitudes pendientes...",20);
+
+  const q = query(CONTEO_REF, where("estatus","==","PENDIENTE"));
+  const snap = await getDocs(q);
+
+  const pendientes = [];
+  snap.forEach(d => pendientes.push({ id:d.id, ...d.data() }));
+
+  if(!pendientes.length){
+    $("loader").classList.add("hide");
+    $("panelSinPendientes").classList.remove("hide");
+    return;
+  }
+
+  pendientes.sort((a,b)=>{
+    const fa = a.fechaSolicitud?.seconds || 0;
+    const fb = b.fechaSolicitud?.seconds || 0;
+    return fb - fa;
+  });
+
+  loader("Abriendo última solicitud pendiente...",70);
+
+  solicitudActualId = pendientes[0].id;
+  const ref = doc(CONTEO_REF, solicitudActualId);
+  const docSnap = await getDoc(ref);
+  solicitudActual = docSnap.data();
+
+  pintarSolicitud();
+
+  loader("Solicitud lista.",100);
+  setTimeout(()=>$("loader").classList.add("hide"),300);
+}
+
+function pintarSolicitud(){
+  $("panelSolicitud").classList.remove("hide");
+
+  $("tituloSolicitud").innerHTML = `
+    Solicitud <span class="badge">${solicitudActual.folio || solicitudActualId}</span>
+  `;
+
+  $("infoSolicitud").innerHTML = `
+    <p>
+      <b>Estatus:</b> ${solicitudActual.estatus || ""}<br>
+      <b>Sucursal:</b> ${solicitudActual.sucursal || ""}<br>
+      <b>Solicitado por:</b> ${solicitudActual.solicitadoPor || ""}<br>
+      <b>Fecha solicitud:</b> ${fmtFecha(solicitudActual.fechaSolicitud)}<br>
+      <b>Total productos:</b> ${solicitudActual.totalProductos || (solicitudActual.productos || []).length}
+    </p>
+  `;
+
+  $("notasSolicitud").innerText = solicitudActual.notasSolicitud || "Sin notas.";
+
+  const productos = Array.isArray(solicitudActual.productos) ? solicitudActual.productos : [];
+
+  $("tbodyProductos").innerHTML = productos.map((p,i)=>`
+    <tr>
+      <td>${p.codigo || ""}</td>
+      <td>${p.nombre || ""}</td>
+      <td>
+        <input 
+          class="input-conteo"
+          type="number"
+          step="0.001"
+          min="0"
+          max="999999"
+          maxlength="6"
+          oninput="this.value=this.value.slice(0,6)"
+          id="cantidad_${i}"
+          value="${p.cantidadContestada ?? ""}">
+      </td>
+    </tr>
+  `).join("");
+
+  $("comentarioGeneral").value = solicitudActual.comentarioGeneralRespuesta || "";
+}
+
+function recolectarProductos(){
+  const productosBase = Array.isArray(solicitudActual.productos) ? solicitudActual.productos : [];
+
+  return productosBase.map((p,i)=>{
+    const raw = $("cantidad_"+i).value.trim();
+    const cantidad = raw === "" ? null : Number(raw);
+
+    return {
+      ...p,
+      cantidadContestada: Number.isFinite(cantidad) ? cantidad : null,
+      contestado: raw !== ""
+    };
+  });
+}
+
+async function guardarAvance(){
+  if(!solicitudActualId) return;
+
+  const productos = recolectarProductos();
+
+  await updateDoc(doc(CONTEO_REF, solicitudActualId), {
+    estatus:"PENDIENTE",
+    productos,
+    avanceGuardado:true,
+    fechaUltimoAvance:serverTimestamp(),
+    comentarioGeneralRespuesta:$("comentarioGeneral").value.trim(),
+    actualizadoEn:serverTimestamp()
+  });
+
+  alert("Avance guardado. La solicitud sigue PENDIENTE.");
+}
+
+function validarCaptura(){
+  const productos = Array.isArray(solicitudActual.productos) ? solicitudActual.productos : [];
+  let vacios = 0;
+
+  productos.forEach((p,i)=>{
+    if($("cantidad_"+i).value.trim()==="") vacios++;
+  });
+
+  if(vacios > 0){
+    alert(`No se puede finalizar. Faltan ${vacios} productos por capturar.`);
+    return false;
+  }
+
+  return true;
+}
+
+function abrirFinalizar(){
+  if(!validarCaptura()) return;
+  $("modalFinal").classList.remove("hide");
+}
+
+function prepararCanvasFirma(){
+  firmaCanvas = $("canvasFirma");
+  firmaCtx = firmaCanvas.getContext("2d");
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = firmaCanvas.getBoundingClientRect();
+
+  firmaCanvas.width = Math.floor(rect.width*dpr);
+  firmaCanvas.height = Math.floor(rect.height*dpr);
+
+  firmaCtx.setTransform(dpr,0,0,dpr,0,0);
+  firmaCtx.fillStyle="#fff";
+  firmaCtx.fillRect(0,0,rect.width,rect.height);
+  firmaCtx.strokeStyle="#000";
+  firmaCtx.lineWidth=2.2;
+  firmaCtx.lineCap="round";
+  firmaCtx.lineJoin="round";
+  firmaTieneTrazos=false;
+}
+
+function abrirFirma(){
+  $("modalFinal").classList.add("hide");
+  $("modalFirma").classList.remove("hide");
+  setTimeout(prepararCanvasFirma,80);
+}
+
+function puntoCanvas(e){
+  const rect = firmaCanvas.getBoundingClientRect();
+  return {x:e.clientX-rect.left,y:e.clientY-rect.top};
+}
+
+function iniciarFirma(e){
+  e.preventDefault();
+  dibujandoFirma=true;
+  firmaTieneTrazos=true;
+  const p=puntoCanvas(e);
+  firmaCtx.beginPath();
+  firmaCtx.moveTo(p.x,p.y);
+}
+
+function moverFirma(e){
+  if(!dibujandoFirma) return;
+  e.preventDefault();
+  const p=puntoCanvas(e);
+  firmaCtx.lineTo(p.x,p.y);
+  firmaCtx.stroke();
+}
+
+function terminarFirma(e){
+  if(e) e.preventDefault();
+  dibujandoFirma=false;
+}
+
+function limpiarFirma(){
+  prepararCanvasFirma();
+}
+
+async function guardarFinalConFirma(){
+  if(!firmaTieneTrazos){
+    alert("Falta la firma.");
+    return;
+  }
+
+  if(!confirm("¿Confirmar guardado final con firma?")) return;
+
+  const productos = recolectarProductos();
+  const firmaBase64 = firmaCanvas.toDataURL("image/png");
+  const duracion = calcularMinutos(solicitudActual.fechaSolicitud);
+
+  await updateDoc(doc(CONTEO_REF, solicitudActualId), {
+    estatus:"CONTESTADO",
+    contestadoPor:"ALLENDE 1",
+    fechaContestacion:serverTimestamp(),
+    fechaContestacionLocalISO:new Date().toISOString(),
+    duracionRespuestaMinutos:duracion,
+    comentarioGeneralRespuesta:$("comentarioGeneral").value.trim(),
+    firmaBase64,
+    firmadoPor:"ALLENDE 1",
+    fechaFirma:serverTimestamp(),
+    fechaFirmaLocalISO:new Date().toISOString(),
+    productos,
+    actualizadoEn:serverTimestamp()
+  });
+
+  alert("Solicitud contestada correctamente.");
+  location.reload();
+}
+
+function imprimirSolicitudBonita(){
+  const productos = Array.isArray(solicitudActual.productos) ? solicitudActual.productos : [];
+
+const filas = productos.map((p,i)=>{
+  const nombre = String(p.nombre || "");
+  const nombreCorto = nombre.length > 35 ? nombre.slice(0,35) + "..." : nombre;
+
+  return `
+    <tr>
+      <td>${i+1}</td>
+      <td>${p.codigo||""}</td>
+      <td>${nombreCorto}</td>
+      <td></td>
+    </tr>
+  `;
+}).join("");
+
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Conteo ${solicitudActual.folio || ""}</title>
+<style>
+@page{size:letter;margin:6mm}
+body{font-family:Arial,sans-serif;margin:0;color:#111;font-size:9px}
+.header{
+  display:grid;
+  grid-template-columns:90px 1fr;
+  gap:6px;
+  align-items:center;
+  border-bottom:2px solid #c00000;
+  padding-bottom:3px;
+}
+.logo{width:85px;max-height:38px;object-fit:contain}
+h1{margin:0;color:#8b0000;font-size:13px;line-height:1}
+.sub{font-size:8px;font-weight:bold}
+.info{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:3px;
+  margin:4px 0;
+}
+.box{border:1px solid #aaa;padding:2px 3px;border-radius:2px}
+.nota{
+  border:1px solid #f59e0b;
+  background:#fff7ed;
+  padding:3px;
+  margin:4px 0;
+  font-size:8.5px;
+  line-height:1.1;
+}
+table{width:100%;border-collapse:collapse;font-size:8.5px;table-layout:fixed}
+th,td{
+  border:1px solid #777;
+  padding:2px 3px;
+  line-height:1.05;
+  height:14px;
+  overflow:hidden;
+  white-space:nowrap;
+}
+th{background:#f1f5f9;text-align:left}
+th:nth-child(1),td:nth-child(1){width:25px;text-align:center}
+th:nth-child(2),td:nth-child(2){width:78px}
+th:nth-child(3),td:nth-child(3){width:260px}
+th:nth-child(4),td:nth-child(4){width:70px;text-align:center}
+</style>
+
+</head>
+<body>
+
+<div class="header">
+  <img src="./logo.jfif" class="logo">
+  <div>
+    <h1>PROVEEDORA DE DULCES Y DESECHABLES ALLENDE 1</h1>
+    <div class="sub">Guía de conteo físico · PROVSOFT</div>
+  </div>
+</div>
+
+<div class="info">
+  <div class="box"><b>Folio:</b> ${solicitudActual.folio || solicitudActualId}</div>
+  <div class="box"><b>Fecha:</b> ${fmtFecha(solicitudActual.fechaSolicitud)}</div>
+  <div class="box"><b>Total:</b> ${productos.length}</div>
+</div>
+
+<div class="nota"><b>Notas:</b> ${solicitudActual.notasSolicitud || "Sin notas."}</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Código</th>
+      <th>Producto</th>
+      <th>Conteo</th>
+    </tr>
+  </thead>
+  <tbody>${filas}</tbody>
+</table>
+
+<script>
+window.onload=()=>window.print();
+<\/script>
+
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+$("btnImprimir").onclick = imprimirSolicitudBonita;
+$("btnGuardarAvance").onclick = guardarAvance;
+$("btnFinalizar").onclick = abrirFinalizar;
+$("btnCancelarFinal").onclick = () => $("modalFinal").classList.add("hide");
+$("btnIrFirma").onclick = abrirFirma;
+$("btnCancelarFirma").onclick = () => $("modalFirma").classList.add("hide");
+$("btnLimpiarFirma").onclick = limpiarFirma;
+$("btnGuardarFirma").onclick = guardarFinalConFirma;
+
+window.addEventListener("load",()=>{
+  firmaCanvas = $("canvasFirma");
+  firmaCtx = firmaCanvas.getContext("2d");
+  firmaCanvas.addEventListener("pointerdown", iniciarFirma);
+  firmaCanvas.addEventListener("pointermove", moverFirma);
+  firmaCanvas.addEventListener("pointerup", terminarFirma);
+  firmaCanvas.addEventListener("pointercancel", terminarFirma);
+  firmaCanvas.addEventListener("pointerleave", terminarFirma);
+});
+
+window.addEventListener("resize",()=>{
+  if(!$("modalFirma").classList.contains("hide")) prepararCanvasFirma();
+});
+
+await cargarUltimaPendiente();
+</script>
+
+</body>
+</html>

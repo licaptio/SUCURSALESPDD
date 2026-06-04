@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Entradas Zapata - PROVSOFT</title>
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div>
+      <h1>Entradas Almacén Zapata</h1>
+      <p>PROVSOFT · Puente de facturas a inventario teórico</p>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <section class="panel menu">
+      <button class="tab activo" data-vista="facturas">Facturas pendientes</button>
+      <button class="tab" data-vista="proveedores">Proveedores autorizados</button>
+      <button class="tab" data-vista="equivalencias">Equivalencias / conversiones</button>
+      <button class="tab" data-vista="entradas">Entradas Zapata</button>
+    </section>
+
+    <section class="contenido">
+
+      <div id="vistaFacturas" class="vista activa">
+        <h2>Facturas pendientes para Zapata</h2>
+        <button id="btnCargarFacturas">Cargar facturas autorizadas</button>
+        <div id="listaFacturas" class="grid"></div>
+      </div>
+
+      <div id="vistaProveedores" class="vista">
+        <h2>Proveedores autorizados</h2>
+
+        <div class="form-grid">
+          <input id="rfcProveedor" placeholder="RFC proveedor" />
+          <input id="nombreProveedor" placeholder="Nombre proveedor" />
+          <button id="btnGuardarProveedor">Guardar proveedor</button>
+        </div>
+
+        <div id="listaProveedores" class="lista"></div>
+      </div>
+
+      <div id="vistaEquivalencias" class="vista">
+        <h2>Equivalencias y conversiones</h2>
+
+        <div class="form-grid">
+          <input id="textoFactura" placeholder="Texto / concepto factura" />
+          <input id="codigoInterno" placeholder="Código interno Zapata" />
+          <input id="descripcionInterna" placeholder="Descripción interna" />
+          <input id="unidadFactura" placeholder="Unidad factura: CAJA / PIEZA" />
+          <input id="unidadInventario" placeholder="Unidad inventario: PIEZA / CAJA" />
+          <input id="factorConversion" type="number" placeholder="Factor conversión" />
+          <button id="btnGuardarEquivalencia">Guardar equivalencia</button>
+        </div>
+
+        <div id="listaEquivalencias" class="lista"></div>
+      </div>
+
+      <div id="vistaEntradas" class="vista">
+        <h2>Entradas registradas en Zapata</h2>
+        <button id="btnCargarEntradas">Cargar entradas</button>
+        <div id="listaEntradas" class="grid"></div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <div id="modalFactura" class="modal oculto">
+    <div class="modal-card">
+      <button id="btnCerrarModal" class="cerrar">×</button>
+      <h2>Autorizar entrada</h2>
+
+      <div id="detalleFactura"></div>
+
+      <button id="btnGenerarEntrada" class="principal">
+        Generar entrada Zapata
+      </button>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+
+</body>
+</html>

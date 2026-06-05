@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>PROVSOFT | Menú Almacen Cigarro</title>
+<title>PROVSOFT | Menú Almacén Cigarro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -129,6 +129,7 @@ h1{
 }
 
 @media(max-width:600px){
+
   body{
     padding:14px;
   }
@@ -150,15 +151,19 @@ h1{
   .card{
     min-height:130px;
   }
+
 }
 </style>
+
 </head>
 
 <body>
 
 <header class="header">
+
   <div class="logoBox">
-    <img src="logo.jfif" alt="Logo">
+    <img src="logo_proveedora.webp" alt="Logo">
+
     <div>
       <h1>PROVSOFT | CIGARRO</h1>
       <div class="sub">Menú principal de operaciones</div>
@@ -168,38 +173,53 @@ h1{
   <div class="reloj" id="relojSistema">
     Cargando fecha...
   </div>
+
 </header>
 
 <main class="menu" id="menuApps"></main>
 
 <div class="footer">
-  Sistema PROVSOFT · ALMACEN CIGARRO
+  Sistema PROVSOFT · ALMACÉN CIGARRO
 </div>
 
 <script>
+
 const APPS_MENU = [
   {
     titulo: "SALIDA CIGARRO",
-    descripcion: "Crear una salida del almacen cigarro.",
-    icono: "📦",
-    color: "#0d6efd",
+    descripcion: "Crear una salida del almacén de cigarro.",
+    icono: "🚬",
+    color: "#dc3545",
     url: "index.html"
-  },
-
+  }
+];
 
 const menuApps = document.getElementById("menuApps");
 
 menuApps.innerHTML = APPS_MENU.map(app => `
-  <div class="card" onclick="abrirApp('${app.url}')">
-    <div>
-      <div class="icono" style="background:${app.color}">
-        ${app.icono}
-      </div>
-      <div class="titulo">${app.titulo}</div>
-      <div class="desc">${app.descripcion}</div>
+<div class="card" onclick="abrirApp('${app.url}')">
+
+  <div>
+
+    <div class="icono" style="background:${app.color}">
+      ${app.icono}
     </div>
-    <div class="footerCard">Abrir →</div>
+
+    <div class="titulo">
+      ${app.titulo}
+    </div>
+
+    <div class="desc">
+      ${app.descripcion}
+    </div>
+
   </div>
+
+  <div class="footerCard">
+    Abrir →
+  </div>
+
+</div>
 `).join("");
 
 function abrirApp(url){
@@ -207,16 +227,17 @@ function abrirApp(url){
 }
 
 function actualizarReloj(){
+
   const now = new Date();
 
-  const fecha = now.toLocaleDateString("es-MX", {
+  const fecha = now.toLocaleDateString("es-MX",{
     weekday:"long",
     year:"numeric",
     month:"long",
     day:"numeric"
   });
 
-  const hora = now.toLocaleTimeString("es-MX", {
+  const hora = now.toLocaleTimeString("es-MX",{
     hour:"2-digit",
     minute:"2-digit",
     second:"2-digit"
@@ -230,6 +251,7 @@ function actualizarReloj(){
 
 actualizarReloj();
 setInterval(actualizarReloj,1000);
+
 </script>
 
 </body>

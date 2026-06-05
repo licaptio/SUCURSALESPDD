@@ -1,89 +1,214 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Menú de Apps – PROVSOFT</title>
 
   <style>
-    body{
-      font-family:'Poppins',Arial,sans-serif;
-      margin:0;
-      padding:25px;
-      text-align:center;
-      background:linear-gradient(135deg,#fff9e6,#fff1b8);
-      color:#333;
+    *{
+      box-sizing:border-box;
     }
 
-    h1{
-      font-size:28px;
-      margin-bottom:25px;
-      color:#c40000;
-      font-weight:700;
+    body{
+      margin:0;
+      font-family:'Segoe UI',Arial,sans-serif;
+      background:#f4f6f9;
+      color:#222;
+    }
+
+    header{
+      padding:28px 18px;
+      text-align:center;
+      background:linear-gradient(135deg,#8b0000,#c40000,#ffcc00);
+      color:white;
+      box-shadow:0 4px 14px rgba(0,0,0,.25);
+    }
+
+    header h1{
+      margin:0;
+      font-size:30px;
+      font-weight:800;
+      letter-spacing:.5px;
+    }
+
+    header p{
+      margin:8px 0 0;
+      font-size:14px;
+      font-weight:600;
+      opacity:.95;
+    }
+
+    main{
+      max-width:1200px;
+      margin:30px auto;
+      padding:0 18px;
     }
 
     .apps{
       display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:16px;
-      max-width:900px;
-      margin:auto;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:18px;
     }
 
-    a{
+    .app{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      min-height:82px;
+      padding:18px;
+      border-radius:18px;
+      text-decoration:none;
+      background:white;
+      color:#333;
+      font-weight:800;
+      font-size:15px;
+      box-shadow:0 6px 18px rgba(0,0,0,.10);
+      border-left:7px solid #ffcc00;
+      transition:.18s ease;
+    }
+
+    .app:hover{
+      transform:translateY(-4px);
+      box-shadow:0 12px 28px rgba(0,0,0,.18);
+      border-left-color:#c40000;
+    }
+
+    .icon{
+      width:44px;
+      height:44px;
       display:flex;
       align-items:center;
       justify-content:center;
-      gap:8px;
-      padding:14px;
       border-radius:14px;
-      text-decoration:none;
       background:linear-gradient(135deg,#ffcc00,#ffb300);
-      color:#7a0000;
-      font-weight:700;
-      font-size:14px;
-      box-shadow:0 6px 14px rgba(0,0,0,.15);
-      transition:.15s;
-    }
-
-    a:hover{
-      transform:translateY(-3px);
-      box-shadow:0 10px 20px rgba(0,0,0,.25);
-      background:linear-gradient(135deg,#ffd633,#ffc107);
+      font-size:22px;
+      flex-shrink:0;
     }
 
     footer{
-      margin-top:35px;
+      text-align:center;
+      margin:35px 0 20px;
       font-size:13px;
-      color:#7a0000;
+      color:#777;
       font-weight:600;
+    }
+
+    footer b{
+      color:#c40000;
+    }
+
+    @media(max-width:600px){
+      header h1{
+        font-size:24px;
+      }
+
+      main{
+        margin-top:22px;
+      }
+
+      .app{
+        min-height:74px;
+        padding:15px;
+        font-size:14px;
+      }
+
+      .icon{
+        width:40px;
+        height:40px;
+        font-size:20px;
+      }
     }
   </style>
 </head>
 
 <body>
 
-<h1>🍬 PROVSOFT – Menú de Apps</h1>
+<header>
+  <h1>🍬 PROVSOFT</h1>
+  <p>Menú principal de aplicaciones</p>
+</header>
 
-<!-- 🔤 ORDENADOS POR ABC -->
-<div class="apps">
-  <a href="ALLENDEONE/indexadmon.html"> SUC ALLENDE UNO </a> 
-  <a href="CENTRALADMON/menuinicioadmon.html"> SUC CENTRAL </a>
-  <a href="RUTA2/indicemenur2asdsvarfhbwrtyn.html"> RUTA 2 ADMON </a>
-  <a href="BODEGAGRAL/menuinicio.html"> BODEGA GRAL CENTRAL </a>
-  <a href="POSVTA4/CORTEV4.html"> CORTE RUTAS </a>
-  <a href="RUTA1/menuprincipalr1pdd.html"> RUTA 1 ADMON </a>
-  <a href="ALLENDE2/menuadmon.html"> SUC ALLENDE DOS </a>
-  <a href="BODEGAZAPATA/menubodega41.html"> ZAPATA </a>
-  <a href="MONTEMORELOS/menuinicio.html"> MONTEMORELOS </a>
-  <a href="RIOVERDE/menuinicio.html"> RIO VERDE </a>
-  <a href="PROVILEON/menuprovileon.html"> PROVILEON </a>
-  <a href="OSITO/menuoso.html"> OSITO </a>
-  <a href="AUDITORIA/menuinicio111.html"> MENU AUDITORIA </a>
-  <a href="CIGARRO/menuadmon.html"> CIGARRO</a>
-  <a href="BODEGALIQUIDO/menuinicio.html"> BODEGA LIQUIDO /a>
- 
-</div>
+<main>
+  <div class="apps">
+
+    <a class="app" href="ALLENDEONE/indexadmon.html">
+      <span class="icon">🏪</span>
+      <span>SUC ALLENDE UNO</span>
+    </a>
+
+    <a class="app" href="ALLENDE2/menuadmon.html">
+      <span class="icon">🏪</span>
+      <span>SUC ALLENDE DOS</span>
+    </a>
+
+    <a class="app" href="AUDITORIA/menuinicio111.html">
+      <span class="icon">📊</span>
+      <span>MENÚ AUDITORÍA</span>
+    </a>
+
+    <a class="app" href="BODEGAGRAL/menuinicio.html">
+      <span class="icon">📦</span>
+      <span>BODEGA GRAL CENTRAL</span>
+    </a>
+
+    <a class="app" href="BODEGALIQUIDO/menuinicio.html">
+      <span class="icon">🥤</span>
+      <span>BODEGA LÍQUIDO</span>
+    </a>
+
+    <a class="app" href="BODEGAZAPATA/menubodega41.html">
+      <span class="icon">🚚</span>
+      <span>ZAPATA</span>
+    </a>
+
+    <a class="app" href="CENTRALADMON/menuinicioadmon.html">
+      <span class="icon">🏢</span>
+      <span>SUC CENTRAL</span>
+    </a>
+
+    <a class="app" href="CIGARRO/menuadmon.html">
+      <span class="icon">🚬</span>
+      <span>CIGARRO</span>
+    </a>
+
+    <a class="app" href="POSVTA4/CORTEV4.html">
+      <span class="icon">💰</span>
+      <span>CORTE RUTAS</span>
+    </a>
+
+    <a class="app" href="MONTEMORELOS/menuinicio.html">
+      <span class="icon">🏬</span>
+      <span>MONTEMORELOS</span>
+    </a>
+
+    <a class="app" href="OSITO/menuoso.html">
+      <span class="icon">🧸</span>
+      <span>OSITO</span>
+    </a>
+
+    <a class="app" href="PROVILEON/menuprovileon.html">
+      <span class="icon">🦁</span>
+      <span>PROVILEON</span>
+    </a>
+
+    <a class="app" href="RIOVERDE/menuinicio.html">
+      <span class="icon">🌿</span>
+      <span>RIO VERDE</span>
+    </a>
+
+    <a class="app" href="RUTA1/menuprincipalr1pdd.html">
+      <span class="icon">🚛</span>
+      <span>RUTA 1 ADMON</span>
+    </a>
+
+    <a class="app" href="RUTA2/indicemenur2asdsvarfhbwrtyn.html">
+      <span class="icon">🚛</span>
+      <span>RUTA 2 ADMON</span>
+    </a>
+
+  </div>
+</main>
 
 <footer>
   Powered by <b>PROVSOFT</b>

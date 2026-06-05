@@ -4,9 +4,10 @@ import {
   collection,
   query,
   where,
-  getDocs,
-  doc,
-  runTransaction,
+getDocs,
+getDoc,
+doc,
+runTransaction,
   setDoc,
   serverTimestamp
 }
@@ -179,10 +180,32 @@ async function iniciarApp(){
 async function cargarCatalogoActivo(){
 
   estado.catalogo = [];
-
   estado.catalogoPorCodigo.clear();
-
   estado.catalogoPorEquivalente.clear();
+
+  const meta = await leerMetadata(
+    "ultima_descarga_catalogo"
+  );
+
+  const catalogoLocal = await leerCatalogoLocal();
+
+  if(
+    meta &&
+    meta.fecha === hoyISO() &&
+    catalogoLocal.length > 0
+  ){
+
+    catalogoLocal.forEach(producto=>{
+      agregarProductoMemoria(producto);
+    });
+
+    mostrarCarga(
+      `${estado.catalogo.length} artículos cargados desde local`
+    );
+
+    return;
+
+  }
 
   const q = query(
     collection(db,"productos"),
@@ -191,54 +214,323 @@ async function cargarCatalogoActivo(){
 
   const snap = await getDocs(q);
 
+  const productos = [];
+
   snap.forEach(docSnap=>{
 
-    const d = docSnap.data();
+    const producto = productoDesdeDoc(docSnap);
 
-    const producto = {
+    productos.push(producto);
 
-      id: docSnap.id,
+    agregarProductoMemoria(producto);
 
-      codigoBarra:
-        limpiarCodigo(
-          d.codigoBarra || docSnap.id
-        ),
+  });
 
-      concepto:
-        String(
-          d.concepto || ""
-        ).trim(),
+  await guardarCatalogoLocal(productos);
 
-      codigosEquivalentes:
-        Array.isArray(
-          d.codigosEquivalentes
-        )
-        ? d.codigosEquivalentes.map(
-            x => limpiarCodigo(x)
-          )
-        : []
+  await guardarMetadata(
+    "ultima_descarga_catalogo",
+    {
+      fecha: hoyISO(),
+      total: productos.length,
+      actualizadoEn: new Date().toISOString()
+    }
+  );
+
+}
+/* =====================================================
+   INDEXEDDB CATALOGO LOCAL
+===================================================== */
+
+const DB_NOMBRE = "PROVSOFT_ALMACEN_DULCES";
+const DB_VERSION = 1;
+const STORE_CATALOGO = "catalogo_productos";
+const STORE_METADATA = "metadata";
+
+function abrirDB(){
+
+  return new Promise((resolve,reject)=>{
+
+    const req = indexedDB.open(
+      DB_NOMBRE,
+      DB_VERSION
+    );
+
+    req.onupgradeneeded = e=>{
+
+      const dbLocal = e.target.result;
+
+      if(!dbLocal.objectStoreNames.contains(STORE_CATALOGO)){
+
+        dbLocal.createObjectStore(
+          STORE_CATALOGO,
+          {
+            keyPath:"codigoBarra"
+          }
+        );
+
+      }
+
+      if(!dbLocal.objectStoreNames.contains(STORE_METADATA)){
+
+        dbLocal.createObjectStore(
+          STORE_METADATA,
+          {
+            keyPath:"clave"
+          }
+        );
+
+      }
 
     };
 
-    estado.catalogo.push(
-      producto
+    req.onsuccess = ()=>resolve(req.result);
+
+    req.onerror = ()=>reject(req.error);
+
+  });
+
+}
+
+async function leerCatalogoLocal(){
+
+  const dbLocal = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbLocal.transaction(
+      STORE_CATALOGO,
+      "readonly"
     );
 
-    estado.catalogoPorCodigo.set(
-      producto.codigoBarra,
-      producto
+    const store = tx.objectStore(
+      STORE_CATALOGO
     );
 
-    producto.codigosEquivalentes.forEach(eq=>{
+    const req = store.getAll();
 
-      estado.catalogoPorEquivalente.set(
-        eq,
-        producto
-      );
+    req.onsuccess = ()=>resolve(req.result || []);
+
+    req.onerror = ()=>reject(req.error);
+
+  });
+
+}
+
+async function guardarCatalogoLocal(productos){
+
+  const dbLocal = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbLocal.transaction(
+      STORE_CATALOGO,
+      "readwrite"
+    );
+
+    const store = tx.objectStore(
+      STORE_CATALOGO
+    );
+
+    store.clear();
+
+    productos.forEach(producto=>{
+
+      store.put(producto);
 
     });
 
+    tx.oncomplete = ()=>resolve(true);
+
+    tx.onerror = ()=>reject(tx.error);
+
   });
+
+}
+
+async function leerMetadata(clave){
+
+  const dbLocal = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbLocal.transaction(
+      STORE_METADATA,
+      "readonly"
+    );
+
+    const store = tx.objectStore(
+      STORE_METADATA
+    );
+
+    const req = store.get(clave);
+
+    req.onsuccess = ()=>resolve(req.result || null);
+
+    req.onerror = ()=>reject(req.error);
+
+  });
+
+}
+
+async function guardarMetadata(clave,data){
+
+  const dbLocal = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbLocal.transaction(
+      STORE_METADATA,
+      "readwrite"
+    );
+
+    const store = tx.objectStore(
+      STORE_METADATA
+    );
+
+    store.put({
+      clave,
+      ...data
+    });
+
+    tx.oncomplete = ()=>resolve(true);
+
+    tx.onerror = ()=>reject(tx.error);
+
+  });
+
+}
+
+function hoyISO(){
+
+  return new Date()
+    .toISOString()
+    .slice(0,10);
+
+}
+
+function productoDesdeDoc(docSnap){
+
+  const d = docSnap.data();
+
+  return {
+
+    id: docSnap.id,
+
+    codigoBarra:
+      limpiarCodigo(
+        d.codigoBarra || docSnap.id
+      ),
+
+    concepto:
+      String(
+        d.concepto || ""
+      ).trim(),
+
+    codigosEquivalentes:
+      Array.isArray(
+        d.codigosEquivalentes
+      )
+      ? d.codigosEquivalentes.map(
+          x => limpiarCodigo(x)
+        )
+      : []
+
+  };
+
+}
+
+function agregarProductoMemoria(producto){
+
+  if(
+    !producto ||
+    !producto.codigoBarra
+  ){
+    return;
+  }
+
+  estado.catalogo.push(
+    producto
+  );
+
+  estado.catalogoPorCodigo.set(
+    producto.codigoBarra,
+    producto
+  );
+
+  producto.codigosEquivalentes.forEach(eq=>{
+
+    estado.catalogoPorEquivalente.set(
+      eq,
+      producto
+    );
+
+  });
+
+}
+async function guardarProductoLocal(producto){
+
+  const dbLocal = await abrirDB();
+
+  return new Promise((resolve,reject)=>{
+
+    const tx = dbLocal.transaction(
+      STORE_CATALOGO,
+      "readwrite"
+    );
+
+    const store = tx.objectStore(
+      STORE_CATALOGO
+    );
+
+    store.put(producto);
+
+    tx.oncomplete = ()=>resolve(true);
+
+    tx.onerror = ()=>reject(tx.error);
+
+  });
+
+}
+
+async function buscarProductoFirebasePorCodigo(codigo){
+
+  const codigoLimpio =
+    limpiarCodigo(codigo);
+
+  let q = query(
+    collection(db,"productos"),
+    where("activo","==",true),
+    where("codigoBarra","==",codigoLimpio)
+  );
+
+  let snap = await getDocs(q);
+
+  if(!snap.empty){
+
+    return productoDesdeDoc(
+      snap.docs[0]
+    );
+
+  }
+
+  q = query(
+    collection(db,"productos"),
+    where("activo","==",true),
+    where("codigosEquivalentes","array-contains",codigoLimpio)
+  );
+
+  snap = await getDocs(q);
+
+  if(!snap.empty){
+
+    return productoDesdeDoc(
+      snap.docs[0]
+    );
+
+  }
+
+  return null;
 
 }
 
@@ -505,11 +797,11 @@ function enfocarScanner(){
 
 }
 
-function procesarCodigoEscaneado(
+async function procesarCodigoEscaneado(
   codigo
 ){
 
-  const producto =
+  let producto =
 
     estado.catalogoPorCodigo.get(
       codigo
@@ -518,6 +810,25 @@ function procesarCodigoEscaneado(
     ||
 
     estado.catalogoPorEquivalente.get(
+      codigo
+    );
+
+  if(producto){
+
+    abrirCantidad(
+      producto
+    );
+
+    return;
+
+  }
+
+  mostrarCarga(
+    "Buscando producto en Firebase..."
+  );
+
+  producto =
+    await buscarProductoFirebasePorCodigo(
       codigo
     );
 
@@ -533,11 +844,24 @@ function procesarCodigoEscaneado(
 
   }
 
+  await guardarProductoLocal(
+    producto
+  );
+
+  agregarProductoMemoria(
+    producto
+  );
+
+  mostrarToast(
+    "Producto actualizado en catálogo local"
+  );
+
   abrirCantidad(
     producto
   );
 
 }
+
 
 
 /* =====================================================

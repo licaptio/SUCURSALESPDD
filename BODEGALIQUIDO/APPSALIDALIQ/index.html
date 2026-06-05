@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Salidas Almacén Dulces</title>
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+
+  <!-- CARGA -->
+  <section id="pantallaCarga" class="pantalla-carga">
+    <img src="logo.jfif" class="logo-carga" alt="La Proveedora">
+    <h2>Salidas Almacén Dulces</h2>
+    <p id="textoCarga">Cargando aplicación...</p>
+    <div class="barra-carga">
+      <div></div>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <main id="app" class="app oculto">
+
+    <header class="header-app">
+      <img src="logo.jfif" class="logo-header" alt="La Proveedora">
+      <div>
+        <h1>Salida de Almacén</h1>
+        <p>Dulces · Captura móvil</p>
+      </div>
+    </header>
+
+    <button id="btnToggleDatos" class="btn blanco">
+  Mostrar / ocultar datos de salida
+</button>
+
+    <section id="panelInfo" class="panel-info panel-info-compacto">
+      <div>
+        <span>Entrega</span>
+        <strong id="txtEntrega">Pendiente</strong>
+      </div>
+
+      <div>
+        <span>Recibe</span>
+        <strong id="txtRecibe">Pendiente</strong>
+      </div>
+
+      <div>
+        <span>Destino</span>
+        <strong id="txtDestino">Pendiente</strong>
+      </div>
+    </section>
+
+    <section id="zonaCaptura" class="zona-captura oculto">
+      <h2>Paso 2 · Escanear producto</h2>
+
+      <input
+        id="inputScanner"
+        class="input-scanner"
+        type="search"
+        placeholder="Escanea aquí el código..."
+        autocomplete="off"
+        inputmode="numeric"
+      />
+
+      <button id="btnBuscarProducto" class="btn blanco">
+        Buscar por concepto
+      </button>
+    </section>
+
+    <section id="carritoBox" class="carrito-box oculto">
+      <div class="carrito-header">
+        <h2>Carrito</h2>
+        <span id="contadorCarrito">0 artículos</span>
+      </div>
+
+      <div id="listaCarrito" class="lista-carrito"></div>
+
+      <button id="btnCerrarSalida" class="btn principal">
+        Cerrar salida y firmar
+      </button>
+    </section>
+
+  </main>
+
+  <!-- MODAL PASO 1 -->
+  <div id="modalPaso1" class="modal oculto">
+    <div class="modal-card modal-grande">
+      <img src="logo.jfif" class="logo-modal" alt="La Proveedora">
+
+      <h2>Paso 1 · Datos de salida</h2>
+
+      <label>Entrega</label>
+      <select id="selectEntrega" class="input-modal">
+        <option value="Arturo Rodriguez Garcia">Arturo Rodriguez Garcia</option>
+        <option value="Octavio Cortes Zapata">Octavio Cortes Zapata</option>
+      </select>
+
+      <label>Recibe</label>
+      <select id="selectRecibe" class="input-modal">
+        <option value="">Selecciona quien recibe</option>
+        <option value="YESENIA URIEGAS MENDOZA">YESENIA URIEGAS MENDOZA</option>
+        <option value="BRANDON ALEXIS SANDOVAL REYES">BRANDON ALEXIS SANDOVAL REYES</option>
+        <option value="PEDRO DAMIAN CHOFER">PEDRO DAMIAN CHOFER</option>
+        <option value="SERGIO MARAVILLA CHOFER">SERGIO MARAVILLA CHOFER</option>
+        <option value="PABLO NUÑEZ PALOMINO (PABIN)">PABLO NUÑEZ PALOMINO (PABIN)</option>
+        <option value="ELOY SANCHEZ AVENDAÑO">ELOY SANCHEZ AVENDAÑO</option>
+        <option value="JUAN MANUEL SALDAÑA BECERRA (JUANITO)">JUAN MANUEL SALDAÑA BECERRA (JUANITO)</option>
+        <option value="LUIS ALBERTO PERALES AGUILAR (GUARDIA)">LUIS ALBERTO PERALES AGUILAR (GUARDIA)</option>
+        <option value="SANDRA GUADALUPE PATIÑO PEREZ">SANDRA GUADALUPE PATIÑO PEREZ</option>
+        <option value="MA ESTHER RODRIGUEZ SIERRA">MA ESTHER RODRIGUEZ SIERRA</option>
+        <option value="GAEL HUMBERTO SANCHEZ">GAEL HUMBERTO SANCHEZ</option>
+        <option value="JOSE NAPOLEON GARCIA LERMA">JOSE NAPOLEON GARCIA LERMA</option>
+        <option value="JUAN CARLOS GONZALEZ TERRAZAS">JUAN CARLOS GONZALEZ TERRAZAS</option>
+        <option value="VERONICA ALEJANDRO BECERRA LERMA">VERONICA ALEJANDRO BECERRA LERMA</option>
+        <option value="CLAUDIA VERONICA CUELLAR RODRIGUEZ">CLAUDIA VERONICA CUELLAR RODRIGUEZ</option>
+        <option value="MARTIN LEOBARDO SERNA ALEMAN">MARTIN LEOBARDO SERNA ALEMAN</option>
+        <option value="HEISEL MAIRELI GUERRA DE LA CRUZ">HEISEL MAIRELI GUERRA DE LA CRUZ</option>
+        <option value="ROSALVA CARRILLO SANCHEZ">ROSALVA CARRILLO SANCHEZ</option>
+        <option value="LIZBETH YAQUELIN LUNA ROQUE">LIZBETH YAQUELIN LUNA ROQUE</option>
+        <option value="CHRISTHOFER AARON DAVILA VALDEZ">CHRISTHOFER AARON DAVILA VALDEZ</option>
+        <option value="VANIA GALILEA DUARTE VILLARREAL">VANIA GALILEA DUARTE VILLARREAL</option>
+        <option value="MIGUEL ANGEL LOPEZ RDZ">MIGUEL ANGEL LOPEZ RDZ</option>
+        <option value="ROLANDO RAUL GARZA">ROLANDO RAUL GARZA</option>
+        <option value="FERNANDA LOERA">FERNANDA LOERA</option>
+        <option value="SANTIAGO MORENO">SANTIAGO MORENO</option>
+        <option value="JOSE GERARDO CABRERA TREVIÑO">JOSE GERARDO CABRERA TREVIÑO</option>
+        <option value="RODOLFO DAVID OVIEDO INFANTE">RODOLFO DAVID OVIEDO INFANTE</option>
+        <option value="LEONARDO DANIEL CUELLAR MARTINEZ">LEONARDO DANIEL CUELLAR MARTINEZ</option>
+        <option value="JUAN GABRIEL PEREZ CARRILLO">JUAN GABRIEL PEREZ CARRILLO</option>
+        <option value="DORA ALICIA CARDENAS TORRES">DORA ALICIA CARDENAS TORRES</option>
+        <option value="JESUS GUADALUPE HERNANDEZ LUNA">JESUS GUADALUPE HERNANDEZ LUNA</option>
+        <option value="JUAN ARTURO RODRIGUEZ GARCIA">JUAN ARTURO RODRIGUEZ GARCIA</option>
+        <option value="OCTAVIO CORTES ZAPATA">OCTAVIO CORTES ZAPATA</option>
+        <option value="JUAN MANUEL ROJAS SANCHEZ">JUAN MANUEL ROJAS SANCHEZ</option>
+        <option value="ERICK SAUL RAMIREZ">ERICK SAUL RAMIREZ</option>
+        <option value="JUAN MANUEL TAMEZ SERRATO">JUAN MANUEL TAMEZ SERRATO</option>
+        <option value="FERNANDO FLORES DE LA CERDA">FERNANDO FLORES DE LA CERDA</option>
+        <option value="JUAN GUALBERTO SERRATO ALEJOS">JUAN GUALBERTO SERRATO ALEJOS</option>
+        <option value="SAMUEL ANDRES CARRILLO">SAMUEL ANDRES CARRILLO</option>
+        <option value="ZAID ESMITH PUENTE MEZA">ZAID ESMITH PUENTE MEZA</option>
+      </select>
+
+      <label>Destino</label>
+      <select id="selectDestino" class="input-modal">
+        <option value="">Selecciona destino</option>
+        <option value="TIENDA MATRIZ CENTRAL">TIENDA MATRIZ CENTRAL</option>
+        <option value="BODEGA PRINCIPAL (SAUL DORA)">BODEGA PRINCIPAL (SAUL DORA)</option>
+        <option value="BODEGA ZAPATA">BODEGA ZAPATA</option>
+        <option value="BODEGA ABARROTES">BODEGA ABARROTES</option>
+      </select>
+
+      <button id="btnContinuarPaso1" class="btn principal">
+        Continuar a escaneo
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL DATOS VIEJO, SE DEJA OCULTO POR COMPATIBILIDAD -->
+  <div id="modalDatos" class="modal oculto">
+    <div class="modal-card">
+      <img src="logo.jfif" class="logo-modal" alt="La Proveedora">
+      <h2 id="tituloModalDatos">Captura</h2>
+
+      <input id="inputModalDatos" class="input-modal" type="text" placeholder="Escribe aquí..." />
+
+      <button id="btnGuardarModalDatos" class="btn principal">
+        Continuar
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL BUSQUEDA -->
+  <div id="modalBusqueda" class="modal oculto">
+    <div class="modal-card modal-grande">
+      <h2>Buscar producto</h2>
+      <p class="texto-ayuda">Busca por concepto. Ejemplo: BIG COLA 3.3, 3.3 COLA, BIG 3.3</p>
+
+      <input id="inputBusqueda" class="input-modal" type="text" placeholder="Nombre del artículo..." />
+
+      <div id="resultadosBusqueda" class="resultados"></div>
+
+      <button id="btnCerrarBusqueda" class="btn blanco">
+        Cerrar
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL CANTIDAD -->
+  <div id="modalCantidad" class="modal oculto">
+    <div class="modal-card">
+      <h2>Cantidad</h2>
+
+      <div class="producto-detectado">
+        <small id="cantidadCodigo"></small>
+        <strong id="cantidadConcepto"></strong>
+      </div>
+
+      <input id="inputCantidad" class="input-modal cantidad" type="number" min="0.001" step="0.001" placeholder="Cantidad" />
+
+      <button id="btnAgregarCarrito" class="btn principal">
+        Agregar al carrito
+      </button>
+
+      <button id="btnCancelarCantidad" class="btn blanco">
+        Cancelar
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL FIRMA -->
+  <div id="modalFirma" class="modal oculto">
+    <div class="modal-card modal-firma">
+      <h2 id="tituloFirma">Firma</h2>
+
+      <canvas id="canvasFirma"></canvas>
+
+      <div class="acciones-firma">
+        <button id="btnLimpiarFirma" class="btn blanco">Limpiar</button>
+        <button id="btnGuardarFirma" class="btn principal">Guardar firma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPROBANTE OCULTO -->
+  <section id="comprobante" class="comprobante oculto">
+    <div class="comp-header">
+      <img src="logo.jfif" alt="La Proveedora">
+      <h2>Comprobante de Salida</h2>
+      <p>Almacén Dulces</p>
+    </div>
+
+    <p><strong>Folio:</strong> <span id="compFolio"></span></p>
+    <p><strong>Fecha:</strong> <span id="compFecha"></span></p>
+    <p><strong>Entrega:</strong> <span id="compEntrega"></span></p>
+    <p><strong>Recibe:</strong> <span id="compRecibe"></span></p>
+    <p><strong>Destino:</strong> <span id="compDestino"></span></p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Concepto</th>
+          <th>Cant.</th>
+        </tr>
+      </thead>
+      <tbody id="compProductos"></tbody>
+    </table>
+
+    <div class="comp-firmas">
+      <div>
+        <p>Firma recibe</p>
+        <img id="compFirmaRecibe">
+      </div>
+      <div>
+        <p>Firma entrega</p>
+        <img id="compFirmaEntrega">
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

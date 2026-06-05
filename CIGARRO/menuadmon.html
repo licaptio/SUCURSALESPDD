@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PROVSOFT | Menú Almacen Cigarro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  box-sizing:border-box;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  background:linear-gradient(135deg,#003b63,#0b6fa4,#e9eef3);
+  padding:20px;
+  color:#fff;
+}
+
+.header{
+  max-width:1100px;
+  margin:0 auto 25px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+}
+
+.logoBox{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.logoBox img{
+  width:58px;
+  height:58px;
+  object-fit:contain;
+  background:white;
+  border-radius:14px;
+  padding:5px;
+}
+
+h1{
+  margin:0;
+  font-size:26px;
+}
+
+.sub{
+  margin-top:4px;
+  font-size:14px;
+  opacity:.9;
+}
+
+.reloj{
+  text-align:right;
+  font-size:13px;
+  background:rgba(0,0,0,.25);
+  padding:10px 14px;
+  border-radius:12px;
+}
+
+.menu{
+  max-width:1100px;
+  margin:auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:18px;
+}
+
+.card{
+  background:white;
+  color:#1f2937;
+  border-radius:18px;
+  padding:22px;
+  min-height:145px;
+  box-shadow:0 10px 25px rgba(0,0,0,.22);
+  cursor:pointer;
+  transition:.18s ease;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+
+.card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 16px 35px rgba(0,0,0,.30);
+}
+
+.icono{
+  width:52px;
+  height:52px;
+  border-radius:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:27px;
+  color:white;
+  margin-bottom:14px;
+}
+
+.titulo{
+  font-size:20px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+
+.desc{
+  font-size:14px;
+  color:#555;
+  line-height:1.35;
+}
+
+.footerCard{
+  margin-top:18px;
+  font-size:13px;
+  font-weight:700;
+  color:#0b6fa4;
+}
+
+.footer{
+  max-width:1100px;
+  margin:30px auto 0;
+  text-align:center;
+  font-size:13px;
+  opacity:.9;
+}
+
+@media(max-width:600px){
+  body{
+    padding:14px;
+  }
+
+  .header{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .reloj{
+    width:100%;
+    text-align:left;
+  }
+
+  h1{
+    font-size:22px;
+  }
+
+  .card{
+    min-height:130px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <div class="logoBox">
+    <img src="logo.jfif" alt="Logo">
+    <div>
+      <h1>PROVSOFT | CIGARRO</h1>
+      <div class="sub">Menú principal de operaciones</div>
+    </div>
+  </div>
+
+  <div class="reloj" id="relojSistema">
+    Cargando fecha...
+  </div>
+</header>
+
+<main class="menu" id="menuApps"></main>
+
+<div class="footer">
+  Sistema PROVSOFT · ALMACEN CIGARRO
+</div>
+
+<script>
+const APPS_MENU = [
+  {
+    titulo: "SALIDA CIGARRO",
+    descripcion: "Crear una salida del almacen cigarro.",
+    icono: "📦",
+    color: "#0d6efd",
+    url: "index.html"
+  },
+
+
+const menuApps = document.getElementById("menuApps");
+
+menuApps.innerHTML = APPS_MENU.map(app => `
+  <div class="card" onclick="abrirApp('${app.url}')">
+    <div>
+      <div class="icono" style="background:${app.color}">
+        ${app.icono}
+      </div>
+      <div class="titulo">${app.titulo}</div>
+      <div class="desc">${app.descripcion}</div>
+    </div>
+    <div class="footerCard">Abrir →</div>
+  </div>
+`).join("");
+
+function abrirApp(url){
+  window.location.href = url;
+}
+
+function actualizarReloj(){
+  const now = new Date();
+
+  const fecha = now.toLocaleDateString("es-MX", {
+    weekday:"long",
+    year:"numeric",
+    month:"long",
+    day:"numeric"
+  });
+
+  const hora = now.toLocaleTimeString("es-MX", {
+    hour:"2-digit",
+    minute:"2-digit",
+    second:"2-digit"
+  });
+
+  document.getElementById("relojSistema").innerHTML = `
+    <strong>${fecha}</strong><br>
+    ${hora}
+  `;
+}
+
+actualizarReloj();
+setInterval(actualizarReloj,1000);
+</script>
+
+</body>
+</html>

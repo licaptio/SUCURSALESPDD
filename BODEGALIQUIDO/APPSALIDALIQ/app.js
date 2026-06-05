@@ -1826,28 +1826,37 @@ async function generarPDF(salida){
   const { jsPDF } =
     window.jspdf;
 
-  const pdf =
-    new jsPDF(
-      "p",
-      "mm",
-      "letter"
-    );
+const anchoTicket = 58;
 
-  const ancho = 190;
+const altoTicket =
+  (canvas.height * anchoTicket / canvas.width) + 10;
 
-  const alto =
-    canvas.height *
-    ancho /
-    canvas.width;
+const pdf =
+  new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [altoTicket, anchoTicket]
+  });
+  
 
-  pdf.addImage(
-    imagen,
-    "PNG",
-    10,
-    10,
-    ancho,
-    alto
-  );
+const margen = 2;
+
+const ancho = 54;
+
+const alto =
+  canvas.height *
+  ancho /
+  canvas.width;
+
+pdf.addImage(
+  imagen,
+  "PNG",
+  margen,
+  margen,
+  ancho,
+  alto
+);
+  
 
   pdf.save(
     `${salida.folio}.pdf`

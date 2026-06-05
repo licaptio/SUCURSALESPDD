@@ -452,3 +452,24 @@ body{
   border:1px solid #ccc;
 }
 
+@media(max-width:480px){
+
+  .header-app{
+    align-items:flex-start;
+  }
+
+  .logo-header{
+    width:80px;
+  }
+
+  .header-app h1{
+    font-size:18px;
+  }
+
+  .acciones-firma{
+    grid-template-columns:1fr;
+  }
+
+}
+
+

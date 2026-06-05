@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Entradas Zapata - PROVSOFT</title>
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div>
+      <h1>Entradas Almacén Zapata</h1>
+      <p>PROVSOFT · Puente de facturas a inventario teórico</p>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <section class="panel menu">
+      <button class="tab activo" data-vista="facturas">Facturas pendientes</button>
+      <button class="tab" data-vista="proveedores">Proveedores autorizados</button>
+      <button class="tab" data-vista="entradas">Entradas Zapata</button>
+      <button class="tab" data-vista="historial">Historial Zapata</button>
+    </section>
+
+    <section class="contenido">
+
+      <div id="vistaFacturas" class="vista activa">
+        <div class="encabezado-vista">
+          <div>
+            <h2>Facturas pendientes para Zapata</h2>
+            <p class="texto-ayuda">
+              Solo se muestran facturas del 24/05/2026 en adelante, de proveedores autorizados,
+              que no tengan entrada generada y que no estén marcadas como no entra.
+            </p>
+          </div>
+
+          <button id="btnRefrescarFacturas">Refrescar</button>
+        </div>
+
+        <div id="listaFacturas" class="grid"></div>
+      </div>
+
+      <div id="vistaProveedores" class="vista">
+        <h2>Proveedores autorizados</h2>
+
+        <div class="form-grid">
+          <input id="rfcProveedor" placeholder="RFC proveedor" />
+          <input id="nombreProveedor" placeholder="Nombre proveedor" />
+          <button id="btnGuardarProveedor">Guardar proveedor</button>
+        </div>
+
+        <div id="listaProveedores" class="lista"></div>
+      </div>
+
+      <div id="vistaEntradas" class="vista">
+        <div class="encabezado-vista">
+          <h2>Entradas registradas en Zapata</h2>
+          <button id="btnCargarEntradas">Cargar entradas</button>
+        </div>
+
+        <div id="listaEntradas" class="grid"></div>
+      </div>
+
+      <div id="vistaHistorial" class="vista">
+        <div class="encabezado-vista">
+          <div>
+            <h2>Historial Zapata</h2>
+            <p class="texto-ayuda">
+              Aquí se muestran facturas que sí entraron y facturas marcadas como no entra.
+            </p>
+          </div>
+
+          <button id="btnCargarHistorial">Cargar historial</button>
+        </div>
+
+        <div id="listaHistorial" class="grid"></div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <div id="modalFactura" class="modal oculto">
+    <div class="modal-card modal-card-grande">
+      <button id="btnCerrarModal" class="cerrar">×</button>
+      <h2>Revisar y autorizar entrada</h2>
+
+      <div id="detalleFactura"></div>
+
+      <div class="bloque-decision">
+        <label for="motivoNoEntra">
+          Motivo si esta factura no entra a Zapata
+        </label>
+        <textarea
+          id="motivoNoEntra"
+          placeholder="Ejemplo: factura no corresponde a mercancía de Zapata, proveedor no debe alimentar este almacén, mercancía para otra ubicación, etc."
+        ></textarea>
+      </div>
+
+      <div class="acciones-modal">
+        <button id="btnFacturaNoEntra" class="peligro">
+          Marcar como no entra a Zapata
+        </button>
+
+        <button id="btnGenerarEntrada" class="principal">
+          Generar entrada Zapata
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalProducto" class="modal oculto modal-secundario">
+    <div class="modal-card modal-producto-card">
+      <button id="btnCerrarProducto" class="cerrar">×</button>
+
+      <h2>Buscar producto interno</h2>
+
+      <div id="productoConceptoActual" class="producto-concepto-actual"></div>
+
+      <div class="buscador-producto">
+        <input
+          id="buscarProductoTexto"
+          placeholder="Buscar por código, concepto, marca, departamento o equivalente"
+          autocomplete="off"
+        />
+        <button id="btnBuscarProducto">Buscar</button>
+      </div>
+
+      <div id="listaProductos" class="lista-productos"></div>
+
+      <div id="productoSeleccionadoBox" class="producto-seleccionado oculto">
+        <h3>Producto seleccionado</h3>
+
+        <p><b>Código:</b> <span id="selCodigoProducto"></span></p>
+        <p><b>Descripción:</b> <span id="selDescripcionProducto"></span></p>
+
+        <div class="cantidad-box">
+          <label for="cantidadEntradaProducto">Cantidad entrada</label>
+          <input id="cantidadEntradaProducto" type="number" step="0.0001" />
+          <small>
+            Por defecto es igual a la cantidad de la factura. Si necesitas conversión, modifica esta cantidad.
+          </small>
+        </div>
+
+        <button id="btnMostrarConversion" class="btn-secundario">
+          Modificar conversión
+        </button>
+
+        <div id="conversionBox" class="conversion-box oculto">
+          <label for="factorConversionProducto">Factor conversión</label>
+          <input id="factorConversionProducto" type="number" step="0.0001" />
+          <small>
+            Cantidad entrada = cantidad factura × factor.
+          </small>
+        </div>
+
+        <div class="acciones-modal">
+          <button id="btnGuardarProductoEnlace" class="principal">
+            Guardar enlace
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalCargando" class="modal modal-cargando">
+    <div class="modal-card cargando-card">
+      <div class="spinner"></div>
+      <h2>Cargando información</h2>
+      <p id="textoCargando">Preparando facturas pendientes...</p>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+
+</body>
+</html>

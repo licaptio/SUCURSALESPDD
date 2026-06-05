@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Registrar salida - Cigarro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body{font-family:Arial,sans-serif;background:linear-gradient(to right,#00416A,#E4E5E6);padding:20px;margin:0;color:white;min-height:100vh;box-sizing:border-box;position:relative}
+    input[list],select,input[type="text"]{width:100%;padding:10px;margin-bottom:20px;font-size:16px;border-radius:6px;border:none;box-sizing:border-box}
+    .marca-agua{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:.20;z-index:0;max-width:80%;pointer-events:none}
+    .contenedor{background:rgba(255,255,255,.1);border-radius:10px;padding:30px;max-width:600px;margin:auto;position:relative;z-index:2}
+    label{display:block;margin-bottom:8px}
+    select,input[type="date"]{color:black}
+    .boton{background-color:#00416A;color:white;border:none;padding:12px 20px;font-size:16px;border-radius:6px;cursor:pointer;width:100%}
+    .boton:hover{background-color:#033b57}
+    .folio{margin-bottom:20px;font-weight:bold}
+  </style>
+</head>
+<body>
+  <img src="logo_proveedora.webp" alt="Marca de agua" class="marca-agua">
+
+  <div class="contenedor">
+    <h2>Registrar salida - Cigarro</h2>
+    <p class="folio">📌 Folio próximo: <strong id="proximoFolio">Cargando...</strong></p>
+
+    <label for="fecha">Fecha:</label>
+    <input type="date" id="fecha" readonly>
+
+    <label for="entrega">Entrega:</label>
+    <select id="entrega">
+      <option value="">Selecciona quien entrega</option>
+      <option>GIBRAN GUADALUPE ROMAN ROSALES</option>
+      <option>ROBERTO GONZALEZ DORIA</option>
+      <option>GERARDO RIOS QUEZADA</option>
+    </select>
+
+    <label for="recibe">Recibe:</label>
+    <select id="recibe">
+      <option value="">Selecciona quien recibe</option>
+      <!-- agrega tus opciones reales -->
+      <option>DORA ALICIA CARDENAS TORRES</option>
+      <option>JUAN GUALBERTO SERRATO ALEJOS</option>
+      <option>ELOY SANCHEZ AVENDAÑO</option>
+      <option>LUIS MIGUEL MEDELLIN ESCALONA</option>
+      <option>SERGIO BECERRA MARAVILLA</option>
+      <option>RAMIRO ROQUE GONZALEZ</option>
+      <option>CHRISTHOFER AARON DAVILA VALDEZ</option>
+      <option>JESUS GUADALUPE HERNANDEZ LUNA</option>
+      <option>LILIANA GUADALUPE PEREZ TREVIÑO</option>
+      <option>ROCIO ISABEL PEREZ TREVIÑO</option>
+      <option>MARIO AGUAYO PEREZ</option>
+      <option>GERARDO RIOS QUEZADA</option>
+      <option>AJUSTE ALMACEN</option>
+    </select>
+
+    <label for="destino">Destino:</label>
+    <select id="destino">
+      <option value="">Selecciona destino</option>
+      <option>MATRIZ PISO</option>
+      <option>OSITO</option>
+      <option>CENTRAL</option>
+      <option>PROVILEON</option>
+      <option>RIO VERDE</option>
+      <option>PETACA</option>
+      <option>BODEGA 41</option>
+      <option>ALLENDE 1</option>
+      <option>ALLENDE 2</option>
+      <option>MONTEMORELOS</option>
+      <option>TIO PANCHO</option>
+      <option>RUTA 1</option>
+      <option>CASINO CROWN</option>
+      <option>SUPER TIENDA RICO</option>
+    </select>
+
+    <button class="boton" id="btnContinuar">Continuar</button>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = { 
+      apiKey:"AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM", 
+      authDomain:"inventariopv-643f1.firebaseapp.com", 
+      projectId:"inventariopv-643f1", 
+      storageBucket:"inventariopv-643f1.appspot.com", 
+      messagingSenderId:"96242533231", 
+      appId:"1:96242533231:web:aae75a18fbaf9840529e9a" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 🔎 Solo LEE el consecutivo y muestra el próximo (no lo incrementa)
+function generarFolioAutomatico(){
+
+  const ahora = new Date();
+
+  const yyyy = ahora.getFullYear();
+
+  const mm = String(ahora.getMonth() + 1).padStart(2, "0");
+
+  const dd = String(ahora.getDate()).padStart(2, "0");
+
+  const hh = String(ahora.getHours()).padStart(2, "0");
+
+  const min = String(ahora.getMinutes()).padStart(2, "0");
+
+  const ss = String(ahora.getSeconds()).padStart(2, "0");
+
+  // ejemplo:
+  // SAL-CIG-20260523-131530
+
+  const folio = `SAL-CIG-${yyyy}${mm}${dd}-${hh}${min}${ss}`;
+
+  document.getElementById("proximoFolio").textContent = folio;
+
+  // guardar temporalmente
+  localStorage.setItem("folioSalidaCigarro", folio);
+}
+    function ponerFechaHoy(){
+      const hoy = new Date(); const yyyy = hoy.getFullYear();
+      const mm = String(hoy.getMonth()+1).padStart(2,'0');
+      const dd = String(hoy.getDate()).padStart(2,'0');
+      document.getElementById("fecha").value = `${yyyy}-${mm}-${dd}`;
+      localStorage.setItem("fechaCigarro", new Date().toLocaleString("es-MX"));
+    }
+
+    function continuar(){
+      const entrega = document.getElementById("entrega").value;
+      const recibe  = document.getElementById("recibe").value;
+      const destino = document.getElementById("destino").value;
+      const fecha   = localStorage.getItem("fechaCigarro");
+
+      if(!entrega || !recibe || !destino){ 
+        alert("Completa todos los campos."); 
+        return; 
+      }
+
+      // Guardamos SOLO datos operativos (sin folio)
+      localStorage.setItem("salidaCigarro", JSON.stringify({fecha,entrega,recibe,destino}));
+
+      // A la pantalla 2
+      window.location.href = "pantalla2.html";
+    }
+
+    document.getElementById("btnContinuar").addEventListener("click", continuar);
+    document.addEventListener("DOMContentLoaded", ()=>{
+
+  generarFolioAutomatico();
+
+  ponerFechaHoy();
+
+});
+  </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrito de productos - Cigarro</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:linear-gradient(to right,#00416A,#E4E5E6);margin:0;padding:20px;color:white;min-height:100vh;box-sizing:border-box;position:relative}
+    .marca-agua{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:.07;z-index:0;max-width:90%;pointer-events:none}
+    .contenedor{max-width:800px;margin:auto;background:rgba(255,255,255,.1);border-radius:10px;padding:20px;z-index:1;position:relative}
+    h2{text-align:center;margin-bottom:20px}
+    .producto{background:white;color:black;border-radius:10px;padding:15px;margin-bottom:10px;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+    .producto input{width:80px;padding:6px;margin-top:10px;margin-right:10px;border-radius:6px;border:1px solid #ccc}
+    .producto button{background:#e60000;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+    .producto button:hover{background:#b00000}
+    .botones-acciones{display:flex;justify-content:center;gap:20px;margin-top:20px;flex-wrap:wrap}
+    .btn{width:250px;padding:14px;font-size:16px;font-weight:bold;border:none;border-radius:10px;cursor:pointer;transition:background .3s;color:white;text-align:center}
+    .btn.azul{background:#1976D2}.btn.azul:hover{background:#1565C0}
+    .btn.rojo{background:#d32f2f}.btn.rojo:hover{background:#b71c1c}
+  </style>
+</head>
+<body>
+  <img src="logo_proveedora.webp" class="marca-agua" alt="Marca de agua">
+
+  <div class="contenedor">
+    <h2>Carrito de productos agregados – Cigarro</h2>
+    <div id="listaCarrito"></div>
+
+    <div class="botones-acciones">
+      <button id="agregarBtn" onclick="irAPantalla2()" class="btn azul">Agregar más artículos</button>
+      <button id="continuarBtn" onclick="irAlResumen()" class="btn rojo">Finalizar y Firmar</button>
+    </div>
+  </div>
+
+  <script>
+    let productos = JSON.parse(localStorage.getItem("carrito_cigarro") || "[]");
+    const contenedor = document.getElementById("listaCarrito");
+
+    function mostrarCarrito(){
+      contenedor.innerHTML="";
+      const continuarBtn=document.getElementById("continuarBtn");
+      const agregarBtn=document.getElementById("agregarBtn");
+      if(productos.length===0){
+        contenedor.innerHTML="<p>No hay productos en el carrito.</p>";
+        continuarBtn.style.display="none"; agregarBtn.style.display="none"; return;
+      }
+      continuarBtn.style.display="block"; agregarBtn.style.display="block";
+      productos.forEach((p,i)=>{
+        const div=document.createElement("div"); div.className="producto";
+        div.innerHTML=`
+          <strong>${p.descripcion}</strong><br>
+          Código: ${p.codigo}<br>
+          Cantidad: <input type="number" step="0.001" min="0.001" value="${p.cantidad}" onchange="actualizarCantidad(${i}, this.value)"/>
+          <button onclick="eliminar(${i})">Eliminar</button>`;
+        contenedor.appendChild(div);
+      });
+    }
+    function actualizarCantidad(i,val){
+      const c=parseFloat(val); if(!c||c<=0){alert("Cantidad inválida");mostrarCarrito();return;}
+      productos[i].cantidad=c; localStorage.setItem("carrito_cigarro",JSON.stringify(productos));
+    }
+    function eliminar(i){ productos.splice(i,1); localStorage.setItem("carrito_cigarro",JSON.stringify(productos)); mostrarCarrito(); }
+    function irAlResumen(){ localStorage.setItem("carrito_cigarro",JSON.stringify(productos)); window.location.href="pantalla4.html"; }
+    function irAPantalla2(){ localStorage.setItem("carrito_cigarro",JSON.stringify(productos)); window.location.href="pantalla2.html"; }
+    mostrarCarrito();
+  </script>
+</body>
+</html>

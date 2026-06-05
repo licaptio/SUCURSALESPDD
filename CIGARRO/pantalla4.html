@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Firma – Quien Entrega (Cigarro)</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:linear-gradient(to right,#00416A,#E4E5E6);margin:0;padding:20px;text-align:center;color:white}
+    h2{margin-bottom:20px}
+    .canvas-container{display:flex;justify-content:center;margin-top:20px}
+    canvas{background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.3);touch-action:none;width:100%;max-width:500px;height:auto;aspect-ratio:5/3}
+    .botones{margin-top:20px;display:flex;justify-content:center;gap:20px;flex-wrap:wrap}
+    .btn{padding:12px 20px;font-size:16px;font-weight:bold;border:none;border-radius:8px;cursor:pointer;color:white;min-width:160px}
+    .limpiar{background:#1976D2}.limpiar:hover{background:#1565C0}
+    .continuar{background:#d32f2f}.continuar:hover{background:#b71c1c}
+  </style>
+</head>
+<body>
+  <h2>Firma de quien entrega – Almacén Cigarro</h2>
+  <div class="canvas-container"><canvas id="canvas"></canvas></div>
+  <div class="botones">
+    <button class="btn limpiar" onclick="limpiarFirma()">🧹 Limpiar firma</button>
+    <button class="btn continuar" onclick="guardarFirma()">Continuar →</button>
+  </div>
+
+  <script>
+    const canvas=document.getElementById("canvas");
+    const ctx=canvas.getContext("2d",{willReadFrequently:true});
+    let dib=false, hay=false;
+
+    function ajustar(){const dpr=Math.max(window.devicePixelRatio||1,1);const r=canvas.getBoundingClientRect();canvas.width=Math.floor(r.width*dpr);canvas.height=Math.floor(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.beginPath();}
+    function pos(e){const r=canvas.getBoundingClientRect();const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;return{x,y};}
+    function start(e){dib=true;hay=true;const {x,y}=pos(e);ctx.beginPath();ctx.moveTo(x,y);}
+    function move(e){if(!dib)return;e.preventDefault();const {x,y}=pos(e);ctx.lineWidth=2;ctx.lineCap="round";ctx.strokeStyle="#000";ctx.lineTo(x,y);ctx.stroke();}
+    function end(){dib=false;ctx.beginPath();}
+    function limpiarFirma(){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);ctx.fillStyle="#fff";ctx.fillRect(0,0,r.width,r.height);hay=false;}
+    function guardarFirma(){ if(!hay){alert("Firma vacía.");return;} const png=canvas.toDataURL("image/png"); localStorage.setItem("firma_entrega_cigarro",png); window.location.href="pantalla5.html"; }
+
+    window.addEventListener("resize",ajustar); ajustar();
+    canvas.addEventListener("mousedown",start);canvas.addEventListener("mousemove",move);canvas.addEventListener("mouseup",end);canvas.addEventListener("mouseout",end);
+    canvas.addEventListener("touchstart",e=>{e.preventDefault();start(e)},{passive:false});
+    canvas.addEventListener("touchmove",e=>{e.preventDefault();move(e)},{passive:false});
+    canvas.addEventListener("touchend",end);canvas.addEventListener("touchcancel",end);
+  </script>
+</body>
+</html>

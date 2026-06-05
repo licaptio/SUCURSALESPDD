@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ticket salida – Cigarro (80mm)</title>
+  <style>
+    :root{
+      --w-mm: 80;
+      --pad-mm: 3;
+      --sep: 1px dashed #000;
+    }
+
+    body{
+      font-family: ui-monospace, Menlo, "Courier New", monospace;
+      background: #f2f5f8;
+      margin:0; padding:12px;
+      color:#000;
+    }
+    .wrap{ max-width: 420px; margin:auto; }
+    .preview{
+      background:#fff; padding:12px; border-radius:10px;
+      box-shadow: 0 3px 16px rgba(0,0,0,.12);
+    }
+    .ticket{
+      width: calc(var(--w-mm) * 1mm);
+      box-sizing: border-box;
+      margin: 0 auto;
+      padding: calc(var(--pad-mm) * 1mm);
+      color:#000; background:#fff;
+    }
+
+    .t-center{ text-align:center }
+    .t-right{ text-align:right }
+    .muted{ opacity:.9 }
+    .h1{ font-weight:700; font-size:14px; letter-spacing:.3px }
+    .sm{ font-size:11px }
+    .xs{ font-size:10px }
+    .line{ border-top: var(--sep); margin:6px 0 }
+    .logo{
+      display:block; margin:2px auto 6px;
+      width: 45mm; max-width:100%;
+      image-rendering: -webkit-optimize-contrast;
+    }
+    .kv{ display:flex; justify-content:space-between; gap:6px; font-size:11px }
+    .kv b{ font-weight:700 }
+    .th, .tr{
+      display:flex; align-items:flex-start; gap:2mm;
+      font-size:11px; line-height:1.25;
+    }
+    .th{ font-weight:700; border-bottom: var(--sep); padding:2px 0 3px }
+    .tr{ padding:2px 0 }
+    .col-cod{ width:22mm; overflow:hidden; white-space:nowrap }
+    .col-des{ flex:1 1 auto; overflow:hidden }
+    .col-und{ width:10mm; text-align:center }
+    .col-cant{ width:12mm; text-align:right }
+
+    .firmas{ display:flex; gap:6mm; margin-top:8px }
+    .firma{ flex:1 1 0; text-align:center }
+    .firma img{ width: 42mm; max-width:100%; border:1px solid #000; background:#fff }
+
+    .btn{
+      display:block; width:100%; margin:12px auto 0; padding:12px;
+      border:none; border-radius:8px; font-size:15px; cursor:pointer;
+      background:#0c6cbd; color:#fff;
+    }
+    .btn[disabled]{ opacity:.6; cursor:not-allowed }
+
+    @media print{
+      @page{ size: calc(var(--w-mm)*1mm) auto; margin: 0 }
+      body{ background:#fff; padding:0 }
+      .preview, .wrap{ box-shadow:none; border-radius:0; padding:0; margin:0 }
+      .btn{ display:none !important }
+      .ticket{ width: calc(var(--w-mm)*1mm); padding: calc(var(--pad-mm)*1mm) }
+      img{ print-color-adjust: exact; -webkit-print-color-adjust: exact }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="preview">
+      <div id="ticket" class="ticket">
+        <img id="logoEmpresa" class="logo" src="logo_proveedora.webp" alt="Logo La Proveedora" crossOrigin="anonymous">
+        <div class="t-center h1">RESUMEN DE SALIDA – CIGARRO</div>
+        <div class="line"></div>
+
+        <div class="kv"><span><b>Folio:</b> <span id="folio">–</span></span><span class="t-right" id="fecha">–</span></div>
+        <div class="kv"><span><b>Entrega:</b> <span id="entrega">–</span></span></div>
+        <div class="kv"><span><b>Recibe:</b> <span id="recibe">–</span></span></div>
+        <div class="kv"><span><b>Destino:</b> <span id="destino">–</span></span></div>
+
+        <div class="line"></div>
+        <div class="th">
+          <div class="col-cod">CÓDIGO</div>
+          <div class="col-des">PRODUCTO</div>
+          <div class="col-und">UND</div>
+          <div class="col-cant">CANT</div>
+        </div>
+        <div id="lista" class="xs"></div>
+
+        <div class="line"></div>
+        <div class="firmas">
+          <div class="firma">
+            <div class="xs muted">Firma Entrega</div>
+            <img id="imgFirmaEntrega" alt="Firma Entrega">
+          </div>
+          <div class="firma">
+            <div class="xs muted">Firma Recibe</div>
+            <img id="imgFirmaRecibe" alt="Firma Recibe">
+          </div>
+        </div>
+
+        <div class="line"></div>
+        <div class="t-center xs muted">Gracias por su preferencia</div>
+      </div>
+      <button class="btn" id="btnGuardarDescargar">Guardar y descargar PDF</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+/* ================== FIREBASE ================== */
+const firebaseConfig = {
+  apiKey:"AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+  authDomain:"inventariopv-643f1.firebaseapp.com",
+  projectId:"inventariopv-643f1",
+  storageBucket:"inventariopv-643f1.appspot.com",
+  messagingSenderId:"96242533231",
+  appId:"1:96242533231:web:aae75a18fbaf9840529e9a"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* ================== DATOS LOCALES ================== */
+const datos = JSON.parse(localStorage.getItem('salidaCigarro') || '{}');
+const productos = JSON.parse(localStorage.getItem('carrito_cigarro') || '[]');
+const getFirma = keys => { for(const k of keys){ const v=localStorage.getItem(k); if(v?.startsWith('data:image')) return v; } return ''; };
+const firmaEntregaB64 = getFirma(['firma_entrega_cigarro','firmaEntrega']);
+const firmaRecibeB64  = getFirma(['firma_recibe_cigarro','firmaRecibe']);
+const $folio=document.getElementById('folio'),$fecha=document.getElementById('fecha'),$entrega=document.getElementById('entrega'),$recibe=document.getElementById('recibe'),$destino=document.getElementById('destino'),$lista=document.getElementById('lista');
+document.getElementById('imgFirmaEntrega').src=firmaEntregaB64||'';
+document.getElementById('imgFirmaRecibe').src=firmaRecibeB64||'';
+$fecha.textContent=datos.fecha||new Date().toLocaleString('es-MX');
+$entrega.textContent=datos.entrega||'';$recibe.textContent=datos.recibe||'';$destino.textContent=datos.destino||'';
+(productos||[]).forEach(p=>{
+  const row=document.createElement('div');row.className='tr';
+  row.innerHTML=`<div class="col-cod">${p.codigo??''}</div><div class="col-des">${(p.descripcion??'').toUpperCase()}</div><div class="col-und">${p.unidad??''}</div><div class="col-cant">${p.cantidad??0}</div>`;
+  $lista.appendChild(row);
+});
+
+/* ================== BASE CONFIG ================== */
+const TOKEN="8495270080:AAFBJ8Vxi6ZhqP6ghtJqMal9RZFz3YJBpo8";
+const CHAT_ID="6617988297";
+
+/* ================== FUNCIONES ================== */
+function nextFolio(){
+
+  const ahora = new Date();
+
+  const yyyy = ahora.getFullYear();
+
+  const mm = String(ahora.getMonth() + 1).padStart(2, "0");
+
+  const dd = String(ahora.getDate()).padStart(2, "0");
+
+  const hh = String(ahora.getHours()).padStart(2, "0");
+
+  const min = String(ahora.getMinutes()).padStart(2, "0");
+
+const ss = String(ahora.getSeconds()).padStart(2, "0");
+
+const ms = String(ahora.getMilliseconds()).padStart(3, "0");
+
+return `SAL-CIG-${yyyy}${mm}${dd}-${hh}${min}${ss}${ms}`;
+}
+
+async function enviarSalidaTelegram(salida){
+  try{
+    let msg=`🚬 *Salida registrada – Almacén Cigarro*\n\n`;
+    msg+=`📄 Folio: ${salida.folio}\n📅 Fecha: ${salida.fecha}\n👤 Entrega: ${salida.entrega}\n🤝 Recibe: ${salida.recibe}\n📍 Destino: ${salida.destino}\n\n`;
+    if(Array.isArray(salida.productos)&&salida.productos.length){
+      msg+=`📦 Artículos:\n`;
+      salida.productos.forEach(p=>{msg+=`• ${p.cantidad} x ${p.descripcion||p.nombre} (Código: ${p.codigo})\n`;});
+    }
+    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:CHAT_ID,text:msg,parse_mode:"Markdown"})});
+  }catch(e){console.warn("No se pudo enviar la notificación general:",e);}
+}
+
+async function enviarAlertaInventario(item,nuevo,minimo){
+  const esCritico=nuevo<=minimo;
+  let msg=esCritico?`
+🔥🔥🔥 *ALERTA MÁXIMA DE INVENTARIO* 🔥🔥🔥
+💀 *¡STOCK CRÍTICO DETECTADO!* 💀
+📦 ${item.concepto||item.descripcion||item.nombre}
+🆔 Código: ${item.codigoBarra||item.codigo}
+📉 Existencia actual: ${nuevo}
+🔢 Mínimo definido: ${minimo}
+🏠 Almacén: Cigarro
+📅 ${new Date().toLocaleString("es-MX")}
+⚠️ *¡REPOSICIÓN URGENTE NECESARIA!* ⚠️
+🚒🔥💣🚨💥🧯🔥💥🚨💣🔥🚒`
+  :`
+✅ *Inventario actualizado correctamente*
+📦 ${item.concepto||item.descripcion||item.nombre}
+🆔 Código: ${item.codigoBarra||item.codigo}
+📉 Existencia actual: ${nuevo}
+🔢 Mínimo definido: ${minimo}
+🏠 Almacén: Cigarro
+📅 ${new Date().toLocaleString("es-MX")}`;
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:CHAT_ID,text:msg,parse_mode:"Markdown"})});
+}
+
+/* ================== INVENTARIO + ALERTAS ================== */
+async function verificarInventarioYNotificar(productos){
+  for (const art of productos) {
+    try {
+      const snap = await db.collection("seguimiento_inventario")
+        .where("codigoBarra", "==", art.codigo)
+        .where("activo", "==", true)
+        .get();
+
+      if (!snap.empty) {
+        for (const docu of snap.docs) {
+          const data = docu.data();
+          const ref = db.collection("seguimiento_inventario").doc(docu.id);
+
+          const salida = Math.abs(Number(String(art.cantidad).replace(/[^0-9.-]/g, ""))) || 0;
+          const invActual = Math.abs(Number(data.inventario_fijado)) || 0;
+          const minimo = Math.abs(Number(data.inventario_minimo)) || 0;
+          const nuevo = invActual >= salida ? invActual - salida : 0;
+
+          // UPDATE
+          await ref.update({
+            inventario_fijado: nuevo,
+            ultima_salida: new Date().toISOString(),
+            actualizadoEn: new Date().toISOString()
+          });
+
+          // HISTORIAL
+          await ref.collection("historial").add({
+            tipo: "salida",
+            cantidad: salida,
+            folio: $folio.textContent || "SAL-CIG",
+            fecha: new Date().toISOString(),
+            usuario: $entrega.textContent || "sistema",
+            descripcion: "Salida registrada desde módulo Almacén Cigarro"
+          });
+
+          // ALERTA TELEGRAM
+          const esCritico = nuevo <= minimo;
+          let msg = `🚬 *Almacén Cigarro – Control de Stock*\n\n`;
+
+          if (esCritico) {
+            msg += `🚨 *ALERTA CRÍTICA DE INVENTARIO*\n`;
+            msg += `📦 ${data.concepto || art.descripcion || art.nombre}\n🆔 Código: ${data.codigoBarra || art.codigo}\n`;
+            msg += `📉 Existencia actual: ${nuevo}\n🔢 Mínimo definido: ${minimo}\n`;
+            msg += `🏠 Almacén: Cigarro\n📅 ${new Date().toLocaleString("es-MX")}\n`;
+            msg += `⚠️ *REPOSICIÓN URGENTE NECESARIA* 🚨`;
+          } else {
+            msg += `✅ Inventario actualizado correctamente\n`;
+            msg += `📦 ${data.concepto || art.descripcion || art.nombre}\n🆔 Código: ${data.codigoBarra || art.codigo}\n`;
+            msg += `📤 Salida reciente: ${salida}\n📉 Existencia actual: ${nuevo}\n`;
+            msg += `🔢 Mínimo definido: ${minimo}\n🏠 Almacén: Cigarro\n📅 ${new Date().toLocaleString("es-MX")}`;
+          }
+
+          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: "Markdown" })
+          });
+
+        }
+      }
+
+    } catch (err) {
+      console.error("❌ Error en verificación de inventario:", err);
+    }
+  }
+}
+
+/* ================== GUARDAR SALIDA (Ajustado a salidas1.0) ================== */
+async function guardarSalida(){
+  const folio = nextFolio();
+  $folio.textContent = folio;
+
+  const firmaEntregaFinal = localStorage.getItem('firma_entrega_cigarro') || firmaEntregaB64 || '';
+  const firmaRecibeFinal  = localStorage.getItem('firma_recibe_cigarro') || firmaRecibeB64 || '';
+
+  const salida = {
+    folio,
+    fecha: $fecha.textContent,
+    entrega: $entrega.textContent,
+    recibe: $recibe.textContent,
+    destino: $destino.textContent,
+    productos: productos || [],
+    firmaEntrega: firmaEntregaFinal,
+    firmaRecibe: firmaRecibeFinal,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+createdAt: new Date().toISOString()
+  };
+
+  /* 🔥 AQUÍ EL AJUSTE IMPORTANTE 🔥 */
+  await db.collection('almacenes')
+          .doc('almacen_cigarro')
+          .collection('salidas1.0')
+          .add(salida);
+
+  await enviarSalidaTelegram(salida);
+  await verificarInventarioYNotificar(productos);
+
+  ["carrito_cigarro","salidaCigarro"].forEach(k=>localStorage.removeItem(k));
+
+  return folio;
+}
+
+/* ================== PDF ================== */
+function preload(el){return new Promise(r=>{if(!el)return r();el.complete?r():(el.onload=r,el.onerror=r);});}
+
+async function descargarPDF(){
+  const {jsPDF}=window.jspdf;
+  const root=document.getElementById('ticket');
+  await Promise.all([
+    preload(document.getElementById('logoEmpresa')),
+    preload(document.getElementById('imgFirmaEntrega')),
+    preload(document.getElementById('imgFirmaRecibe'))
+  ]);
+
+  const scale=3;
+  const canvas=await html2canvas(root,{
+    scale,
+    backgroundColor:'#fff',
+    useCORS:true,
+    logging:false,
+    windowWidth:root.scrollWidth
+  });
+
+  const Wmm=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--w-mm'))||80;
+  const imgData=canvas.toDataURL('image/png');
+  const pxPerMM=canvas.width/Wmm;
+  const Hmm=canvas.height/pxPerMM;
+  const pdf=new jsPDF('p','mm',[Wmm,Hmm]);
+  pdf.addImage(imgData,'PNG',0,0,Wmm,Hmm);
+  pdf.save(`Comprobante_${($folio.textContent||'SAL-CIG')}.pdf`);
+}
+
+/* ================== BOTÓN ================== */
+const btn=document.getElementById('btnGuardarDescargar');
+btn.addEventListener('click',async()=>{
+  if(!productos?.length){alert('No hay productos.');return;}
+  btn.disabled=true;
+  try{
+    await guardarSalida();
+    await descargarPDF();
+    setTimeout(()=>location.href='index.html',1000);
+  }catch(e){
+    console.error(e);
+    alert('Error: '+(e.message||e));
+  }finally{
+    btn.disabled=false;
+  }
+});
+</script>
+
+</body>
+</html>

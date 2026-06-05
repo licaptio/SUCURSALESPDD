@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Seleccionar productos – Cigarro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #00416A, #E4E5E6);
+      margin: 0; padding: 0;
+      color: white;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .marca-agua {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.10; z-index: 0; max-width: 80%;
+      pointer-events: none;
+    }
+
+    .contenedor {
+      max-width: 600px; 
+      margin: 50px auto; 
+      padding: 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px; 
+      position: relative;
+      z-index: 2;
+    }
+
+    h2 { text-align: center; margin-bottom: 20px; }
+
+    .tarjeta {
+      background: white; color: black;
+      padding: 14px 18px; margin: 10px 0;
+      border-radius: 10px; font-weight: 600;
+      cursor: pointer; text-align: center;
+      transition: background 0.25s;
+    }
+    .tarjeta:hover { background: #d4e7ff; }
+
+    .producto {
+      background: white; color: black;
+      padding: 14px 18px;
+      margin: 8px 0;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .producto:hover { background: #e7f1ff; }
+
+    #popupCantidad {
+      display: none; position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: white; padding: 22px;
+      border-radius: 10px; z-index: 9999;
+      color: black; width: 90%;
+      max-width: 350px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    #popupCantidad input {
+      width: 100%; padding: 10px;
+      margin-top: 10px; font-size: 16px;
+    }
+
+    #popupCantidad button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      border: none; border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .cancelar { background: #ccc; color: black; }
+    .agregar { background: #0d47a1; color: white; }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: rgba(255,255,255,0.7);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <img src="logo_proveedora.webp" class="marca-agua">
+
+  <div class="contenedor" id="pantalla">
+    <h2>Selecciona una marca</h2>
+    <div id="marcasContainer"></div>
+    <p id="loader" style="text-align:center;margin-top:20px;">Cargando productos…</p>
+  </div>
+
+  <div class="contenedor" id="productos" style="display:none;">
+    <h2 id="tituloMarca"></h2>
+    <div id="listaProductos"></div>
+  </div>
+
+  <div id="popupCantidad">
+    <h3>Agregar cantidad</h3>
+    <p id="nombreProductoSeleccionado"></p>
+    <input type="number" id="inputCantidad" placeholder="Cantidad" step="0.001" min="0.001">
+    <button class="cancelar" onclick="cerrarPopup()">Cancelar</button>
+    <button class="agregar" onclick="confirmarCantidad()">Agregar</button>
+  </div>
+
+  <footer>© 2025 · Almacén Cigarro · Sistema de Inventario</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, query, where, orderBy }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+  authDomain: "inventariopv-643f1.firebaseapp.com",
+  projectId: "inventariopv-643f1",
+  storageBucket: "inventariopv-643f1.appspot.com",
+  messagingSenderId: "96242533231",
+  appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let productos = [];
+let mapaMarcas = {};
+
+// =============================
+//   CARGAR PRODUCTOS CIGARRO
+// =============================
+async function cargarProductos() {
+  document.getElementById("loader").style.display = "block";
+
+  const qProductos = query(
+    collection(db, "productos"),
+    where("activo", "==", true),
+    where("departamento", "==", "CIGARROS"),
+    orderBy("marca", "asc")
+  );
+
+  const snap = await getDocs(qProductos);
+
+  productos = [];
+  mapaMarcas = {};
+
+  snap.forEach(doc => {
+    const data = doc.data();
+
+    const item = {
+      codigo: data.codigoBarra || "",
+      descripcion: data.concepto || "",
+      marca: data.marca || "OTROS",
+      unidad: data.unidadMedidaSat || "PZ",
+      conversion: data.conversion_caja_piezas || 1
+    };
+
+    productos.push(item);
+
+    if (!mapaMarcas[item.marca]) mapaMarcas[item.marca] = [];
+    mapaMarcas[item.marca].push(item);
+  });
+
+  document.getElementById("loader").style.display = "none";
+  mostrarMarcas();
+}
+
+// =============================
+//       MOSTRAR MARCAS
+// =============================
+function mostrarMarcas() {
+  const cont = document.getElementById("marcasContainer");
+  cont.innerHTML = "";
+
+  Object.keys(mapaMarcas)
+    .sort()
+    .forEach(marca => {
+      const div = document.createElement("div");
+      div.className = "tarjeta";
+      div.textContent = marca;
+      div.onclick = () => mostrarProductos(marca);
+      cont.appendChild(div);
+    });
+}
+
+// =============================
+//   PRODUCTOS POR MARCA
+// =============================
+function mostrarProductos(marca) {
+  document.getElementById("pantalla").style.display = "none";
+
+  const lista = document.getElementById("listaProductos");
+  lista.innerHTML = "";
+
+  const listaMarca = mapaMarcas[marca].sort((a, b) =>
+    a.descripcion.localeCompare(b.descripcion)
+  );
+
+  listaMarca.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "producto";
+    div.textContent = p.descripcion;
+    div.onclick = () => abrirPopup(p);
+    lista.appendChild(div);
+  });
+
+  document.getElementById("tituloMarca").textContent = marca;
+  document.getElementById("productos").style.display = "block";
+}
+
+// =============================
+//     POPUP AGREGAR CANTIDAD
+// =============================
+let productoSeleccionado = null;
+
+function abrirPopup(producto) {
+  productoSeleccionado = producto;
+  document.getElementById("nombreProductoSeleccionado").textContent =
+    producto.descripcion;
+  document.getElementById("inputCantidad").value = '';
+  document.getElementById("popupCantidad").style.display = "block";
+}
+
+function cerrarPopup() {
+  document.getElementById("popupCantidad").style.display = "none";
+}
+
+function confirmarCantidad() {
+  const cantidad = parseFloat(document.getElementById("inputCantidad").value);
+
+  if (isNaN(cantidad) || cantidad <= 0) {
+    alert("Cantidad inválida");
+    return;
+  }
+
+  let carrito = JSON.parse(localStorage.getItem("carrito_cigarro")) || [];
+
+  carrito.push({
+    codigo: productoSeleccionado.codigo,
+    descripcion: productoSeleccionado.descripcion,
+    marca: productoSeleccionado.marca,
+    unidad: productoSeleccionado.unidad,
+    cantidad: cantidad
+  });
+
+  localStorage.setItem("carrito_cigarro", JSON.stringify(carrito));
+const folio = localStorage.getItem("folioSalidaCigarro");
+
+localStorage.setItem(
+  "folioSalidaCigarro",
+  folio
+);
+  cerrarPopup();
+  
+  window.location.href = "pantalla3.html";
+}
+
+window.cerrarPopup = cerrarPopup;
+window.confirmarCantidad = confirmarCantidad;
+
+// CARGA INICIAL
+cargarProductos();
+</script>
+
+</body>
+</html>

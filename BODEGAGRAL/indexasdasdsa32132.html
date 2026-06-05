@@ -1287,6 +1287,12 @@ const SUCURSALES = {
   
 const COLECCION_OPERADORES = 'usuarios_ruta';
 const COLECCION_PRODUCTOS = 'productos';
+
+const DB_CATALOGO = 'PROVSOFT_CATALOGO_LOCAL';
+const STORE_PRODUCTOS = 'productos';
+const STORE_META = 'metadata';
+const CATALOGO_DIAS_VIGENCIA = 3;
+
 const LOGO_URL = './logo.jfif';
 
 const RESPONSABLES = {
@@ -2094,38 +2100,184 @@ async function cargarOperadores() {
 
 }
   
+function abrirDBCatalogo() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_CATALOGO, 1);
+
+    req.onupgradeneeded = (event) => {
+      const dbLocal = event.target.result;
+
+      if (!dbLocal.objectStoreNames.contains(STORE_PRODUCTOS)) {
+        dbLocal.createObjectStore(STORE_PRODUCTOS, { keyPath: 'codigoBarra' });
+      }
+
+      if (!dbLocal.objectStoreNames.contains(STORE_META)) {
+        dbLocal.createObjectStore(STORE_META, { keyPath: 'clave' });
+      }
+    };
+
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function guardarCatalogoLocal(lista) {
+  const dbLocal = await abrirDBCatalogo();
+
+  return new Promise((resolve, reject) => {
+    const tx = dbLocal.transaction([STORE_PRODUCTOS, STORE_META], 'readwrite');
+
+    const productosStore = tx.objectStore(STORE_PRODUCTOS);
+    const metaStore = tx.objectStore(STORE_META);
+
+    productosStore.clear();
+
+    lista.forEach(p => {
+      if (p?.codigoBarra) productosStore.put(p);
+    });
+
+    metaStore.put({
+      clave: 'catalogo',
+      ultimaDescarga: new Date().toISOString(),
+      total: lista.length
+    });
+
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function leerCatalogoLocal() {
+  const dbLocal = await abrirDBCatalogo();
+
+  return new Promise((resolve, reject) => {
+    const tx = dbLocal.transaction([STORE_PRODUCTOS, STORE_META], 'readonly');
+
+    const productosStore = tx.objectStore(STORE_PRODUCTOS);
+    const metaStore = tx.objectStore(STORE_META);
+
+    const reqProductos = productosStore.getAll();
+    const reqMeta = metaStore.get('catalogo');
+
+    tx.oncomplete = () => {
+      resolve({
+        productos: reqProductos.result || [],
+        meta: reqMeta.result || null
+      });
+    };
+
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function guardarProductoLocal(producto) {
+  if (!producto?.codigoBarra) return false;
+
+  const dbLocal = await abrirDBCatalogo();
+
+  return new Promise((resolve, reject) => {
+    const tx = dbLocal.transaction(STORE_PRODUCTOS, 'readwrite');
+    tx.objectStore(STORE_PRODUCTOS).put(producto);
+
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function catalogoLocalVigente(meta) {
+  if (!meta?.ultimaDescarga) return false;
+
+  const ultima = new Date(meta.ultimaDescarga).getTime();
+
+  if (!Number.isFinite(ultima)) return false;
+
+  const vigenciaMs = CATALOGO_DIAS_VIGENCIA * 24 * 60 * 60 * 1000;
+
+  return Date.now() - ultima < vigenciaMs;
+}
+
+function ordenarCatalogo() {
+  catalogo.sort((a, b) => {
+    return String(a.concepto || '').localeCompare(
+      String(b.concepto || ''),
+      'es-MX',
+      {
+        sensitivity: 'base',
+        numeric: true
+      }
+    );
+  });
+}
+
+async function descargarCatalogoFirebase() {
+  const snap = await getDocs(
+    query(
+      collection(db, COLECCION_PRODUCTOS),
+      where('activo', '==', true)
+    )
+  );
+
+  const lista = [];
+
+  snap.forEach(docSnap => {
+    const p = normalizarProductoCatalogo(docSnap.data() || {});
+
+    if (p.codigoBarra && p.concepto) {
+      lista.push(p);
+    }
+  });
+
+  return lista;
+}
+
 async function cargarCatalogo() {
   try {
-    const snap = await getDocs(
-      query(
-        collection(db, COLECCION_PRODUCTOS),
-        where('activo', '==', true)
-      )
-    );
+    const local = await leerCatalogoLocal();
 
-    catalogo = [];
+    if (
+      catalogoLocalVigente(local.meta) &&
+      Array.isArray(local.productos) &&
+      local.productos.length
+    ) {
+      catalogo = local.productos;
+      ordenarCatalogo();
 
-    snap.forEach(docSnap => {
-      const p = normalizarProductoCatalogo(docSnap.data() || {});
-
-      if (p.codigoBarra && p.concepto) {
-        catalogo.push(p);
-      }
-    });
-
-    catalogo.sort((a, b) => {
-      return String(a.concepto || '').localeCompare(
-        String(b.concepto || ''),
-        'es-MX',
-        {
-          sensitivity: 'base',
-          numeric: true
-        }
+      console.log(
+        `Catálogo cargado desde IndexedDB: ${catalogo.length} productos`
       );
-    });
+
+      return;
+    }
+
+    catalogo = await descargarCatalogoFirebase();
+    ordenarCatalogo();
+
+    await guardarCatalogoLocal(catalogo);
+
+    console.log(
+      `Catálogo descargado de Firebase y guardado local: ${catalogo.length} productos`
+    );
 
   } catch (error) {
     console.error('Error cargando catálogo:', error);
+
+    try {
+      const local = await leerCatalogoLocal();
+
+      if (Array.isArray(local.productos) && local.productos.length) {
+        catalogo = local.productos;
+        ordenarCatalogo();
+
+        console.warn(
+          'Se usó catálogo local por error de conexión con Firebase.'
+        );
+
+        return;
+      }
+    } catch (errorLocal) {
+      console.error('Error leyendo catálogo local:', errorLocal);
+    }
+
     throw new Error('No se pudo cargar catálogo de productos.');
   }
 }
@@ -2210,6 +2362,89 @@ function buscarEnCatalogo(term) {
   }
 
   return [...exactCodigo, ...exactEq, ...nombreStarts, ...flexible].slice(0, 30);
+}
+
+
+function esBusquedaCodigoPuntual(term) {
+  const value = String(term || '').trim();
+
+  if (value.length < 3) return false;
+  if (/\s/.test(value)) return false;
+
+  return /^[a-zA-Z0-9._\-]+$/.test(value);
+}
+
+async function buscarProductoFirebasePorCodigo(rawCodigo) {
+  const codigo = String(rawCodigo || '').trim();
+
+  if (!codigo) return null;
+
+  let snap = await getDocs(
+    query(
+      collection(db, COLECCION_PRODUCTOS),
+      where('codigoBarra', '==', codigo),
+      limit(1)
+    )
+  );
+
+  let fueEquivalente = false;
+
+  if (snap.empty) {
+    snap = await getDocs(
+      query(
+        collection(db, COLECCION_PRODUCTOS),
+        where('codigosEquivalentes', 'array-contains', codigo),
+        limit(1)
+      )
+    );
+
+    fueEquivalente = !snap.empty;
+  }
+
+  if (snap.empty) return null;
+
+  const docSnap = snap.docs[0];
+  const producto = normalizarProductoCatalogo(docSnap.data() || {});
+
+  if (!producto.activo) return null;
+  if (!producto.codigoBarra || !producto.concepto) return null;
+
+  await guardarProductoLocal(producto);
+
+  const existeEnMemoria = catalogo.some(p => {
+    return String(p.codigoBarra || '') === String(producto.codigoBarra || '');
+  });
+
+  if (!existeEnMemoria) {
+    catalogo.push(producto);
+    ordenarCatalogo();
+  }
+
+  return crearProductoResultadoBusqueda(
+    producto,
+    codigo,
+    fueEquivalente && producto.codigoBarra !== codigo
+  );
+}
+
+async function buscarCatalogoConRespaldoFirebase(term) {
+  const listaLocal = buscarEnCatalogo(term);
+
+  if (listaLocal.length) return listaLocal;
+
+  if (!esBusquedaCodigoPuntual(term)) return [];
+
+  try {
+    const productoFirebase = await buscarProductoFirebasePorCodigo(term);
+
+    if (productoFirebase) {
+      return [productoFirebase];
+    }
+  } catch (error) {
+    console.error('Error buscando producto puntual en Firebase:', error);
+  }
+
+  return [];
 }
 
 function renderResultadosBusqueda(lista) {
@@ -4200,20 +4435,20 @@ function bindEvents() {
   $('busquedaProducto').addEventListener('input', () => {
     clearTimeout(timerBusqueda);
 
-    timerBusqueda = setTimeout(() => {
-      const lista = buscarEnCatalogo(
-        $('busquedaProducto').value
-      );
+    timerBusqueda = setTimeout(async () => {
+      const valor = $('busquedaProducto').value;
+
+      const lista = await buscarCatalogoConRespaldoFirebase(valor);
 
       renderResultadosBusqueda(lista);
-    }, 180);
+    }, 250);
   });
 
-  $('busquedaProducto').addEventListener('keydown', (e) => {
+  $('busquedaProducto').addEventListener('keydown', async (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
 
-      const lista = buscarEnCatalogo(
+      const lista = await buscarCatalogoConRespaldoFirebase(
         $('busquedaProducto').value
       );
 

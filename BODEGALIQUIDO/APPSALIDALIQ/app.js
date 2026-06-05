@@ -189,11 +189,11 @@ async function cargarCatalogoActivo(){
 
   const catalogoLocal = await leerCatalogoLocal();
 
-  if(
-    meta &&
-    meta.fecha === hoyISO() &&
-    catalogoLocal.length > 0
-  ){
+if(
+  meta &&
+  diasTranscurridos(meta.fecha) < 3 &&
+  catalogoLocal.length > 0
+){
 
     catalogoLocal.forEach(producto=>{
       agregarProductoMemoria(producto);
@@ -1858,3 +1858,20 @@ async function generarPDF(salida){
   );
 
 }
+function diasTranscurridos(fechaISO){
+
+  const inicio = new Date(fechaISO);
+  const hoy = new Date();
+
+  inicio.setHours(0,0,0,0);
+  hoy.setHours(0,0,0,0);
+
+  const diferencia =
+    hoy.getTime() - inicio.getTime();
+
+  return Math.floor(
+    diferencia / 86400000
+  );
+
+}
+

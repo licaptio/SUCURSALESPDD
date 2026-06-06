@@ -441,6 +441,7 @@ async function abrirModalProducto(index) {
     return;
   }
 
+  document.getElementById("listaProductos").classList.remove("oculto");
   document.getElementById("productoSeleccionadoBox").classList.add("oculto");
   document.getElementById("conversionBox").classList.add("oculto");
   document.getElementById("buscarProductoTexto").value = "";
@@ -520,6 +521,10 @@ function pintarProductos(productos) {
 function seleccionarProducto(producto) {
   productoSeleccionado = producto;
 
+  document.getElementById("listaProductos").innerHTML = "";
+  document.getElementById("listaProductos").classList.add("oculto");
+  document.getElementById("buscarProductoTexto").value = "";
+
   const articulo = articulosPreparados[indiceArticuloEnlace];
   const cantidadFactura = Number(articulo?.cantidad_factura || 0);
   const factor = Number(articulo?.factor_conversion || 1);
@@ -538,6 +543,10 @@ function seleccionarProducto(producto) {
     numeroInput(factor || 1);
 
   document.getElementById("productoSeleccionadoBox").classList.remove("oculto");
+
+  setTimeout(() => {
+    document.getElementById("btnGuardarProductoEnlace").focus();
+  }, 50);
 }
 
 function toggleConversion() {

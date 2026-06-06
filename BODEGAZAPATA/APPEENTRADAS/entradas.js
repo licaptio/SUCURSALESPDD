@@ -10,18 +10,6 @@ import {
   serverTimestamp
 } from "./firebase.js";
 
-import {
-  db,
-  doc,
-  setDoc,
-  getDocs,
-  collection,
-  query,
-  orderBy,
-  limit,
-  serverTimestamp
-} from "./firebase.js";
-
 const RUTA_ENTRADAS_ZAPATA = "almacenes/almacen_zapata/entradas";
 
 export function prepararArticulosEntrada(factura, equivalencias) {

@@ -719,7 +719,8 @@ function pintarPivotPorSemana() {
       <th class="left">Código</th>
       <th class="left">Nombre</th>
       <th>INVINI<br>SEMANA</th>
-      <th>ENTRADAS<br>SEMANA</th>
+      ${fechasColumnas.map(f => `<th>ENTRADA<br>${fechaCorta(f)}</th>`).join("")}
+      <th>TOTAL<br>ENTRADAS</th>
       ${fechasColumnas.map(f => `<th>SALIDA<br>${fechaCorta(f)}</th>`).join("")}
       <th>TOTAL<br>SALIDAS</th>
       <th>EXISTENCIA<br>FINAL</th>
@@ -731,21 +732,35 @@ function pintarPivotPorSemana() {
       <td class="left codigo">${escapeHtml(r.codigo)}</td>
       <td class="left">${escapeHtml(r.nombre)}</td>
       <td class="cantidad">${fmtNum(r.inviniSemana)}</td>
+
+      ${fechasColumnas.map(f => {
+        const val = Number(r.entradasPorFecha[f] || 0);
+        return `<td class="${val ? "cantidad" : ""}">${fmtCelda(val)}</td>`;
+      }).join("")}
+
       <td class="cantidad">${fmtNum(r.totalEntradasSemana)}</td>
+
       ${fechasColumnas.map(f => {
         const val = Number(r.salidasPorFecha[f] || 0);
         return `<td class="${val ? "cantidad" : ""}">${fmtCelda(val)}</td>`;
       }).join("")}
+
       <td class="cantidad">${fmtNum(r.totalSalidasSemana)}</td>
       <td class="cantidad">${fmtNum(r.existenciaFinalSemana)}</td>
     </tr>
   `).join("");
 
+  const totalEntradasPorFecha = {};
   const totalSalidasPorFecha = {};
-  fechasColumnas.forEach(f => totalSalidasPorFecha[f] = 0);
+
+  fechasColumnas.forEach(f => {
+    totalEntradasPorFecha[f] = 0;
+    totalSalidasPorFecha[f] = 0;
+  });
 
   rows.forEach(r => {
     fechasColumnas.forEach(f => {
+      totalEntradasPorFecha[f] += Number(r.entradasPorFecha[f] || 0);
       totalSalidasPorFecha[f] += Number(r.salidasPorFecha[f] || 0);
     });
   });
@@ -759,13 +774,19 @@ function pintarPivotPorSemana() {
     <tr>
       <td class="left" colspan="2">TOTAL</td>
       <td>${fmtNum(totalInviniSemana)}</td>
+
+      ${fechasColumnas.map(f => `<td>${fmtNum(totalEntradasPorFecha[f])}</td>`).join("")}
+
       <td>${fmtNum(totalEntradasSemana)}</td>
+
       ${fechasColumnas.map(f => `<td>${fmtNum(totalSalidasPorFecha[f])}</td>`).join("")}
+
       <td>${fmtNum(totalSalidasSemana)}</td>
       <td>${fmtNum(totalExistenciaFinal)}</td>
     </tr>
   `;
 }
+
 
 function pintarDetalle() {
   const tabla = $("tabla");

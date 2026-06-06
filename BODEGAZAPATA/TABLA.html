@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Tabla Salidas Zapata - PROVSOFT</title>
+  <title>Inventario Zapata - PROVSOFT</title>
 
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css" />
@@ -25,7 +25,7 @@
       <h2 class="loader-title">PROVEEDORA DE DULCES Y DESECHABLES</h2>
 
       <div class="loader-subtitle">
-        ALMACÉN ZAPATA · SALIDAS · INVENTARIO SEMANAL
+        ALMACÉN ZAPATA · ENTRADAS · SALIDAS · INVENTARIO SEMANAL
       </div>
 
       <div class="progress-shell">
@@ -40,7 +40,7 @@
     <section class="card">
       <header class="topbar">
         <div>
-          <h1>Tabla Salidas Zapata</h1>
+          <h1>Inventario Zapata</h1>
 
           <p>
             Inventario inicial tomado de:
@@ -50,6 +50,11 @@
           <p>
             Base original: 25/05/2026 · Vista semanal domingo a sábado ·
             Inventario inicial visible = existencia final de la semana anterior.
+          </p>
+
+          <p>
+            Entradas tomadas de:
+            /almacenes/almacen_zapata/entradas
           </p>
         </div>
 
@@ -82,7 +87,7 @@
           <input
             id="busqueda"
             type="search"
-            placeholder="Buscar código, nombre, folio..."
+            placeholder="Buscar código, nombre, folio, proveedor, destino..."
           />
 
           <button id="btnRecargar">Recargar</button>
@@ -104,7 +109,7 @@
       </section>
 
       <p id="status" class="status">
-        Listo. El inventario inicial se calcula recorriendo todos los usuarios del conteo.
+        Listo. El inventario inicial se calcula recorriendo el conteo; las entradas suman y las salidas restan.
       </p>
     </section>
   </main>

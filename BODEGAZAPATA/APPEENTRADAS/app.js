@@ -21,6 +21,7 @@ import {
 } from "./entradas.js";
 
 let proveedores = [];
+let proveedorEditandoId = null;
 let equivalencias = [];
 let facturasPendientes = [];
 let facturaSeleccionada = null;
@@ -136,21 +137,25 @@ async function cargarConfiguracionesIniciales() {
 }
 
 async function guardarProveedorUI() {
-const rfc = document.getElementById("rfcProveedor").value;
-const nombre = document.getElementById("nombreProveedor").value;
-const aliasPivot = document.getElementById("aliasPivotProveedor").value;
-  
+  const rfc = document.getElementById("rfcProveedor").value;
+  const nombre = document.getElementById("nombreProveedor").value;
+  const aliasPivot = document.getElementById("aliasPivotProveedor").value;
+
   try {
-await guardarProveedorAutorizado({
-  rfc_emisor: rfc,
-  razon_social_emisor: nombre,
-  alias_pivot: aliasPivot
-});
-    
+    await guardarProveedorAutorizado({
+      rfc_emisor: proveedorEditandoId || rfc,
+      razon_social_emisor: nombre,
+      alias_pivot: aliasPivot
+    });
+
+    proveedorEditandoId = null;
+
+    document.getElementById("rfcProveedor").disabled = false;
     document.getElementById("rfcProveedor").value = "";
     document.getElementById("nombreProveedor").value = "";
-document.getElementById("aliasPivotProveedor").value = "";
-    
+    document.getElementById("aliasPivotProveedor").value = "";
+    document.getElementById("btnGuardarProveedor").textContent = "Guardar proveedor";
+
     proveedores = await cargarProveedoresAutorizados();
     pintarProveedores();
 
@@ -293,19 +298,58 @@ function pintarProveedores() {
     const div = document.createElement("div");
     div.className = "item-lista";
 
-    div.innerHTML = `
-      <b>${escapeHtml(p.rfc_emisor || "")}</b><br>
-${escapeHtml(p.razon_social_emisor || "")}<br>
-<b>Alias pivot:</b> ${escapeHtml(p.alias_pivot || "")}<br>
-<span class="badge ${p.activo ? "badge-ok" : "badge-no"}">
-${p.activo ? "ACTIVO" : "INACTIVO"}
-      </span>
-    `;
+div.innerHTML = `
+  <b>${escapeHtml(p.rfc_emisor || "")}</b><br>
+  ${escapeHtml(p.razon_social_emisor || "")}<br>
+  <b>Alias pivot:</b> ${escapeHtml(p.alias_pivot || "")}<br>
+  <span class="badge ${p.activo ? "badge-ok" : "badge-no"}">
+    ${p.activo ? "ACTIVO" : "INACTIVO"}
+  </span>
+  <br><br>
+  <button class="btn-mini btnEditarProveedor" data-id="${escapeHtml(p.id)}">
+    Editar
+  </button>
+`;
+  
+contenedor.appendChild(div);
+});
 
-    contenedor.appendChild(div);
+document.querySelectorAll(".btnEditarProveedor").forEach(btn => {
+  btn.addEventListener("click", () => {
+
+    const id = btn.dataset.id;
+
+    const proveedor = proveedores.find(
+      p => p.id === id
+    );
+
+    if (!proveedor) return;
+
+    proveedorEditandoId = proveedor.id;
+
+    document.getElementById("rfcProveedor").value =
+      proveedor.rfc_emisor || "";
+
+    document.getElementById("rfcProveedor").disabled = true;
+
+    document.getElementById("nombreProveedor").value =
+      proveedor.razon_social_emisor || "";
+
+    document.getElementById("aliasPivotProveedor").value =
+      proveedor.alias_pivot || "";
+
+    document.getElementById("btnGuardarProveedor").textContent =
+      "Actualizar proveedor";
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+
   });
-}
+});
 
+}
 function pintarFacturas() {
   const contenedor = document.getElementById("listaFacturas");
   contenedor.innerHTML = "";

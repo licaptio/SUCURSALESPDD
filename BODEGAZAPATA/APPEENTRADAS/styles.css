@@ -480,3 +480,17 @@ textarea {
     align-items: stretch;
   }
 }
+.resumen-factura-compacto {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.resumen-factura-compacto span {
+  white-space: nowrap;
+}
+

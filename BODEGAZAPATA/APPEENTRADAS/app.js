@@ -107,10 +107,10 @@ function configurarBotones() {
     .getElementById("btnBuscarProducto")
     .addEventListener("click", buscarProductoUI);
 
-  document
-    .getElementById("buscarProductoTexto")
-    .addEventListener("input", debounce(buscarProductoUI, 250));
-
+document
+  .getElementById("buscarProductoTexto")
+  .addEventListener("input", debounce(buscarProductoUI, 120));
+  
   document
     .getElementById("btnMostrarConversion")
     .addEventListener("click", toggleConversion);

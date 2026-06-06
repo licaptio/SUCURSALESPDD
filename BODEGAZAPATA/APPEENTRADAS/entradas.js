@@ -11,8 +11,16 @@ import {
 } from "./firebase.js";
 
 import {
-  buscarEquivalenciaParaConcepto
-} from "./configuracion.js";
+  db,
+  doc,
+  setDoc,
+  getDocs,
+  collection,
+  query,
+  orderBy,
+  limit,
+  serverTimestamp
+} from "./firebase.js";
 
 const RUTA_ENTRADAS_ZAPATA = "almacenes/almacen_zapata/entradas";
 
@@ -22,7 +30,7 @@ export function prepararArticulosEntrada(factura, equivalencias) {
     : [];
 
   return conceptos.map(concepto => {
-    const eq = buscarEquivalenciaParaConcepto(concepto, equivalencias);
+    const eq = buscarEquivalenciaExactaParaConcepto(concepto, equivalencias);
 
     const cantidadFactura = Number(concepto.cantidad || 0);
     const factor = eq ? Number(eq.factor_conversion || 1) : 1;
@@ -41,6 +49,50 @@ export function prepararArticulosEntrada(factura, equivalencias) {
       equivalencia_encontrada: Boolean(eq)
     };
   });
+}
+function buscarEquivalenciaExactaParaConcepto(concepto, equivalencias = []) {
+  const codigoFactura = normalizarTexto(concepto.noIdentificacion || "");
+  const descripcionFactura = normalizarTexto(concepto.descripcion || "");
+  const textoFactura = normalizarTexto(
+    `${concepto.noIdentificacion || ""} ${concepto.descripcion || ""}`
+  );
+
+  if (!codigoFactura && !descripcionFactura) return null;
+
+  const equivalenciasActivas = Array.isArray(equivalencias)
+    ? equivalencias
+    : [];
+
+  let eq = equivalenciasActivas.find(e => {
+    const codigoEq = normalizarTexto(e.codigo_factura || e.noIdentificacion || "");
+    return codigoEq && codigoEq === codigoFactura;
+  });
+
+  if (eq) return eq;
+
+  eq = equivalenciasActivas.find(e => {
+    const textoEq = normalizarTexto(e.texto_factura || "");
+    return textoEq && textoEq === textoFactura;
+  });
+
+  if (eq) return eq;
+
+  eq = equivalenciasActivas.find(e => {
+    const descripcionEq = normalizarTexto(e.descripcion_factura || "");
+    return descripcionEq && descripcionEq === descripcionFactura;
+  });
+
+  return eq || null;
+}
+
+function normalizarTexto(valor) {
+  return String(valor || "")
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export async function generarEntradaZapata(factura, articulos, usuario = "GERARDO") {

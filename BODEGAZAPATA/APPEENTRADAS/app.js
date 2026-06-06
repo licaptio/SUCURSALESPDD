@@ -397,14 +397,12 @@ function renderDetalleFactura() {
   `).join("");
 
   detalle.innerHTML = `
-    <div class="resumen-factura">
-      <p><b>Proveedor:</b> ${escapeHtml(facturaSeleccionada.razon_social_emisor || "")}</p>
-      <p><b>RFC:</b> ${escapeHtml(facturaSeleccionada.rfc_emisor || "")}</p>
-      <p><b>Factura:</b> ${escapeHtml(facturaSeleccionada.serie || "")} ${escapeHtml(facturaSeleccionada.folio || "")}</p>
-      <p><b>Fecha:</b> ${escapeHtml(facturaSeleccionada.fecha || facturaSeleccionada.fecha_factura || facturaSeleccionada.fecha_emision || "")}</p>
-      <p><b>Total:</b> ${formatoPesos(facturaSeleccionada.total)}</p>
-      <p><b>UUID:</b> ${escapeHtml(facturaSeleccionada.uuid_cfdi || facturaSeleccionada.id || "")}</p>
-    </div>
+
+<div class="resumen-factura resumen-factura-compacto">
+  <span><b>Proveedor:</b> ${escapeHtml(facturaSeleccionada.razon_social_emisor || "")}</span>
+  <span><b>Fecha:</b> ${escapeHtml(facturaSeleccionada.fecha || facturaSeleccionada.fecha_factura || facturaSeleccionada.fecha_emision || "")}</span>
+  <span><b>UUID:</b> ${escapeHtml(facturaSeleccionada.uuid_cfdi || facturaSeleccionada.id || "")}</span>
+</div>
 
     <table class="tabla tabla-revision">
       <thead>

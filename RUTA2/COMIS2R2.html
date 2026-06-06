@@ -161,6 +161,7 @@ window.generarListado = async function(){
     v.detalle.forEach(item=>{
 
 const depto = item.departamento_info?.nombre || "SIN DEPTO";
+      console.log("DEPTO:", depto, typeof depto);
 
 let comision = 0;
 

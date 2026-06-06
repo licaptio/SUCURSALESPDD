@@ -136,18 +136,21 @@ async function cargarConfiguracionesIniciales() {
 }
 
 async function guardarProveedorUI() {
-  const rfc = document.getElementById("rfcProveedor").value;
-  const nombre = document.getElementById("nombreProveedor").value;
-
+const rfc = document.getElementById("rfcProveedor").value;
+const nombre = document.getElementById("nombreProveedor").value;
+const aliasPivot = document.getElementById("aliasPivotProveedor").value;
+  
   try {
-    await guardarProveedorAutorizado({
-      rfc_emisor: rfc,
-      razon_social_emisor: nombre
-    });
-
+await guardarProveedorAutorizado({
+  rfc_emisor: rfc,
+  razon_social_emisor: nombre,
+  alias_pivot: aliasPivot
+});
+    
     document.getElementById("rfcProveedor").value = "";
     document.getElementById("nombreProveedor").value = "";
-
+document.getElementById("aliasPivotProveedor").value = "";
+    
     proveedores = await cargarProveedoresAutorizados();
     pintarProveedores();
 
@@ -292,9 +295,10 @@ function pintarProveedores() {
 
     div.innerHTML = `
       <b>${escapeHtml(p.rfc_emisor || "")}</b><br>
-      ${escapeHtml(p.razon_social_emisor || "")}<br>
-      <span class="badge ${p.activo ? "badge-ok" : "badge-no"}">
-        ${p.activo ? "ACTIVO" : "INACTIVO"}
+${escapeHtml(p.razon_social_emisor || "")}<br>
+<b>Alias pivot:</b> ${escapeHtml(p.alias_pivot || "")}<br>
+<span class="badge ${p.activo ? "badge-ok" : "badge-no"}">
+${p.activo ? "ACTIVO" : "INACTIVO"}
       </span>
     `;
 

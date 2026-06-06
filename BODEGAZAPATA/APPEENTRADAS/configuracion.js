@@ -119,48 +119,76 @@ export async function cargarProductosActivos(max = 1200) {
   }));
 }
 
-export function filtrarProductosCatalogo(productos, textoBusqueda) {
-  const texto = normalizarTexto(textoBusqueda);
+export function filtrarProductosCatalogo(productos = [], texto = "") {
+  const queryOriginal = String(texto || "").trim();
 
-  if (!texto) {
-    return productos.slice(0, 50);
+  if (!queryOriginal) {
+    return productos.slice(0, 80);
   }
 
-  const tokens = texto.split(" ").filter(Boolean);
+  const query = normalizarBusqueda(queryOriginal);
+  const tokens = query.split(" ").filter(Boolean);
 
-  return productos
+  const resultados = productos
     .map(p => {
-      const codigosEquivalentes = Array.isArray(p.codigosEquivalentes)
-        ? p.codigosEquivalentes.join(" ")
-        : "";
+      const codigo = normalizarBusqueda(p.codigoBarra || p.id || "");
+      const concepto = normalizarBusqueda(p.concepto || "");
+      const marca = normalizarBusqueda(p.marca || "");
+      const departamento = normalizarBusqueda(p.departamento || "");
 
-      const base = normalizarTexto(`
-        ${p.codigoBarra || ""}
-        ${p.concepto || ""}
-        ${p.marca || ""}
-        ${p.departamento || ""}
-        ${codigosEquivalentes}
-      `);
+      const equivalentes = Array.isArray(p.codigosEquivalentes)
+        ? p.codigosEquivalentes.map(x => normalizarBusqueda(x)).join(" ")
+        : normalizarBusqueda(p.codigosEquivalentes || "");
+
+      const textoBase = `${codigo} ${concepto} ${marca} ${departamento} ${equivalentes}`.trim();
 
       let score = 0;
 
-      for (const token of tokens) {
-        if (base.includes(token)) score++;
+      if (codigo === query) score += 1000;
+      if (codigo.startsWith(query)) score += 700;
+      if (codigo.includes(query)) score += 500;
+
+      if (concepto === query) score += 900;
+      if (concepto.startsWith(query)) score += 600;
+      if (concepto.includes(query)) score += 450;
+
+      if (textoBase.includes(query)) score += 350;
+
+      tokens.forEach(token => {
+        if (codigo === token) score += 250;
+        else if (codigo.includes(token)) score += 180;
+
+        if (concepto.includes(token)) score += 150;
+        if (marca.includes(token)) score += 80;
+        if (departamento.includes(token)) score += 40;
+        if (equivalentes.includes(token)) score += 220;
+      });
+
+      const tokensEncontrados = tokens.filter(t => textoBase.includes(t)).length;
+      score += tokensEncontrados * 120;
+
+      if (tokens.length > 0 && tokensEncontrados === tokens.length) {
+        score += 300;
       }
 
-      if (String(p.codigoBarra || "").toUpperCase() === texto) {
-        score += 10;
-      }
-
-      return {
-        producto: p,
-        score
-      };
+      return { producto: p, score };
     })
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 80)
+    .slice(0, 40)
     .map(x => x.producto);
+
+  return resultados;
+}
+
+function normalizarBusqueda(valor) {
+  return String(valor || "")
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[.,;:/\\|(){}\[\]\-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function buscarEquivalenciaParaConcepto(concepto, equivalencias) {

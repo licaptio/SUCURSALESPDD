@@ -120,65 +120,49 @@ export async function cargarProductosActivos(max = 1200) {
 }
 
 export function filtrarProductosCatalogo(productos = [], texto = "") {
-  const queryOriginal = String(texto || "").trim();
+  const query = normalizarBusqueda(texto);
 
-  if (!queryOriginal) {
-    return productos.slice(0, 80);
+  if (!query) {
+    return productos.slice(0, 100);
   }
 
-  const query = normalizarBusqueda(queryOriginal);
   const tokens = query.split(" ").filter(Boolean);
 
-  const resultados = productos
+  return productos
     .map(p => {
       const codigo = normalizarBusqueda(p.codigoBarra || p.id || "");
       const concepto = normalizarBusqueda(p.concepto || "");
       const marca = normalizarBusqueda(p.marca || "");
       const departamento = normalizarBusqueda(p.departamento || "");
 
-      const equivalentes = Array.isArray(p.codigosEquivalentes)
-        ? p.codigosEquivalentes.map(x => normalizarBusqueda(x)).join(" ")
-        : normalizarBusqueda(p.codigosEquivalentes || "");
-
-      const textoBase = `${codigo} ${concepto} ${marca} ${departamento} ${equivalentes}`.trim();
+      const textoCompleto = `${codigo} ${concepto} ${marca} ${departamento}`;
 
       let score = 0;
 
       if (codigo === query) score += 1000;
-      if (codigo.startsWith(query)) score += 700;
-      if (codigo.includes(query)) score += 500;
+      if (codigo.includes(query)) score += 700;
+      if (concepto.includes(query)) score += 600;
+      if (textoCompleto.includes(query)) score += 500;
 
-      if (concepto === query) score += 900;
-      if (concepto.startsWith(query)) score += 600;
-      if (concepto.includes(query)) score += 450;
+      for (const token of tokens) {
+        if (codigo.includes(token)) score += 300;
+        if (concepto.includes(token)) score += 250;
+        if (marca.includes(token)) score += 100;
+        if (departamento.includes(token)) score += 80;
+      }
 
-      if (textoBase.includes(query)) score += 350;
+      const encontrados = tokens.filter(t => textoCompleto.includes(t)).length;
 
-      tokens.forEach(token => {
-        if (codigo === token) score += 250;
-        else if (codigo.includes(token)) score += 180;
-
-        if (concepto.includes(token)) score += 150;
-        if (marca.includes(token)) score += 80;
-        if (departamento.includes(token)) score += 40;
-        if (equivalentes.includes(token)) score += 220;
-      });
-
-      const tokensEncontrados = tokens.filter(t => textoBase.includes(t)).length;
-      score += tokensEncontrados * 120;
-
-      if (tokens.length > 0 && tokensEncontrados === tokens.length) {
-        score += 300;
+      if (encontrados === tokens.length) {
+        score += 500;
       }
 
       return { producto: p, score };
     })
     .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 40)
+    .slice(0, 50)
     .map(x => x.producto);
-
-  return resultados;
 }
 
 function normalizarBusqueda(valor) {
@@ -186,10 +170,11 @@ function normalizarBusqueda(valor) {
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[.,;:/\\|(){}\[\]\-_]+/g, " ")
+    .replace(/[^A-Z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
+
 
 export function buscarEquivalenciaParaConcepto(concepto, equivalencias) {
   const texto = normalizarTexto(

@@ -160,7 +160,28 @@ window.generarListado = async function(){
 
     v.detalle.forEach(item=>{
 
-const depto = item.departamento_info?.nombre || "SIN DEPTO";
+const deptoOriginal =
+  item.departamento_info?.nombre ??
+  item.departamento ??
+  "SIN DEPTO";
+if (typeof deptoOriginal !== "string") {
+  alert(
+    `Artículo con departamento incorrecto:\n\n` +
+    `Código: ${item.codigo}\n` +
+    `Artículo: ${item.nombre}\n` +
+    `Departamento: ${deptoOriginal}`
+  );
+}
+if (typeof deptoOriginal !== "string") {
+  console.error("DEPTO INVALIDO:", {
+    codigo: item.codigo,
+    nombre: item.nombre,
+    departamento: deptoOriginal,
+    itemCompleto: item
+  });
+}
+
+const depto = String(deptoOriginal);
       console.log("DEPTO:", depto, typeof depto);
 
 let comision = 0;
@@ -174,7 +195,7 @@ const cantidad =
   (precioUnit > 0 ? importe / precioUnit : 0);
 
 // 🔥 CÁLCULO CORRECTO PARA CIGARROS
-if (depto.toUpperCase().includes("CIGARRO")) {
+if (String(depto).toUpperCase().includes("CIGARRO")) {
   comision = +(cantidad * 0.05).toFixed(2);
 } else {
   comision = Number(item.comision_monto) || 0;
@@ -196,7 +217,7 @@ if (depto.toUpperCase().includes("CIGARRO")) {
         cantidad: cantidad,                 // ✅ YA NO ES undefined
         precio: Number(item.precio_unit) || 0,
         importe: importe,
-       comisionValor: depto.toUpperCase().includes("CIGARRO")
+       comisionValor: String(depto).toUpperCase().includes("CIGARRO")
   ? "$0.50 / 10 pzs"
   : (item.comision_valor || 0) + "%",
         comisionMonto: comision

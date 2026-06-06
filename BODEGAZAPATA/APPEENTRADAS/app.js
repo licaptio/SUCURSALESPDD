@@ -470,7 +470,7 @@ async function abrirModalProducto(index) {
 async function asegurarProductosActivos() {
   if (productosActivosCargados) return;
 
-  productosActivos = await cargarProductosActivos(1500);
+  productosActivos = await cargarProductosActivos(10000);
   productosActivosCargados = true;
 }
 

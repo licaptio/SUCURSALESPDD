@@ -30,12 +30,16 @@ export async function guardarProveedorAutorizado(data) {
   );
 
   await setDoc(ref, {
-    rfc_emisor: rfc,
-    razon_social_emisor: data.razon_social_emisor.trim(),
-    activo: true,
-    actualizado_en: new Date().toISOString(),
-    timestamp: serverTimestamp()
-  }, { merge: true });
+  rfc_emisor: rfc,
+  razon_social_emisor: data.razon_social_emisor.trim(),
+  alias_pivot: normalizarAliasPivot(
+    data.alias_pivot || data.razon_social_emisor
+  ),
+  activo: true,
+  actualizado_en: new Date().toISOString(),
+  timestamp: serverTimestamp()
+}, { merge: true });
+  
 }
 
 export async function cargarProveedoresAutorizados() {
@@ -232,4 +236,14 @@ function normalizarId(txt) {
   return normalizarTexto(txt)
     .replace(/\s+/g, "_")
     .slice(0, 120);
+}
+
+
+function normalizarAliasPivot(valor) {
+  return String(valor || "")
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 5);
 }

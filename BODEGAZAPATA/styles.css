@@ -245,6 +245,44 @@ td.cantidad {
   color: var(--verde);
 }
 
+th.entrada-head,
+td.entrada-col {
+  background: #eff6ff;
+}
+
+th.entrada-head {
+  color: #1d4ed8;
+  border-left: 2px solid #93c5fd;
+  border-right: 2px solid #93c5fd;
+}
+
+td.entrada-col {
+  border-left: 2px solid #bfdbfe;
+  border-right: 2px solid #bfdbfe;
+}
+
+th.entrada-head small {
+  display: block;
+  margin-top: 1px;
+  font-size: 8px;
+  line-height: 1.05;
+  color: #1e40af;
+  font-weight: 900;
+  white-space: normal;
+  max-width: 85px;
+}
+
+th.salida-head,
+td.salida-col {
+  background: #ffffff;
+}
+
+td.entrada-col.cantidad,
+td.entrada-total {
+  color: #1d4ed8;
+  font-weight: 900;
+}
+
 .status {
   margin: 0;
   padding: 8px 14px;

@@ -775,6 +775,10 @@ function pintarPivotPorSemana() {
 
   const rows = registrosPivot.filter(pasaFiltroPivot);
 
+  const fechasConEntrada = fechasColumnas.filter(f =>
+    registrosEntradasSemana.some(x => x.fecha === f)
+  );
+
   thead.innerHTML = `
     <tr>
       <th class="left">Código</th>
@@ -783,13 +787,18 @@ function pintarPivotPorSemana() {
 
       ${fechasColumnas.map(f => {
         const proveedor = obtenerProveedoresEntradaPorFecha(f);
+        const tieneEntrada = fechasConEntrada.includes(f);
 
         return `
-          <th class="entrada-head">
-            ${fechaCorta(f)}<br>
-            ENTRADA
-            ${proveedor ? `<small>${escapeHtml(proveedor)}</small>` : ""}
-          </th>
+          ${
+            tieneEntrada
+              ? `<th class="entrada-head">
+                  ${fechaCorta(f)}<br>
+                  ENTRADA<br>
+                  <small>${escapeHtml(proveedor)}</small>
+                </th>`
+              : ""
+          }
           <th class="salida-head">
             ${fechaCorta(f)}<br>
             SALIDA
@@ -812,11 +821,16 @@ function pintarPivotPorSemana() {
       ${fechasColumnas.map(f => {
         const entrada = Number(r.entradasPorFecha[f] || 0);
         const salida = Number(r.salidasPorFecha[f] || 0);
+        const tieneEntrada = fechasConEntrada.includes(f);
 
         return `
-          <td class="entrada-col ${entrada ? "cantidad" : ""}">
-            ${fmtCelda(entrada)}
-          </td>
+          ${
+            tieneEntrada
+              ? `<td class="entrada-col ${entrada ? "cantidad" : ""}">
+                  ${fmtCelda(entrada)}
+                </td>`
+              : ""
+          }
           <td class="salida-col ${salida ? "cantidad" : ""}">
             ${fmtCelda(salida)}
           </td>
@@ -854,10 +868,18 @@ function pintarPivotPorSemana() {
       <td class="left" colspan="2">TOTAL</td>
       <td>${fmtNum(totalInviniSemana)}</td>
 
-      ${fechasColumnas.map(f => `
-        <td class="entrada-col">${fmtNum(totalEntradasPorFecha[f])}</td>
-        <td class="salida-col">${fmtNum(totalSalidasPorFecha[f])}</td>
-      `).join("")}
+      ${fechasColumnas.map(f => {
+        const tieneEntrada = fechasConEntrada.includes(f);
+
+        return `
+          ${
+            tieneEntrada
+              ? `<td class="entrada-col">${fmtNum(totalEntradasPorFecha[f])}</td>`
+              : ""
+          }
+          <td class="salida-col">${fmtNum(totalSalidasPorFecha[f])}</td>
+        `;
+      }).join("")}
 
       <td>${fmtNum(totalEntradasSemana)}</td>
       <td>${fmtNum(totalSalidasSemana)}</td>

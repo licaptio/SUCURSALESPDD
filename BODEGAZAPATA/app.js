@@ -25,6 +25,15 @@ const REF_ENTRADAS_ZAPATA = collection(
   "entradas"
 );
 
+const REF_PROVEEDORES_AUTORIZADOS_ZAPATA = collection(
+  db,
+  "almacenes",
+  "almacen_zapata",
+  "configuracion",
+  "proveedores_autorizados",
+  "items"
+);
+
 const REF_USUARIOS_INVENTARIO = collection(
   db,
   "almacenes",
@@ -38,15 +47,14 @@ const $ = (id) => document.getElementById(id);
 
 let registrosDetalleSemana = [];
 let registrosDetalleAcumuladoAnterior = [];
-
 let registrosEntradasSemana = [];
 let registrosEntradasAcumuladoAnterior = [];
-
 let registrosDetalleMovimientoSemana = [];
 let registrosPivot = [];
 let fechasColumnas = [];
 
 let inventarioInicialOriginal = {};
+let proveedoresAutorizadosPivot = {};
 let vistaActual = "resumen";
 
 let rangoSemanaActual = {
@@ -252,6 +260,45 @@ function crearFechasSemana(inicio, fin) {
   return fechas;
 }
 
+async function cargarProveedoresAutorizadosPivot() {
+  proveedoresAutorizadosPivot = {};
+
+  const snap = await getDocs(REF_PROVEEDORES_AUTORIZADOS_ZAPATA);
+
+  snap.forEach((docu) => {
+    const p = docu.data() || {};
+    const rfc = String(p.rfc_emisor || docu.id || "").trim().toUpperCase();
+
+    if (!rfc) return;
+    if (p.activo === false) return;
+
+    proveedoresAutorizadosPivot[rfc] = {
+      rfc,
+      razon_social_emisor: String(p.razon_social_emisor || "").trim(),
+      alias_pivot: String(p.alias_pivot || p.razon_social_emisor || rfc).trim()
+    };
+  });
+}
+
+function obtenerAliasProveedorPivot(rfc, razonSocial) {
+  const key = String(rfc || "").trim().toUpperCase();
+
+  if (key && proveedoresAutorizadosPivot[key]) {
+    return proveedoresAutorizadosPivot[key].alias_pivot;
+  }
+
+  return String(razonSocial || key || "PROVEEDOR").trim();
+}
+
+function obtenerProveedoresEntradaPorFecha(fecha) {
+  const proveedores = registrosEntradasSemana
+    .filter(x => x.fecha === fecha)
+    .map(x => String(x.alias_pivot || x.proveedor || x.entrega || "").trim())
+    .filter(Boolean);
+
+  return [...new Set(proveedores)].join(" / ");
+}
+
 async function cargarInventarioInicial() {
   const inventario = {};
 
@@ -368,6 +415,9 @@ async function consultarSalidas(inicio, fin) {
         recibe: String(data.recibe || "").trim(),
         folioCincho: String(data.folioCincho || "").trim(),
         proveedor: "",
+        alias_pivot: "",
+        rfc_emisor: "",
+        razon_social_emisor: "",
         codigo: codigoOriginal,
         codigoKey,
         nombre,
@@ -412,6 +462,10 @@ async function consultarEntradas(inicio, fin) {
 
     if (!fecha || fecha < FECHA_INICIO_MINIMA) return;
 
+    const rfcEmisor = String(data.rfc_emisor || "").trim().toUpperCase();
+    const razonSocialEmisor = String(data.razon_social_emisor || "").trim();
+    const aliasPivot = obtenerAliasProveedorPivot(rfcEmisor, razonSocialEmisor);
+
     const articulos = Array.isArray(data.articulos) ? data.articulos : [];
 
     articulos.forEach((art, idx) => {
@@ -429,10 +483,13 @@ async function consultarEntradas(inicio, fin) {
         folio: String(data.folioEntrada || data.folio || documento.id || "").trim(),
         fecha,
         destino: "ALMACÉN ZAPATA",
-        entrega: String(data.razon_social_emisor || "").trim(),
+        entrega: aliasPivot,
         recibe: String(data.usuario || "").trim(),
         folioCincho: "",
-        proveedor: String(data.razon_social_emisor || "").trim(),
+        proveedor: aliasPivot,
+        rfc_emisor: rfcEmisor,
+        razon_social_emisor: razonSocialEmisor,
+        alias_pivot: aliasPivot,
         codigo: codigoOriginal,
         codigoKey,
         nombre,
@@ -452,6 +509,7 @@ async function cargarSalidasZapata() {
     const rango = obtenerRangoSemana();
 
     await cargarInventarioInicial();
+    await cargarProveedoresAutorizadosPivot();
 
     setStatus(
       `Consultando semana ${rango.inicio} a ${rango.fin}. Acumulado anterior hasta ${rango.acumuladoAnteriorFin}...`
@@ -694,7 +752,10 @@ function pasaFiltroDetalle(item) {
     item.destino,
     item.entrega,
     item.recibe,
-    item.proveedor
+    item.proveedor,
+    item.alias_pivot,
+    item.rfc_emisor,
+    item.razon_social_emisor
   ].some((v) => String(v || "").toLowerCase().includes(q));
 }
 
@@ -719,9 +780,24 @@ function pintarPivotPorSemana() {
       <th class="left">Código</th>
       <th class="left">Nombre</th>
       <th>INVINI<br>SEMANA</th>
-      ${fechasColumnas.map(f => `<th>ENTRADA<br>${fechaCorta(f)}</th>`).join("")}
+
+      ${fechasColumnas.map(f => {
+        const proveedor = obtenerProveedoresEntradaPorFecha(f);
+
+        return `
+          <th class="entrada-head">
+            ${fechaCorta(f)}<br>
+            ENTRADA
+            ${proveedor ? `<small>${escapeHtml(proveedor)}</small>` : ""}
+          </th>
+          <th class="salida-head">
+            ${fechaCorta(f)}<br>
+            SALIDA
+          </th>
+        `;
+      }).join("")}
+
       <th>TOTAL<br>ENTRADAS</th>
-      ${fechasColumnas.map(f => `<th>SALIDA<br>${fechaCorta(f)}</th>`).join("")}
       <th>TOTAL<br>SALIDAS</th>
       <th>EXISTENCIA<br>FINAL</th>
     </tr>
@@ -734,17 +810,20 @@ function pintarPivotPorSemana() {
       <td class="cantidad">${fmtNum(r.inviniSemana)}</td>
 
       ${fechasColumnas.map(f => {
-        const val = Number(r.entradasPorFecha[f] || 0);
-        return `<td class="${val ? "cantidad" : ""}">${fmtCelda(val)}</td>`;
+        const entrada = Number(r.entradasPorFecha[f] || 0);
+        const salida = Number(r.salidasPorFecha[f] || 0);
+
+        return `
+          <td class="entrada-col ${entrada ? "cantidad" : ""}">
+            ${fmtCelda(entrada)}
+          </td>
+          <td class="salida-col ${salida ? "cantidad" : ""}">
+            ${fmtCelda(salida)}
+          </td>
+        `;
       }).join("")}
 
-      <td class="cantidad">${fmtNum(r.totalEntradasSemana)}</td>
-
-      ${fechasColumnas.map(f => {
-        const val = Number(r.salidasPorFecha[f] || 0);
-        return `<td class="${val ? "cantidad" : ""}">${fmtCelda(val)}</td>`;
-      }).join("")}
-
+      <td class="cantidad entrada-total">${fmtNum(r.totalEntradasSemana)}</td>
       <td class="cantidad">${fmtNum(r.totalSalidasSemana)}</td>
       <td class="cantidad">${fmtNum(r.existenciaFinalSemana)}</td>
     </tr>
@@ -775,18 +854,17 @@ function pintarPivotPorSemana() {
       <td class="left" colspan="2">TOTAL</td>
       <td>${fmtNum(totalInviniSemana)}</td>
 
-      ${fechasColumnas.map(f => `<td>${fmtNum(totalEntradasPorFecha[f])}</td>`).join("")}
+      ${fechasColumnas.map(f => `
+        <td class="entrada-col">${fmtNum(totalEntradasPorFecha[f])}</td>
+        <td class="salida-col">${fmtNum(totalSalidasPorFecha[f])}</td>
+      `).join("")}
 
       <td>${fmtNum(totalEntradasSemana)}</td>
-
-      ${fechasColumnas.map(f => `<td>${fmtNum(totalSalidasPorFecha[f])}</td>`).join("")}
-
       <td>${fmtNum(totalSalidasSemana)}</td>
       <td>${fmtNum(totalExistenciaFinal)}</td>
     </tr>
   `;
 }
-
 
 function pintarDetalle() {
   const tabla = $("tabla");
@@ -857,6 +935,9 @@ function exportarExcel() {
       Destino_Proveedor: r.destino,
       Entrega_Emisor: r.entrega,
       Recibe_Usuario: r.recibe,
+      RFC_Emisor: r.rfc_emisor,
+      Razon_Social_Emisor: r.razon_social_emisor,
+      Alias_Pivot: r.alias_pivot,
       Partida: r.partida,
       Codigo: r.codigo,
       Nombre: r.nombre,
@@ -867,14 +948,15 @@ function exportarExcel() {
       const obj = {
         Codigo: r.codigo,
         Nombre: r.nombre,
-        "INVINI SEMANA": Number(r.inviniSemana || 0),
-        "ENTRADAS SEMANA": Number(r.totalEntradasSemana || 0)
+        "INVINI SEMANA": Number(r.inviniSemana || 0)
       };
 
       fechasColumnas.forEach((f) => {
+        obj[`ENTRADA ${fechaCorta(f)}`] = Number(r.entradasPorFecha[f] || 0);
         obj[`SALIDA ${fechaCorta(f)}`] = Number(r.salidasPorFecha[f] || 0);
       });
 
+      obj["TOTAL ENTRADAS"] = Number(r.totalEntradasSemana || 0);
       obj["TOTAL SALIDAS"] = Number(r.totalSalidasSemana || 0);
       obj["EXISTENCIA FINAL"] = Number(r.existenciaFinalSemana || 0);
 

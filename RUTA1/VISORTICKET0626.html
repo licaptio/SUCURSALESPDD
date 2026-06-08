@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Tickets por Semana | PROVSOFT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+body{
+  font-family:Arial,sans-serif;
+  margin:0;
+  padding:20px;
+  background:#eef2f5;
+}
+h2{text-align:center}
+.filtros{
+  background:white;
+  padding:15px;
+  border-radius:12px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:15px;
+}
+input,select,button{
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+button{
+  background:#00416A;
+  color:white;
+  cursor:pointer;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  border-radius:12px;
+  overflow:hidden;
+}
+th,td{
+  padding:9px;
+  border-bottom:1px solid #ddd;
+  font-size:14px;
+}
+th{
+  background:#00416A;
+  color:white;
+}
+.si{color:green;font-weight:bold}
+.no{color:#b00020;font-weight:bold}
+
+.fila-verde{
+  background:#d9fbe1;
+}
+.fila-amarilla{
+  background:#fff6c7;
+}
+.fila-roja{
+  background:#ffdada;
+}
+.fila-verde:hover,
+.fila-amarilla:hover,
+.fila-roja:hover{
+  filter:brightness(0.97);
+}
+
+.resumen{
+  margin-top:12px;
+  background:#00416A;
+  color:white;
+  padding:12px;
+  border-radius:10px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<h2>📆 Tickets por Semana | PROVSOFT</h2>
+
+<div class="filtros">
+  <label>Semana:</label>
+  <input type="week" id="semanaFiltro">
+
+  <label>Usuario:</label>
+  <select id="usuarioFiltro">
+    <option value="">Todos</option>
+  </select>
+
+  <label>Factura:</label>
+  <select id="facturaFiltro">
+    <option value="">Todos</option>
+    <option value="SI">Facturados</option>
+    <option value="NO">No facturados</option>
+  </select>
+
+  <button onclick="cargarTicketsSemana()">Consultar</button>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Ticket</th>
+  <th>Fecha</th>
+  <th>Hora</th>
+  <th>Usuario</th>
+  <th>Cliente</th>
+  <th>Importe</th>
+  <th>Facturado</th>
+  <th>Cortado</th>
+</tr>
+</thead>
+<tbody id="tablaTickets">
+<tr><td colspan="8">Seleccione una semana</td></tr>
+</tbody>
+</table>
+
+<div class="resumen" id="resumen"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+  authDomain: "inventariopv-643f1.firebaseapp.com",
+  projectId: "inventariopv-643f1",
+  storageBucket: "inventariopv-643f1.firebasestorage.app",
+  messagingSenderId: "96242533231",
+  appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const tabla = document.getElementById("tablaTickets");
+const resumen = document.getElementById("resumen");
+const usuarioFiltro = document.getElementById("usuarioFiltro");
+
+function obtenerRangoSemana(valorWeek){
+  const [anio, semana] = valorWeek.split("-W").map(Number);
+
+  const enero4 = new Date(anio, 0, 4);
+  const diaSemana = enero4.getDay() || 7;
+
+  const lunesSemana1 = new Date(enero4);
+  lunesSemana1.setDate(enero4.getDate() - diaSemana + 1);
+
+  const inicio = new Date(lunesSemana1);
+  inicio.setDate(lunesSemana1.getDate() + (semana - 1) * 7);
+  inicio.setHours(0,0,0,0);
+
+  const fin = new Date(inicio);
+  fin.setDate(inicio.getDate() + 7);
+  fin.setHours(0,0,0,0);
+
+  return { inicio, fin };
+}
+
+function formatoFecha(fecha){
+  return fecha.toLocaleDateString("es-MX");
+}
+
+function formatoHora(fecha){
+  return fecha.toLocaleTimeString("es-MX", {
+    hour:"2-digit",
+    minute:"2-digit",
+    second:"2-digit"
+  });
+}
+
+function esFacturado(data){
+  return data.facturada_global === true;
+}
+
+function esCortado(data){
+  return data.cortado === true;
+}
+
+async function cargarUsuariosSemana(snapshot){
+  const usuarios = new Set();
+
+  snapshot.forEach(doc=>{
+    const data = doc.data();
+    usuarios.add(data.usuarioNombre || data.usuario || "—");
+  });
+
+  const valorActual = usuarioFiltro.value;
+  usuarioFiltro.innerHTML = `<option value="">Todos</option>`;
+
+  [...usuarios].sort().forEach(usuario=>{
+    const opt = document.createElement("option");
+    opt.value = usuario;
+    opt.textContent = usuario;
+    usuarioFiltro.appendChild(opt);
+  });
+
+  usuarioFiltro.value = valorActual;
+}
+
+async function cargarTicketsSemana(){
+  const semana = document.getElementById("semanaFiltro").value;
+  const usuarioSel = document.getElementById("usuarioFiltro").value;
+  const facturaSel = document.getElementById("facturaFiltro").value;
+
+  if(!semana){
+    alert("Seleccione una semana");
+    return;
+  }
+
+  tabla.innerHTML = `<tr><td colspan="8">Cargando tickets...</td></tr>`;
+  resumen.textContent = "";
+
+  const { inicio, fin } = obtenerRangoSemana(semana);
+
+  const snapshot = await db.collection("ventas_rutav2")
+    .where("fecha", ">=", inicio)
+    .where("fecha", "<", fin)
+    .orderBy("fecha", "asc")
+    .get();
+
+  await cargarUsuariosSemana(snapshot);
+
+  let total = 0;
+  let totalFacturado = 0;
+  let totalNoFacturado = 0;
+  let totalCortado = 0;
+  let totalNoCortado = 0;
+  let cantidad = 0;
+
+  tabla.innerHTML = "";
+
+  snapshot.forEach(doc=>{
+    const data = doc.data();
+
+    if(!data.fecha || !data.fecha.toDate) return;
+
+    const usuario = data.usuarioNombre || data.usuario || "—";
+    const facturado = esFacturado(data);
+    const cortado = esCortado(data);
+
+    if(usuarioSel && usuario !== usuarioSel) return;
+    if(facturaSel === "SI" && !facturado) return;
+    if(facturaSel === "NO" && facturado) return;
+
+    const fecha = data.fecha.toDate();
+    const importe = Number(data.total || data.resumen_financiero?.total || 0);
+
+    total += importe;
+    cantidad++;
+
+    if(facturado){
+      totalFacturado += importe;
+    }else{
+      totalNoFacturado += importe;
+    }
+
+    if(cortado){
+      totalCortado += importe;
+    }else{
+      totalNoCortado += importe;
+    }
+
+    let claseFila = "fila-roja";
+
+    if(facturado && cortado){
+      claseFila = "fila-verde";
+    }else if(facturado && !cortado){
+      claseFila = "fila-amarilla";
+    }
+
+    const tr = document.createElement("tr");
+    tr.className = claseFila;
+
+    tr.innerHTML = `
+      <td>${data.folio || doc.id}</td>
+      <td>${formatoFecha(fecha)}</td>
+      <td>${formatoHora(fecha)}</td>
+      <td>${usuario}</td>
+      <td>${data.cliente || data.cliente_info?.nombre || "—"}</td>
+      <td>$${importe.toFixed(2)}</td>
+      <td class="${facturado ? "si" : "no"}">${facturado ? "SI" : "NO"}</td>
+      <td class="${cortado ? "si" : "no"}">${cortado ? "SI" : "NO"}</td>
+    `;
+
+    tabla.appendChild(tr);
+  });
+
+  if(cantidad === 0){
+    tabla.innerHTML = `<tr><td colspan="8">Sin tickets para esa semana</td></tr>`;
+  }
+
+  resumen.innerHTML = `
+    Semana: ${formatoFecha(inicio)} al ${formatoFecha(new Date(fin.getTime() - 1))}<br>
+    Tickets: ${cantidad}<br>
+    Total: $${total.toFixed(2)}<br>
+    Facturado: $${totalFacturado.toFixed(2)}<br>
+    No facturado: $${totalNoFacturado.toFixed(2)}<br>
+    Cortado: $${totalCortado.toFixed(2)}<br>
+    No cortado: $${totalNoCortado.toFixed(2)}<br><br>
+    🟩 Verde: facturado y cortado<br>
+    🟨 Amarillo: facturado pero no cortado<br>
+    🟥 Rojo: no facturado o no cortado
+  `;
+}
+</script>
+
+</body>
+</html>

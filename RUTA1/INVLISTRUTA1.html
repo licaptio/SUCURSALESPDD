@@ -683,18 +683,29 @@ tfoot td {
     let opcionesCodigos = [];
 
     function getTiendaActual() {
-      return "RUTA 1";
-    }
+  return "RUTA1";
+}
+
+function getAlmacenRutaActual() {
+  return "Almacen_Ruta_1";
+}
 
 function getRefsPorTienda() {
   const TIENDA = getTiendaActual();
+  const ALMACEN = getAlmacenRutaActual();
 
   return {
     TIENDA,
-    INVENTARIOS_REF: db.collection("TIENDAS").doc(TIENDA).collection("inventario1"),
+    ALMACEN,
+
+    INVENTARIOS_REF: db.collection("TIENDAS").doc(TIENDA).collection("INVENTARIOS"),
+    ENTRADAS_REF: db.collection("almacenes").doc(ALMACEN).collection("entradas"),
+
+    VENTAS_REF: db.collection("ventas_rutav2"),
+
     TRANSFERENCIAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("TECNOTRANSF"),
     PROVTRANS_REF: db.collection("TIENDAS").doc(TIENDA).collection("SURTIDOTRANS"),
-    VENTAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("ventas"),
+
     PRODUCTOS_REF: db.collection("productos"),
     EQUIVALENCIAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("configuracion_equivalencias")
   };
@@ -1196,7 +1207,69 @@ function getRefsPorTienda() {
         catalogo
       };
     }
+async function cargarEntradas() {
+  const { ENTRADAS_REF } = getRefsPorTienda();
 
+  const snap = await ENTRADAS_REF.get();
+
+  const docs = [];
+  const catalogo = new Map();
+
+  snap.forEach(doc => {
+    const data = doc.data() || {};
+
+    const fecha = normalizarFecha(
+      data.fecha ||
+      data.fecha_entrada ||
+      data.fecha_guardado ||
+      data.fecha_guardado_server
+    );
+
+    const detalle = Array.isArray(data.detalle)
+      ? data.detalle
+      : Array.isArray(data.items)
+        ? data.items
+        : [];
+
+    detalle.forEach((item, index) => {
+      const codigoOriginal = String(item.codigo || item.id || item.codigoBarra || "").trim();
+      const descripcion = String(item.nombre || item.descripcion || item.concepto || "").trim();
+
+      const cantidad = Number(
+        item.cantidad_entrada ??
+        item.cantidadEntrada ??
+        item.cantidad ??
+        item.cantidad_surtida ??
+        0
+      );
+
+      if (!codigoOriginal || !fecha || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+      docs.push({
+        origen: "ENT",
+        id: `${doc.id}_${index}_${codigoOriginal}`,
+        codigo: codigoOriginal,
+        codigoKey: normalizarCodigo(codigoOriginal),
+        descripcion,
+        fecha,
+        cantidad
+      });
+
+      if (!catalogo.has(codigoOriginal)) {
+        catalogo.set(codigoOriginal, descripcion);
+      }
+    });
+  });
+
+  console.log("entradas docs leídos:", snap.size);
+  console.log("entradas items sumados:", docs.length);
+
+  return {
+    docs,
+    totalEntradasDocs: snap.size,
+    catalogo
+  };
+}
     async function cargarTransferencias() {
       const { TRANSFERENCIAS_REF } = getRefsPorTienda();
       const transferSnap = await TRANSFERENCIAS_REF.get();
@@ -1344,49 +1417,65 @@ async function cargarProvTrans() {
 }
     
     
-    async function cargarVentas() {
-      const { VENTAS_REF } = getRefsPorTienda();
-      const ventasSnap = await VENTAS_REF.get();
+async function cargarVentas() {
+  const { VENTAS_REF, ALMACEN } = getRefsPorTienda();
 
-      const docs = [];
-      const catalogo = new Map();
+  const ventasSnap = await VENTAS_REF
+    .where("rutaId", "==", ALMACEN)
+    .get();
 
-      ventasSnap.forEach(doc => {
-        const data = doc.data() || {};
+  const docs = [];
+  const catalogo = new Map();
 
-        const codigoLeido = obtenerCodigoVenta(data);
-        const descripcionLeida = obtenerDescripcionVenta(data);
-        const resuelto = resolverVentaPorCodigoEquivalente(codigoLeido, descripcionLeida);
+  ventasSnap.forEach(doc => {
+    const data = doc.data() || {};
 
-        const venta = {
-          origen: "VTA",
-          id: doc.id,
-          codigo: resuelto.codigo,
-          codigoKey: resuelto.codigoKey,
-          descripcion: resuelto.descripcion,
-          fecha: obtenerFechaVenta(data),
-          cantidad: obtenerCantidadVenta(data),
-          aliasAplicado: resuelto.fueAlias,
-          codigoVendidoOriginal: resuelto.codigoVendidoOriginal
-        };
+    const fechaVenta = normalizarFecha(
+      data.fecha ||
+      data.fecha_local_iso ||
+      data.fecha_txt
+    );
 
-        if (venta.codigoKey && venta.fecha && Number.isFinite(venta.cantidad)) {
-          docs.push(venta);
-        }
+    const detalle = Array.isArray(data.detalle) ? data.detalle : [];
 
-        if (resuelto.codigo && !catalogo.has(resuelto.codigo)) {
-          catalogo.set(resuelto.codigo, resuelto.descripcion);
-        }
+    detalle.forEach((item, index) => {
+      const codigoLeido = String(item.codigo || item.id || "").trim();
+      const descripcionLeida = String(item.nombre || item.descripcion || "").trim();
+
+      const resuelto = resolverVentaPorCodigoEquivalente(codigoLeido, descripcionLeida);
+      const cantidad = Number(item.cantidad || 0);
+
+      if (!resuelto.codigoKey || !fechaVenta || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+      docs.push({
+        origen: "VTA",
+        id: `${doc.id}_${index}_${codigoLeido}`,
+        codigo: resuelto.codigo,
+        codigoKey: resuelto.codigoKey,
+        descripcion: resuelto.descripcion,
+        fecha: fechaVenta,
+        cantidad,
+        aliasAplicado: resuelto.fueAlias,
+        codigoVendidoOriginal: resuelto.codigoVendidoOriginal
       });
 
-      return {
-        docs,
-        totalVentasDocs: ventasSnap.size,
-        totalAliasAplicados: docs.filter(x => x.aliasAplicado).length,
-        catalogo
-      };
-    }
+      if (resuelto.codigo && !catalogo.has(resuelto.codigo)) {
+        catalogo.set(resuelto.codigo, resuelto.descripcion);
+      }
+    });
+  });
 
+  console.log("ventas_rutav2 docs leídos:", ventasSnap.size);
+  console.log("ventas_rutav2 items sumados:", docs.length);
+
+  return {
+    docs,
+    totalVentasDocs: ventasSnap.size,
+    totalAliasAplicados: docs.filter(x => x.aliasAplicado).length,
+    catalogo
+  };
+}
+    
     async function cargarTodo() {
       try {
         limpiarTabla();
@@ -1398,24 +1487,28 @@ async function cargarProvTrans() {
 
 const [
   inventariosData,
+  entradasData,
   transferenciasData,
   provTransData,
   ventasData
 ] = await Promise.all([
   cargarInventarios(),
+  cargarEntradas(),
   cargarTransferencias(),
   cargarProvTrans(),
   cargarVentas()
 ]);
         
         const catalogo = new Map();
-        [
+[
   equivalentesCatalogoData.catalogo,
   inventariosData.catalogo,
+  entradasData.catalogo,
   transferenciasData.catalogo,
   provTransData.catalogo,
   ventasData.catalogo
 ].forEach(mapita => {
+  
           mapita.forEach((descripcion, codigo) => {
             if (codigo && !catalogo.has(codigo)) catalogo.set(codigo, descripcion || "");
           });
@@ -1425,6 +1518,7 @@ const [
 
 let registros = [
   ...inventariosData.docs,
+  ...entradasData.docs,
   ...transferenciasData.docs,
   ...provTransData.docs,
   ...ventasData.docs
@@ -1488,6 +1582,7 @@ setStatus(
       const mapa = new Map();
 
       const totalInvPorFecha = {};
+      const totalEntPorFecha = {};
       const totalEqPorFecha = {};
       const totalTransPorFecha = {};
       const totalProvTransPorFecha = {};
@@ -1505,26 +1600,29 @@ setStatus(
 
         fechasConMovimiento.add(fecha);
 
-        if (!mapa.has(codigoKey)) {
-          mapa.set(codigoKey, {
-            codigo: String(item.codigo || "").trim(),
-            codigoKey,
-            descripcion: String(item.descripcion || "").trim(),
-            invPorFecha: {},
-            eqPorFecha: {},
-            transPorFecha: {},
-            provTransPorFecha: {},
-            vtaPorFecha: {},
-            totalInvBase: 0,
-            totalEq: 0,
-            totalTrans: 0,
-            totalProvTrans: 0,
-            totalVta: 0,
-            totalInv: 0,
-            neto: 0
-          });
-        }
+if (!mapa.has(codigoKey)) {
+  mapa.set(codigoKey, {
+    codigo: String(item.codigo || "").trim(),
+    codigoKey,
+    descripcion: String(item.descripcion || "").trim(),
 
+    invPorFecha: {},
+    entPorFecha: {},
+    eqPorFecha: {},
+    transPorFecha: {},
+    provTransPorFecha: {},
+    vtaPorFecha: {},
+
+    totalInvBase: 0,
+    totalEnt: 0,
+    totalEq: 0,
+    totalTrans: 0,
+    totalProvTrans: 0,
+    totalVta: 0,
+    totalInv: 0,
+    neto: 0
+  });
+}
         const row = mapa.get(codigoKey);
 
         if (item.codigo && !row.codigo) row.codigo = item.codigo;

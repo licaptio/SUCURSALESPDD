@@ -681,7 +681,7 @@ tfoot td {
     let equivalenciasMap = {};
     let reglaEditandoId = null;
     let opcionesCodigos = [];
-
+const FECHA_INICIO_CALCULO = "2026-05-14 10:04:11";
     function getTiendaActual() {
   return "RUTA1";
 }
@@ -752,37 +752,58 @@ function getRefsPorTienda() {
         .replace(/'/g, "&#039;");
     }
 
-    function normalizarFecha(valor) {
-      if (!valor) return "";
+function normalizarFecha(valor) {
+  if (!valor) return "";
 
-      if (typeof valor === "string") {
-        const v = valor.trim();
+  if (typeof valor === "string") {
+    const v = valor.trim();
 
-        const m1 = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        if (m1) {
-          const [, dd, mm, yyyy] = m1;
-          return `${yyyy}-${mm}-${dd}`;
-        }
-
-        const m2 = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (m2) {
-          return `${m2[1]}-${m2[2]}-${m2[3]}`;
-        }
-
-        return v;
-      }
-
-      if (valor && typeof valor.toDate === "function") {
-        return valor.toDate().toISOString().slice(0, 10);
-      }
-
-      if (valor && typeof valor.seconds === "number") {
-        return new Date(valor.seconds * 1000).toISOString().slice(0, 10);
-      }
-
-      return String(valor).trim();
+    const m0 = v.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
+    if (m0) {
+      return `${m0[1]}-${m0[2]}-${m0[3]}T${m0[4]}:${m0[5]}:${m0[6]}`;
     }
 
+    const m1 = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m1) {
+      const dd = String(m1[1]).padStart(2, "0");
+      const mm = String(m1[2]).padStart(2, "0");
+      const yyyy = m1[3];
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    const m2 = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m2) {
+      return `${m2[1]}-${m2[2]}-${m2[3]}`;
+    }
+
+    return v;
+  }
+
+  if (valor && typeof valor.toDate === "function") {
+    return valor.toDate().toISOString().slice(0, 19);
+  }
+
+  if (valor && typeof valor.seconds === "number") {
+    return new Date(valor.seconds * 1000).toISOString().slice(0, 19);
+  }
+
+  return String(valor).trim();
+}
+    function fechaPermitidaParaCalculo(fechaNormalizada) {
+  if (!fechaNormalizada) return false;
+
+  const inicio = new Date(FECHA_INICIO_CALCULO.replace(" ", "T"));
+  const fecha = new Date(
+    fechaNormalizada.includes("T")
+      ? fechaNormalizada
+      : `${fechaNormalizada}T00:00:00`
+  );
+
+  if (Number.isNaN(fecha.getTime())) return false;
+
+  return fecha >= inicio;
+}
+    
     function normalizarCodigo(valor) {
       const s = String(valor ?? "").trim();
       if (!s) return "";
@@ -1597,6 +1618,8 @@ function construirPivot(registros) {
     const origen = String(item.origen || "").trim();
 
     if (!codigoKey || !fecha || !Number.isFinite(cantidad)) continue;
+if (!fechaPermitidaParaCalculo(fecha)) continue;
+    
 
     fechasConMovimiento.add(fecha);
 
@@ -1795,9 +1818,11 @@ function claseColumna(tipo) {
         for (const col of columnas) {
           let val = 0;
 
-          if (col.tipo === "INV") {
-            val = row.invPorFecha[col.fecha] || 0;
-          } else if (col.tipo === "EQUIV") {
+if (col.tipo === "INV") {
+  val = row.invPorFecha[col.fecha] || 0;
+} else if (col.tipo === "ENT") {
+  val = row.entPorFecha[col.fecha] || 0;
+} else if (col.tipo === "EQUIV") {
             val = row.eqPorFecha[col.fecha] || 0;
           } else if (col.tipo === "TRANS") {
             val = row.transPorFecha[col.fecha] || 0;
@@ -1836,10 +1861,12 @@ function claseColumna(tipo) {
         ${columnas.map(col => {
           let val = 0;
 
-          if (col.tipo === "INV") {
-            val = totalInvPorFecha[col.fecha] || 0;
-          } else if (col.tipo === "EQUIV") {
-            val = totalEqPorFecha[col.fecha] || 0;
+if (col.tipo === "INV") {
+  val = totalInvPorFecha[col.fecha] || 0;
+} else if (col.tipo === "ENT") {
+  val = totalEntPorFecha[col.fecha] || 0;
+} else if (col.tipo === "EQUIV") {
+  val = totalEqPorFecha[col.fecha] || 0;
           } else if (col.tipo === "TRANS") {
             val = totalTransPorFecha[col.fecha] || 0;
           } else if (col.tipo === "PROVTRANS") {

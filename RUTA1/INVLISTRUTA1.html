@@ -1578,162 +1578,175 @@ setStatus(
       }
     }
 
-    function construirPivot(registros) {
-      const mapa = new Map();
+function construirPivot(registros) {
+  const mapa = new Map();
 
-      const totalInvPorFecha = {};
-      const totalEntPorFecha = {};
-      const totalEqPorFecha = {};
-      const totalTransPorFecha = {};
-      const totalProvTransPorFecha = {};
-      const totalVtaPorFecha = {};
-      
-      const fechasConMovimiento = new Set();
+  const totalInvPorFecha = {};
+  const totalEntPorFecha = {};
+  const totalEqPorFecha = {};
+  const totalTransPorFecha = {};
+  const totalProvTransPorFecha = {};
+  const totalVtaPorFecha = {};
 
-      for (const item of registros) {
-        const codigoKey = String(item.codigoKey || "").trim();
-        const fecha = String(item.fecha || "").trim();
-        const cantidad = Number(item.cantidad || 0);
-        const origen = String(item.origen || "").trim();
+  const fechasConMovimiento = new Set();
 
-        if (!codigoKey || !fecha || !Number.isFinite(cantidad)) continue;
+  for (const item of registros) {
+    const codigoKey = String(item.codigoKey || "").trim();
+    const fecha = String(item.fecha || "").trim();
+    const cantidad = Number(item.cantidad || 0);
+    const origen = String(item.origen || "").trim();
 
-        fechasConMovimiento.add(fecha);
+    if (!codigoKey || !fecha || !Number.isFinite(cantidad)) continue;
 
-if (!mapa.has(codigoKey)) {
-  mapa.set(codigoKey, {
-    codigo: String(item.codigo || "").trim(),
-    codigoKey,
-    descripcion: String(item.descripcion || "").trim(),
+    fechasConMovimiento.add(fecha);
 
-    invPorFecha: {},
-    entPorFecha: {},
-    eqPorFecha: {},
-    transPorFecha: {},
-    provTransPorFecha: {},
-    vtaPorFecha: {},
+    if (!mapa.has(codigoKey)) {
+      mapa.set(codigoKey, {
+        codigo: String(item.codigo || "").trim(),
+        codigoKey,
+        descripcion: String(item.descripcion || "").trim(),
 
-    totalInvBase: 0,
-    totalEnt: 0,
-    totalEq: 0,
-    totalTrans: 0,
-    totalProvTrans: 0,
-    totalVta: 0,
-    totalInv: 0,
-    neto: 0
-  });
-}
-        const row = mapa.get(codigoKey);
+        invPorFecha: {},
+        entPorFecha: {},
+        eqPorFecha: {},
+        transPorFecha: {},
+        provTransPorFecha: {},
+        vtaPorFecha: {},
 
-        if (item.codigo && !row.codigo) row.codigo = item.codigo;
-        if (item.descripcion && !row.descripcion) row.descripcion = item.descripcion;
-
-        if (origen === "INV") {
-          row.invPorFecha[fecha] = (row.invPorFecha[fecha] || 0) + cantidad;
-          totalInvPorFecha[fecha] = (totalInvPorFecha[fecha] || 0) + cantidad;
-        }
-
-        if (origen === "EQ") {
-          row.eqPorFecha[fecha] = (row.eqPorFecha[fecha] || 0) + cantidad;
-          totalEqPorFecha[fecha] = (totalEqPorFecha[fecha] || 0) + cantidad;
-        }
-
-        if (origen === "TRANS") {
-          row.transPorFecha[fecha] = (row.transPorFecha[fecha] || 0) + cantidad;
-          totalTransPorFecha[fecha] = (totalTransPorFecha[fecha] || 0) + cantidad;
-        }
-
-        if (origen === "PROVTRANS") {
-          row.provTransPorFecha[fecha] = (row.provTransPorFecha[fecha] || 0) + cantidad;
-          totalProvTransPorFecha[fecha] = (totalProvTransPorFecha[fecha] || 0) + cantidad;
-        }
-
-        if (origen === "VTA") {
-          row.vtaPorFecha[fecha] = (row.vtaPorFecha[fecha] || 0) + cantidad;
-          totalVtaPorFecha[fecha] = (totalVtaPorFecha[fecha] || 0) + cantidad;
-        }
-      }
-
-      const fechas = Array.from(fechasConMovimiento).sort();
-
-      const columnas = [];
-      for (const fecha of fechas) {
-        if (totalInvPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "INV" });
-        if (totalEqPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "EQUIV" });
-        if (totalTransPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "TRANS" });
-        if (totalProvTransPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "PROVTRANS" });
-        if (totalVtaPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "VTA" });
-      }
-
-      let totalInvGeneralBase = 0;
-      let totalEqGeneral = 0;
-      let totalTransGeneral = 0;
-      let totalProvTransGeneral = 0;
-      let totalVtaGeneral = 0;
-      let totalNetoGeneral = 0;
-
-      const rows = Array.from(mapa.values()).map(row => {
-        row.totalInvBase = Object.values(row.invPorFecha).reduce((a, b) => a + Number(b || 0), 0);
-        row.totalEq = Object.values(row.eqPorFecha).reduce((a, b) => a + Number(b || 0), 0);
-        row.totalTrans = Object.values(row.transPorFecha).reduce((a, b) => a + Number(b || 0), 0);
-        row.totalProvTrans = Object.values(row.provTransPorFecha).reduce((a, b) => a + Number(b || 0), 0);
-        row.totalVta = Object.values(row.vtaPorFecha).reduce((a, b) => a + Number(b || 0), 0);
-
-        row.totalInv = row.totalInvBase + row.totalEq + row.totalTrans + row.totalProvTrans;
-        row.neto = row.totalInv - row.totalVta;
-
-        totalInvGeneralBase += row.totalInvBase;
-        totalEqGeneral += row.totalEq;
-        totalTransGeneral += row.totalTrans;
-        totalProvTransGeneral += row.totalProvTrans;
-        totalVtaGeneral += row.totalVta;
-        totalNetoGeneral += row.neto;
-
-        return row;
-      }).sort((a, b) => {
-        const da = String(a.descripcion || "").trim();
-        const db = String(b.descripcion || "").trim();
-        if (!da && !db) return 0;
-        if (!da) return 1;
-        if (!db) return -1;
-        return da.localeCompare(db, "es", { sensitivity: "base" });
+        totalInvBase: 0,
+        totalEnt: 0,
+        totalEq: 0,
+        totalTrans: 0,
+        totalProvTrans: 0,
+        totalVta: 0,
+        totalInv: 0,
+        neto: 0
       });
-
-      return {
-        fechas,
-        columnas,
-        rows,
-        totalInvPorFecha,
-        totalEqPorFecha,
-        totalTransPorFecha,
-        totalProvTransPorFecha,
-        totalVtaPorFecha,
-        totalInvGeneralBase,
-        totalEqGeneral,
-        totalTransGeneral,
-        totalProvTransGeneral,
-        totalInvGeneral: totalInvGeneralBase + totalEqGeneral + totalTransGeneral + totalProvTransGeneral,
-        totalVtaGeneral,
-        totalNetoGeneral,
-        totalCodigos: rows.length
-      };
     }
-    
 
+    const row = mapa.get(codigoKey);
+
+    if (item.codigo && !row.codigo) row.codigo = item.codigo;
+    if (item.descripcion && !row.descripcion) row.descripcion = item.descripcion;
+
+    if (origen === "INV") {
+      row.invPorFecha[fecha] = (row.invPorFecha[fecha] || 0) + cantidad;
+      totalInvPorFecha[fecha] = (totalInvPorFecha[fecha] || 0) + cantidad;
+    }
+
+    if (origen === "ENT") {
+      row.entPorFecha[fecha] = (row.entPorFecha[fecha] || 0) + cantidad;
+      totalEntPorFecha[fecha] = (totalEntPorFecha[fecha] || 0) + cantidad;
+    }
+
+    if (origen === "EQ") {
+      row.eqPorFecha[fecha] = (row.eqPorFecha[fecha] || 0) + cantidad;
+      totalEqPorFecha[fecha] = (totalEqPorFecha[fecha] || 0) + cantidad;
+    }
+
+    if (origen === "TRANS") {
+      row.transPorFecha[fecha] = (row.transPorFecha[fecha] || 0) + cantidad;
+      totalTransPorFecha[fecha] = (totalTransPorFecha[fecha] || 0) + cantidad;
+    }
+
+    if (origen === "PROVTRANS") {
+      row.provTransPorFecha[fecha] = (row.provTransPorFecha[fecha] || 0) + cantidad;
+      totalProvTransPorFecha[fecha] = (totalProvTransPorFecha[fecha] || 0) + cantidad;
+    }
+
+    if (origen === "VTA") {
+      row.vtaPorFecha[fecha] = (row.vtaPorFecha[fecha] || 0) + cantidad;
+      totalVtaPorFecha[fecha] = (totalVtaPorFecha[fecha] || 0) + cantidad;
+    }
+  }
+
+  const fechas = Array.from(fechasConMovimiento).sort();
+
+  const columnas = [];
+  for (const fecha of fechas) {
+    if (totalInvPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "INV" });
+    if (totalEntPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "ENT" });
+    if (totalEqPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "EQUIV" });
+    if (totalTransPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "TRANS" });
+    if (totalProvTransPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "PROVTRANS" });
+    if (totalVtaPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "VTA" });
+  }
+
+  let totalInvGeneralBase = 0;
+  let totalEntGeneral = 0;
+  let totalEqGeneral = 0;
+  let totalTransGeneral = 0;
+  let totalProvTransGeneral = 0;
+  let totalVtaGeneral = 0;
+  let totalNetoGeneral = 0;
+
+  const rows = Array.from(mapa.values()).map(row => {
+    row.totalInvBase = Object.values(row.invPorFecha).reduce((a, b) => a + Number(b || 0), 0);
+    row.totalEnt = Object.values(row.entPorFecha).reduce((a, b) => a + Number(b || 0), 0);
+    row.totalEq = Object.values(row.eqPorFecha).reduce((a, b) => a + Number(b || 0), 0);
+    row.totalTrans = Object.values(row.transPorFecha).reduce((a, b) => a + Number(b || 0), 0);
+    row.totalProvTrans = Object.values(row.provTransPorFecha).reduce((a, b) => a + Number(b || 0), 0);
+    row.totalVta = Object.values(row.vtaPorFecha).reduce((a, b) => a + Number(b || 0), 0);
+
+    row.totalInv = row.totalInvBase + row.totalEnt + row.totalEq + row.totalTrans + row.totalProvTrans;
+    row.neto = row.totalInv - row.totalVta;
+
+    totalInvGeneralBase += row.totalInvBase;
+    totalEntGeneral += row.totalEnt;
+    totalEqGeneral += row.totalEq;
+    totalTransGeneral += row.totalTrans;
+    totalProvTransGeneral += row.totalProvTrans;
+    totalVtaGeneral += row.totalVta;
+    totalNetoGeneral += row.neto;
+
+    return row;
+  }).sort((a, b) => {
+    const da = String(a.descripcion || "").trim();
+    const db = String(b.descripcion || "").trim();
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da.localeCompare(db, "es", { sensitivity: "base" });
+  });
+
+  return {
+    fechas,
+    columnas,
+    rows,
+
+    totalInvPorFecha,
+    totalEntPorFecha,
+    totalEqPorFecha,
+    totalTransPorFecha,
+    totalProvTransPorFecha,
+    totalVtaPorFecha,
+
+    totalInvGeneralBase,
+    totalEntGeneral,
+    totalEqGeneral,
+    totalTransGeneral,
+    totalProvTransGeneral,
+
+    totalInvGeneral: totalInvGeneralBase + totalEntGeneral + totalEqGeneral + totalTransGeneral + totalProvTransGeneral,
+    totalVtaGeneral,
+    totalNetoGeneral,
+    totalCodigos: rows.length
+  };
+}
     function pintarResumen(registros, pivot, extra = {}) {
       // Resumen visual desactivado: la pantalla se mantiene limpia.
       // La información completa queda en la tabla y en el Excel.
     }
 
-    function claseColumna(tipo) {
-      if (tipo === "INV") return "inv-col";
-      if (tipo === "EQUIV") return "eq-col";
-      if (tipo === "TRANS") return "trans-col";
-      if (tipo === "PROVTRANS") return "trans-col";
-      if (tipo === "VTA") return "vta-col";
-      return "total-col";
-    }
-
+function claseColumna(tipo) {
+  if (tipo === "INV") return "inv-col";
+  if (tipo === "ENT") return "inv-col";
+  if (tipo === "EQUIV") return "eq-col";
+  if (tipo === "TRANS") return "trans-col";
+  if (tipo === "PROVTRANS") return "trans-col";
+  if (tipo === "VTA") return "vta-col";
+  return "total-col";
+}
     function pintarTabla(pivot) {
       const {
         columnas,

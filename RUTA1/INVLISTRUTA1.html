@@ -1770,19 +1770,21 @@ function claseColumna(tipo) {
   if (tipo === "VTA") return "vta-col";
   return "total-col";
 }
-    function pintarTabla(pivot) {
-      const {
-        columnas,
-        rows,
-        totalInvPorFecha,
-        totalEqPorFecha,
-        totalTransPorFecha,
-        totalProvTransPorFecha,
-        totalVtaPorFecha,
-        totalInvGeneral,
-        totalVtaGeneral,
-        totalNetoGeneral
-      } = pivot;
+function pintarTabla(pivot) {
+  const {
+    columnas,
+    rows,
+    totalInvPorFecha,
+    totalEntPorFecha,
+    totalEqPorFecha,
+    totalTransPorFecha,
+    totalProvTransPorFecha,
+    totalVtaPorFecha,
+    totalInvGeneral,
+    totalVtaGeneral,
+    totalNetoGeneral
+  } = pivot;
+  
 
       const trHead = document.createElement("tr");
       trHead.innerHTML = `

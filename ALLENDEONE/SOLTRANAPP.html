@@ -230,11 +230,11 @@ html,body{
 .main-work-area{
   flex:1;
   overflow:hidden;
-  display:flex;
-  flex-direction:column;
+  display:grid;
+  grid-template-columns: 1fr 260px;
   gap:8px;
 }
-
+  
 .captura-card{
   background:white;
   border-radius:20px;
@@ -505,7 +505,51 @@ html,body{
   color:#374151;
   font-weight:700;
 }
+.main-work-area{
+  flex:1;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns: 1fr 255px;
+  gap:8px;
+}
 
+.foto-panel{
+  background:white;
+  border:3px solid #111;
+  height:170px;
+  border-radius:0;
+  overflow:hidden;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+}
+
+.foto-panel-title{
+  position:absolute;
+  top:18px;
+  left:0;
+  background:#facc15;
+  padding:12px 30px;
+  font-size:28px;
+  font-weight:900;
+  color:#111;
+  z-index:2;
+}
+
+#ultimaFotoImg{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  transform:rotate(0deg);
+}
+
+.foto-vacia{
+  font-size:18px;
+  font-weight:900;
+  color:#94a3b8;
+}
 @keyframes logoBaile{
   0%{
     transform:translateY(0) rotate(0deg) scale(1);
@@ -595,20 +639,17 @@ html,body{
 
   </div>
 
-  <div class="main-work-area">
+<div class="main-work-area">
+
+  <div style="
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      overflow:hidden;
+  ">
 
     <div class="captura-card">
-      <div class="manual-title">
-        Captura manual guiada
-      </div>
-
-      <div class="manual-sub">
-        El usuario agrega artículos por código o nombre usando modales controlados.
-      </div>
-
-      <button class="btn-agregar" id="btnAbrirAgregar">
-        ➕ AGREGAR ARTÍCULO
-      </button>
+      ...
     </div>
 
     <div class="lista-container">
@@ -617,7 +658,25 @@ html,body{
 
   </div>
 
+  <div>
+
+    <div class="foto-panel" onclick="abrirUltimaFoto()">
+
+      <div class="foto-panel-title">
+        ULTIMA FOTO
+      </div>
+
+      <div id="ultimaFotoBox" class="foto-vacia">
+        Sin foto
+      </div>
+
+    </div>
+
+  </div>
+
 </div>
+  
+  
 
 <!-- =========================
 MODAL MENU

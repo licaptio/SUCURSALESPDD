@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#991b1b">
+  <title>PROVSOFT | Catálogo guiado Zapata</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root{
+      --rojo:#991b1b; --rojo2:#7f1d1d; --fondo:#f5f6f8; --card:#fff;
+      --texto:#172033; --muted:#667085; --borde:#d8dee8; --verde:#15803d;
+      --amarillo:#a16207; --sombra:0 10px 28px rgba(15,23,42,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--fondo);color:var(--texto);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    button,input,select{font:inherit}
+    header{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,var(--rojo),var(--rojo2));color:white;padding:18px 20px;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+    header .wrap{max-width:1450px;margin:auto;display:flex;gap:14px;align-items:center;justify-content:space-between}
+    h1{font-size:1.25rem;margin:0}.sub{opacity:.85;font-size:.85rem;margin-top:3px}
+    .status{font-size:.82rem;background:rgba(255,255,255,.15);padding:8px 11px;border-radius:999px;white-space:nowrap}
+    main{max-width:1450px;margin:18px auto;padding:0 16px 42px}
+    .grid{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start}
+    .card{background:var(--card);border:1px solid var(--borde);border-radius:16px;box-shadow:var(--sombra)}
+    .card-head{padding:16px 18px;border-bottom:1px solid var(--borde)}
+    .card-body{padding:18px}
+    h2{font-size:1.05rem;margin:0} label{display:block;font-size:.8rem;font-weight:700;color:#344054;margin:0 0 6px}
+    .field{margin-bottom:13px}
+    input,select{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:11px 12px;background:white;outline:none}
+    input:focus,select:focus{border-color:var(--rojo);box-shadow:0 0 0 3px rgba(153,27,27,.12)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .check{display:flex;align-items:center;gap:8px;padding:9px 0}.check input{width:auto;transform:scale(1.15)}
+    .btn{border:0;border-radius:10px;padding:11px 14px;font-weight:800;cursor:pointer}
+    .btn-primary{background:var(--rojo);color:white}.btn-primary:hover{background:var(--rojo2)}
+    .btn-light{background:#eef2f6;color:#27364d}.btn-danger{background:#fee2e2;color:#991b1b}.btn-success{background:#dcfce7;color:#166534}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}.actions .btn{flex:1}
+    .tools{display:grid;grid-template-columns:minmax(220px,1fr) 190px 190px auto;gap:10px;padding:15px;border-bottom:1px solid var(--borde)}
+    .stats{display:flex;gap:8px;flex-wrap:wrap;padding:0 15px 15px}
+    .pill{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:7px 10px;font-size:.8rem;font-weight:700}
+    .table-wrap{overflow:auto;max-height:calc(100vh - 270px)}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
+    th{position:sticky;top:0;background:#f8fafc;z-index:2;text-align:left;font-size:.75rem;color:#475467;padding:11px;border-bottom:1px solid var(--borde)}
+    td{padding:10px 11px;border-bottom:1px solid #edf0f4;font-size:.86rem;vertical-align:middle}
+    tr:hover td{background:#fafafa}
+    .badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:.72rem;font-weight:800;background:#e2e8f0}
+    .badge.on{background:#dcfce7;color:#166534}.badge.off{background:#fee2e2;color:#991b1b}
+    .icon-btn{border:0;border-radius:8px;padding:7px 9px;cursor:pointer;font-weight:700;margin-right:4px}
+    .empty{text-align:center;color:var(--muted);padding:40px}
+    .hint{font-size:.78rem;color:var(--muted);line-height:1.45}
+    .notice{display:none;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:.84rem;font-weight:700}
+    .notice.ok{display:block;background:#dcfce7;color:#166534}.notice.err{display:block;background:#fee2e2;color:#991b1b}
+    .catalog-results{max-height:210px;overflow:auto;border:1px solid var(--borde);border-radius:10px;display:none;margin-top:6px}
+    .catalog-item{padding:9px 10px;border-bottom:1px solid #eee;cursor:pointer;font-size:.8rem}.catalog-item:hover{background:#f8fafc}
+    @media(max-width:950px){.grid{grid-template-columns:1fr}.tools{grid-template-columns:1fr 1fr}.table-wrap{max-height:none}}
+    @media(max-width:600px){header .wrap{align-items:flex-start}.status{font-size:.7rem}.row,.tools{grid-template-columns:1fr}.card-body{padding:14px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div><h1>PROVSOFT · Catálogo guiado Zapata</h1><div class="sub">Administrador de productos por familia</div></div>
+    <div id="estado" class="status">Conectando…</div>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <div class="card-head"><h2 id="formTitle">Agregar producto</h2></div>
+      <div class="card-body">
+        <div id="notice" class="notice"></div>
+
+        <div class="field">
+          <label>Buscar en catálogo general (opcional)</label>
+          <input id="buscarGeneral" placeholder="Código o descripción..." autocomplete="off">
+          <div id="resultadosGeneral" class="catalog-results"></div>
+        </div>
+
+        <div class="field"><label>Código *</label><input id="codigo" placeholder="Ej. 7501234567890"></div>
+        <div class="field"><label>Concepto / descripción *</label><input id="concepto" placeholder="Nombre del producto"></div>
+
+        <div class="row">
+          <div class="field"><label>Familia *</label><input id="familia" list="familiasList" placeholder="Ej. LIQUIDO"><datalist id="familiasList"></datalist></div>
+          <div class="field"><label>Departamento *</label><input id="departamento" list="departamentosList" placeholder="Ej. AGUA GYM"><datalist id="departamentosList"></datalist></div>
+        </div>
+
+        <div class="row">
+          <div class="field"><label>Orden</label><input id="orden" type="number" min="1" step="1" placeholder="Automático"></div>
+          <div class="field"><label>Estado</label><div class="check"><input id="activo" type="checkbox" checked><span>Producto activo</span></div></div>
+        </div>
+
+        <div class="actions">
+          <button id="guardar" class="btn btn-primary">Guardar producto</button>
+          <button id="cancelar" class="btn btn-light" style="display:none">Cancelar edición</button>
+        </div>
+        <p class="hint">Los textos de familia y departamento se guardan en mayúsculas. El documento se actualiza mediante una transacción para reducir el riesgo de sobrescribir cambios simultáneos.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Productos configurados</h2></div>
+      <div class="tools">
+        <input id="filtroTexto" placeholder="Buscar código o producto...">
+        <select id="filtroFamilia"><option value="">Todas las familias</option></select>
+        <select id="filtroDepartamento"><option value="">Todos los departamentos</option></select>
+        <button id="recargar" class="btn btn-light">↻ Recargar</button>
+      </div>
+      <div class="stats">
+        <span id="total" class="pill">0 productos</span>
+        <span id="activos" class="pill">0 activos</span>
+        <span id="familiasCount" class="pill">0 familias</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Orden</th><th>Código</th><th>Producto</th><th>Familia</th><th>Departamento</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div id="empty" class="empty">Cargando catálogo…</div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+  authDomain: "inventariopv-643f1.firebaseapp.com",
+  projectId: "inventariopv-643f1",
+  storageBucket: "inventariopv-643f1.firebasestorage.app",
+  messagingSenderId: "96242533231",
+  appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const CONFIG_REF = db.collection("almacenes").doc("almacen_zapata").collection("configuracion").doc("catalogo_guiado");
+const PRODUCTOS_REF = db.collection("productos");
+
+let articulos = [];
+let editCodigoOriginal = null;
+let unsubscribe = null;
+let timerBusqueda = null;
+
+const $ = id => document.getElementById(id);
+const normalizar = v => String(v ?? "").trim().toUpperCase();
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+function aviso(msg, tipo="ok"){
+  $("notice").className = "notice " + tipo;
+  $("notice").textContent = msg;
+  clearTimeout(aviso.t);
+  aviso.t = setTimeout(()=> $("notice").className="notice", 4200);
+}
+function setEstado(txt){ $("estado").textContent = txt; }
+
+function iniciarEscucha(){
+  if(unsubscribe) unsubscribe();
+  setEstado("Conectando…");
+  unsubscribe = CONFIG_REF.onSnapshot(snap => {
+    const data = snap.exists ? snap.data() : {};
+    articulos = Array.isArray(data.articulos) ? data.articulos.map(a => ({
+      activo: a.activo !== false,
+      codigo: String(a.codigo ?? "").trim(),
+      concepto: String(a.concepto ?? "").trim(),
+      departamento: normalizar(a.departamento),
+      familia: normalizar(a.familia),
+      orden: Number(a.orden) || 0
+    })) : [];
+    articulos.sort((a,b)=>(a.orden-b.orden)||a.concepto.localeCompare(b.concepto,"es"));
+    setEstado("Sincronizado · " + articulos.length + " productos");
+    llenarFiltros();
+    render();
+  }, err => {
+    console.error(err);
+    setEstado("Error de conexión");
+    aviso("No se pudo leer Firestore: " + err.message, "err");
+  });
+}
+
+function llenarFiltros(){
+  const familias = [...new Set(articulos.map(a=>a.familia).filter(Boolean))].sort();
+  const deps = [...new Set(articulos.map(a=>a.departamento).filter(Boolean))].sort();
+  const fv=$("filtroFamilia").value, dv=$("filtroDepartamento").value;
+  $("filtroFamilia").innerHTML='<option value="">Todas las familias</option>'+familias.map(x=>`<option>${esc(x)}</option>`).join("");
+  $("filtroDepartamento").innerHTML='<option value="">Todos los departamentos</option>'+deps.map(x=>`<option>${esc(x)}</option>`).join("");
+  $("familiasList").innerHTML=familias.map(x=>`<option value="${esc(x)}">`).join("");
+  $("departamentosList").innerHTML=deps.map(x=>`<option value="${esc(x)}">`).join("");
+  if(familias.includes(fv)) $("filtroFamilia").value=fv;
+  if(deps.includes(dv)) $("filtroDepartamento").value=dv;
+}
+
+function render(){
+  const q=normalizar($("filtroTexto").value), fam=$("filtroFamilia").value, dep=$("filtroDepartamento").value;
+  const lista=articulos.filter(a =>
+    (!q || normalizar(a.codigo+" "+a.concepto).includes(q)) &&
+    (!fam || a.familia===fam) && (!dep || a.departamento===dep)
+  );
+  $("total").textContent=articulos.length+" productos";
+  $("activos").textContent=articulos.filter(a=>a.activo).length+" activos";
+  $("familiasCount").textContent=new Set(articulos.map(a=>a.familia).filter(Boolean)).size+" familias";
+  $("empty").style.display=lista.length?"none":"block";
+  $("empty").textContent=articulos.length?"No hay coincidencias.":"No hay productos configurados.";
+  $("tbody").innerHTML=lista.map(a=>`
+    <tr>
+      <td><b>${a.orden}</b></td>
+      <td>${esc(a.codigo)}</td>
+      <td>${esc(a.concepto)}</td>
+      <td><span class="badge">${esc(a.familia)}</span></td>
+      <td>${esc(a.departamento)}</td>
+      <td><span class="badge ${a.activo?'on':'off'}">${a.activo?'ACTIVO':'INACTIVO'}</span></td>
+      <td>
+        <button class="icon-btn btn-light" onclick='editar(${JSON.stringify(a.codigo)})'>Editar</button>
+        <button class="icon-btn ${a.activo?'btn-danger':'btn-success'}" onclick='cambiarEstado(${JSON.stringify(a.codigo)})'>${a.activo?'Desactivar':'Activar'}</button>
+        <button class="icon-btn btn-danger" onclick='eliminar(${JSON.stringify(a.codigo)})'>Eliminar</button>
+      </td>
+    </tr>`).join("");
+}
+
+function limpiar(){
+  editCodigoOriginal=null;
+  $("codigo").value=""; $("concepto").value=""; $("familia").value=""; $("departamento").value=""; $("orden").value=""; $("activo").checked=true;
+  $("formTitle").textContent="Agregar producto"; $("guardar").textContent="Guardar producto"; $("cancelar").style.display="none";
+}
+
+window.editar = codigo => {
+  const a=articulos.find(x=>x.codigo===codigo); if(!a)return;
+  editCodigoOriginal=a.codigo;
+  $("codigo").value=a.codigo; $("concepto").value=a.concepto; $("familia").value=a.familia; $("departamento").value=a.departamento; $("orden").value=a.orden; $("activo").checked=a.activo;
+  $("formTitle").textContent="Editar producto"; $("guardar").textContent="Guardar cambios"; $("cancelar").style.display="block";
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+
+async function transaccionModificar(modificador){
+  $("guardar").disabled=true;
+  try{
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(CONFIG_REF);
+      const data=snap.exists?snap.data():{};
+      const actuales=Array.isArray(data.articulos)?data.articulos:[];
+      const nuevos=modificador(actuales.map(a=>({...a})));
+      tx.set(CONFIG_REF,{...data,articulos:nuevos,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    });
+  } finally { $("guardar").disabled=false; }
+}
+
+$("guardar").onclick=async()=>{
+  const nuevo={
+    activo:$("activo").checked,
+    codigo:$("codigo").value.trim(),
+    concepto:$("concepto").value.trim(),
+    departamento:normalizar($("departamento").value),
+    familia:normalizar($("familia").value),
+    orden:Number($("orden").value)||0
+  };
+  if(!nuevo.codigo||!nuevo.concepto||!nuevo.familia||!nuevo.departamento){aviso("Completa código, concepto, familia y departamento.","err");return}
+  try{
+    await transaccionModificar(actuales=>{
+      const existeOtro=actuales.some(a=>String(a.codigo).trim()===nuevo.codigo && String(a.codigo).trim()!==editCodigoOriginal);
+      if(existeOtro) throw new Error("Ya existe otro producto con ese código.");
+      if(!nuevo.orden) nuevo.orden=Math.max(0,...actuales.map(a=>Number(a.orden)||0))+1;
+      if(editCodigoOriginal){
+        const idx=actuales.findIndex(a=>String(a.codigo).trim()===editCodigoOriginal);
+        if(idx<0) throw new Error("El producto ya no existe. Recarga e intenta otra vez.");
+        actuales[idx]=nuevo;
+      }else actuales.push(nuevo);
+      return actuales.sort((a,b)=>(Number(a.orden)||0)-(Number(b.orden)||0));
+    });
+    aviso(editCodigoOriginal?"Producto actualizado correctamente.":"Producto agregado correctamente.");
+    limpiar();
+  }catch(e){console.error(e);aviso(e.message||"No se pudo guardar.","err")}
+};
+
+window.cambiarEstado=async codigo=>{
+  try{
+    await transaccionModificar(arr=>{
+      const x=arr.find(a=>String(a.codigo).trim()===codigo);
+      if(!x) throw new Error("Producto no encontrado.");
+      x.activo=x.activo===false?true:false;
+      return arr;
+    });
+    aviso("Estado actualizado.");
+  }catch(e){aviso(e.message,"err")}
+};
+
+window.eliminar=async codigo=>{
+  const a=articulos.find(x=>x.codigo===codigo);
+  if(!a||!confirm(`¿Eliminar definitivamente "${a.concepto}"?`))return;
+  try{
+    await transaccionModificar(arr=>arr.filter(x=>String(x.codigo).trim()!==codigo));
+    aviso("Producto eliminado.");
+    if(editCodigoOriginal===codigo) limpiar();
+  }catch(e){aviso(e.message,"err")}
+};
+
+$("cancelar").onclick=limpiar;
+$("recargar").onclick=()=>{ iniciarEscucha(); aviso("Catálogo recargado."); };
+["filtroTexto","filtroFamilia","filtroDepartamento"].forEach(id=>$(id).addEventListener(id==="filtroTexto"?"input":"change",render));
+
+$("buscarGeneral").addEventListener("input",()=>{
+  clearTimeout(timerBusqueda);
+  const q=$("buscarGeneral").value.trim();
+  if(q.length<2){$("resultadosGeneral").style.display="none";return}
+  timerBusqueda=setTimeout(()=>buscarCatalogo(q),350);
+});
+
+async function buscarCatalogo(q){
+  const box=$("resultadosGeneral"); box.style.display="block"; box.innerHTML='<div class="catalog-item">Buscando…</div>';
+  try{
+    const codigo=q.trim();
+    const resultados=[];
+    const porId=await PRODUCTOS_REF.doc(codigo).get();
+    if(porId.exists) resultados.push({id:porId.id,...porId.data()});
+    const porCodigo=await PRODUCTOS_REF.where("codigoBarra","==",codigo).limit(10).get();
+    porCodigo.forEach(d=>{if(!resultados.some(x=>x.id===d.id))resultados.push({id:d.id,...d.data()})});
+    if(resultados.length===0){
+      const may=normalizar(q);
+      const snap=await PRODUCTOS_REF.orderBy("concepto").startAt(may).endAt(may+"\uf8ff").limit(15).get();
+      snap.forEach(d=>resultados.push({id:d.id,...d.data()}));
+    }
+    box.innerHTML=resultados.length?resultados.map((p,i)=>`
+      <div class="catalog-item" data-i="${i}">
+        <b>${esc(p.codigoBarra||p.id)}</b><br>${esc(p.concepto||"Sin descripción")} · ${esc(p.departamento||"")}
+      </div>`).join(""):'<div class="catalog-item">Sin coincidencias. Puedes capturarlo manualmente.</div>';
+    [...box.querySelectorAll("[data-i]")].forEach(el=>el.onclick=()=>{
+      const p=resultados[Number(el.dataset.i)];
+      $("codigo").value=String(p.codigoBarra||p.id||"");
+      $("concepto").value=String(p.concepto||"");
+      $("departamento").value=normalizar(p.departamento||"");
+      box.style.display="none"; $("buscarGeneral").value="";
+    });
+  }catch(e){
+    console.error(e);
+    box.innerHTML='<div class="catalog-item">No fue posible buscar por descripción. Captura el producto manualmente.</div>';
+  }
+}
+
+iniciarEscucha();
+</script>
+</body>
+</html>

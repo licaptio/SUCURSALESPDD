@@ -1,4 +1,4 @@
-const CACHE_NAME = "salidas-zapata-v1";
+const CACHE_NAME = "salidas-zapata-v2";
 
 const ASSETS = [
   "./",

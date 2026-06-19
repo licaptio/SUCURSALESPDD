@@ -1,116 +1,982 @@
-const CHOFERES=["EDUARDO CUELLAR VAZQUEZ","LUIS MIGUEL MEDELLIN ESCALONA","SERGIO BECERRA MARAVILLA","DAVID WENCESLAO MORALES MARTINEZ","LINDOLFO GAUNA PEDRAZA"],QUIEN_ENTREGA=['JOSE MARIA "CHEMA" LOPEZ GONZALEZ',"ROSENDO GARCIA HERNANDEZ","LADREDO MEDINA GARCIA","ARMANDO RIVERA CAMARILLO"],DESTINOS=["BODEGA MATRIZ MADERO 690","SUCURSAL GUADALUPE B41","SUCURSAL MONTEMORELOS","SUCURSAL ALLENDE 1","SUCURSAL ALLENDE 2","SUPER TIENDAS RICO","ROBERTO YADO","COMERCIALIZADORA CAVAZOS","EL PARIENTE ALIMENTOS","LA MISION SUC DIAZ ORDAZ","LA MISION SUC VILLEGAS","LA MISION SUC PETACA","LA MISION SUC ARBOLEDAS","LA MISION SUC MORELOS","LA MISION SUC ALLENDE"];function opcionesSelect(a,t=""){return a.map(a=>`     <option value="${escA(a)}" ${a===t?"selected":""}>
-      ${esc(a)}     </option>
-  `).join("")}const DB_NAME="PROVSOFT_SALIDAS_ZAPATA",DB_VERSION=1,STORE_KV="kv",STORE_HIST="historial";let idb=null,guia=null,catalogo=[],catalogoMap=new Map,salida=nuevaSalida(),stack=[],guardando=!1;const $=a=>document.getElementById(a);function nuevaSalida(){return{iniciado:!1,fecha:hoy(),folioTemporal:"",entrega:"",recibe:"",destino:"",placas:"",notasGenerales:"",articulos:[],firmaEntrega:"",firmaRecibe:""}}function hoy(){return(new Date).toISOString().slice(0,10)}function ymd(a){return`${a.getFullYear()}${String(a.getMonth()+1).padStart(2,"0")}${String(a.getDate()).padStart(2,"0")}`}function hms(a){return`${String(a.getHours()).padStart(2,"0")}${String(a.getMinutes()).padStart(2,"0")}${String(a.getSeconds()).padStart(2,"0")}`}function folioTemp(){const a=new Date;return`BORRADOR-ZAP-${ymd(a)}-${hms(a)}`}function folioFinal(){const a=new Date;return`ZAP-${ymd(a)}-${hms(a)}`}function setLoad(a,t){$("loaderMsg").textContent=a,$("loaderBar").style.width=t+"%"}function fmt(a){return Number(a||0).toLocaleString("es-MX",{maximumFractionDigits:2})}function esc(a){return String(a??"").replace(/[&<>"']/g,a=>({"&":"&","<":"<",">":">",'"':""","'":"'"}[a]))}function escA(a){return esc(a).replace(/`/g,"")}function slug(a){return String(a||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")}function normCod(a){const t=String(a??"").trim(),e=t.replace(/\D/g,"");return e?e.replace(/^0+/,"")||"0":t.toLowerCase()}function openIDB(){return new Promise((a,t)=>{const e=indexedDB.open(DB_NAME,1);e.onupgradeneeded=a=>{const t=a.target.result;t.objectStoreNames.contains("kv")||t.createObjectStore("kv"),t.objectStoreNames.contains(STORE_HIST)||t.createObjectStore(STORE_HIST,{keyPath:"folio"})},e.onsuccess=()=>a(e.result),e.onerror=()=>t(e.error)})}function getKV(a){return new Promise((t,e)=>{const i=idb.transaction("kv","readonly").objectStore("kv").get(a);i.onsuccess=()=>t(i.result),i.onerror=()=>e(i.error)})}function setKV(a,t){return new Promise((e,i)=>{const n=idb.transaction("kv","readwrite");n.objectStore("kv").put(t,a),n.oncomplete=e,n.onerror=()=>i(n.error)})}function delKV(a){return new Promise((t,e)=>{const i=idb.transaction("kv","readwrite");i.objectStore("kv").delete(a),i.oncomplete=t,i.onerror=()=>e(i.error)})}function putHist(a){return new Promise((t,e)=>{const i=idb.transaction(STORE_HIST,"readwrite");i.objectStore(STORE_HIST).put(a),i.oncomplete=t,i.onerror=()=>e(i.error)})}function getHist(){return new Promise((a,t)=>{const e=idb.transaction(STORE_HIST,"readonly").objectStore(STORE_HIST).getAll();e.onsuccess=()=>a((e.result||[]).sort((a,t)=>String(t.fechaGuardado).localeCompare(String(a.fechaGuardado))).slice(0,20)),e.onerror=()=>t(e.error)})}async function sync(){let a=!1;try{const t=await RUTAS.CONFIG_DOC.get();t.exists&&(guia=normalizeGuia(t.data()),await setKV("guia",guia),a=!0)}catch(a){console.warn(a)}try{const t=await RUTAS.PRODUCTOS_REF.where("activo","==",!0).get();catalogo=[],t.forEach(a=>catalogo.push({id:a.id,...a.data()})),buildCatalogo(),await setKV("catalogo",catalogo),a=!0}catch(a){console.warn(a)}$("estadoConexion").textContent=a?"Sincronizado":"Modo local"}function normalizeGuia(a){a=a||{};const t=Array.isArray(a.articulos)?a.articulos:[],e=a.estadoDepartamentos&&"object"==typeof a.estadoDepartamentos?a.estadoDepartamentos:{},i=a.estadoFamilias&&"object"==typeof a.estadoFamilias?a.estadoFamilias:{};if(t.length){const n=new Map;t.forEach((a,t)=>{const o=String(a.codigo||"").trim(),r=String(a.concepto||a.nombre||"").trim(),s=String(a.departamento||"SIN DEPARTAMENTO").trim(),c=String(a.familia||"SIN FAMILIA").trim();if(!o||!r)return;const d=slug(s),l=slug(c),u=`${d}__${l}`,m=Number(a.orden||t+1);n.has(d)||n.set(d,{id:d,nombre:s,icono:a.iconoDepartamento||"📦",activo:!1!==e[d],orden:m,familiasMap:new Map});const g=n.get(d);g.orden=Math.min(Number(g.orden||m),m),g.familiasMap.has(l)||g.familiasMap.set(l,{id:l,nombre:c,icono:a.iconoFamilia||"📁",activo:!1!==i[u],orden:m,articulos:[]});const b=g.familiasMap.get(l);b.orden=Math.min(Number(b.orden||m),m);const p=b.articulos.findIndex(a=>normCod(a.codigo)===normCod(o)),f={codigo:o,concepto:r,icono:a.icono||"📦",activo:!1!==a.activo,orden:m};p>=0?b.articulos[p]=f:b.articulos.push(f)});const o=[...n.values()].map(a=>{const t=[...a.familiasMap.values()].map(a=>({...a,articulos:a.articulos.sort((a,t)=>a.orden-t.orden||a.concepto.localeCompare(t.concepto,"es"))})).sort((a,t)=>a.orden-t.orden||a.nombre.localeCompare(t.nombre,"es"));return delete a.familiasMap,{...a,familias:t}}).sort((a,t)=>a.orden-t.orden||a.nombre.localeCompare(t.nombre,"es"));return{...a,articulos:t,departamentos:o,estadoDepartamentos:e,estadoFamilias:i}}return Array.isArray(a.departamentos)&&a.departamentos.length?{...a,departamentos:a.departamentos.map((a,t)=>({id:slug(a.id||a.nombre),nombre:a.nombre||"SIN DEPTO",icono:a.icono||"📦",activo:!1!==a.activo,orden:Number(a.orden||t+1),familias:(a.familias||[]).map((a,t)=>({id:slug(a.id||a.nombre),nombre:a.nombre||"SIN FAMILIA",icono:a.icono||"📁",activo:!1!==a.activo,orden:Number(a.orden||t+1),articulos:(a.articulos||[]).map((a,t)=>({codigo:String(a.codigo||"").trim(),concepto:String(a.concepto||a.nombre||"").trim(),icono:a.icono||"📦",activo:!1!==a.activo,orden:Number(a.orden||t+1)}))}))}))}:{...a,articulos:[],departamentos:[],estadoDepartamentos:e,estadoFamilias:i}}function buildCatalogo(){catalogoMap=new Map,catalogo.forEach(a=>[a.codigo,a.Codigo,a.CODIGO,a.codigoBarra,a.codigo_barra,a.id].filter(Boolean).forEach(t=>catalogoMap.set(normCod(t),a)))}function prodByCod(a){return catalogoMap.get(normCod(a))}function codProd(a){return String(a.codigo||a.Codigo||a.CODIGO||a.codigoBarra||a.id||"").trim()}function nomProd(a,t=""){return String(a.concepto||a.Concepto||a.descripcion||a.nombre||a.Nombre||t||"").trim()}function bind(){$("btnNuevaSalida").onclick=abrirDatos,$("btnAgregarProducto").onclick=()=>abrirDepartamentos(),$("btnBuscarProducto").onclick=abrirBusqueda,$("btnCarrito").onclick=abrirCarrito,$("btnConfig").onclick=abrirConfig,$("btnHistorial").onclick=abrirHistorial,$("btnContinuarNotas").onclick=abrirNotas,$("btnClose").onclick=cerrarModal,$("btnBack").onclick=backModal}function updateUI(){const a=salida.articulos.reduce((a,t)=>a+Number(t.cantidad||0),0);if($("badgeCarrito").textContent=salida.articulos.length,!salida.iniciado)return $("tituloEstado").textContent="Nueva salida",$("resumenSalida").textContent="Inicia una salida para comenzar.",$("panelAcciones").classList.add("hidden"),void $("btnNuevaSalida").classList.remove("hidden");$("tituloEstado").textContent=salida.folioTemporal,$("resumenSalida").innerHTML=`<b>Destino:</b> ${esc(salida.destino||"SIN DESTINO")}<br><b>Entrega:</b> ${esc(salida.entrega||"")} · <b>Chofer:</b> ${esc(salida.recibe||"")}<br><b>Artículos:</b> ${salida.articulos.length} · <b>Cantidad:</b> ${fmt(a)}`,$("panelAcciones").classList.remove("hidden"),$("btnNuevaSalida").classList.add("hidden")}function contarGuia(){return(guia?.departamentos||[]).flatMap(a=>a.familias||[]).flatMap(a=>a.articulos||[]).length}function modal(a,t,e=!1,i=!0){$("modalTitle").textContent=a,$("modalBody").innerHTML=t,$("modal").classList.remove("hidden"),$("btnBack").classList.toggle("hidden",!e),i&&stack.push({title:a,html:t,back:e})}function cerrarModal(){$("modal").classList.add("hidden"),$("modalBody").innerHTML="",stack=[]}function backModal(){stack.pop();const a=stack.pop();if(!a)return cerrarModal();modal(a.title,a.html,a.back,!0)}function validarInicio(){return!!salida.iniciado||(alert("Primero inicia una salida."),!1)}async function saveDraft(){salida.iniciado&&await setKV("borrador",salida)}function abrirDatos(){salida.iniciado||(salida=nuevaSalida(),salida.iniciado=!0,salida.folioTemporal=folioTemp()),modal("Datos generales",` <div class="field"> <label>Chofer *</label> <select id="recibe"> <option value="">Selecciona chofer</option>
-${opcionesSelect(CHOFERES,salida.recibe)} </select> </div>
+const CHOFERES = [
+  "EDUARDO CUELLAR VAZQUEZ",
+  "LUIS MIGUEL MEDELLIN ESCALONA",
+  "SERGIO BECERRA MARAVILLA",
+  "DAVID WENCESLAO MORALES MARTINEZ",
+  "LINDOLFO GAUNA PEDRAZA"
+];
 
-```
-<div class="field">
-  <label>Quién entrega *</label>
-  <select id="entrega">
-    <option value="">Selecciona quién entrega</option>
-    ${opcionesSelect(QUIEN_ENTREGA,salida.entrega)}
-  </select>
-</div>
+const QUIEN_ENTREGA = [
+  'JOSE MARIA "CHEMA" LOPEZ GONZALEZ',
+  "ROSENDO GARCIA HERNANDEZ",
+  "LADREDO MEDINA GARCIA",
+  "ARMANDO RIVERA CAMARILLO"
+];
 
-<div class="field">
-  <label>Destino *</label>
-  <select id="destino">
-    <option value="">Selecciona destino</option>
-    ${opcionesSelect(DESTINOS,salida.destino)}
-  </select>
-</div>
+const DESTINOS = [
+  "BODEGA MATRIZ MADERO 690",
+  "SUCURSAL GUADALUPE B41",
+  "SUCURSAL MONTEMORELOS",
+  "SUCURSAL ALLENDE 1",
+  "SUCURSAL ALLENDE 2",
+  "SUPER TIENDAS RICO",
+  "ROBERTO YADO",
+  "COMERCIALIZADORA CAVAZOS",
+  "EL PARIENTE ALIMENTOS",
+  "LA MISION SUC DIAZ ORDAZ",
+  "LA MISION SUC VILLEGAS",
+  "LA MISION SUC PETACA",
+  "LA MISION SUC ARBOLEDAS",
+  "LA MISION SUC MORELOS",
+  "LA MISION SUC ALLENDE"
+];
 
-<div class="field">
-  <label>Placas</label>
-  <input id="placas" value="${escA(salida.placas)}">
-</div>
+function opcionesSelect(lista, valorActual = "") {
+  return lista.map(x => `
+    <option value="${escA(x)}" ${x === valorActual ? "selected" : ""}>
+      ${esc(x)}
+    </option>
+  `).join("");
+}
 
-<button class="btn primary" onclick="guardarDatos()">Continuar</button>
-```
+const DB_NAME="PROVSOFT_SALIDAS_ZAPATA",DB_VERSION=1,STORE_KV="kv",STORE_HIST="historial";
+let idb=null,guia=null,catalogo=[],catalogoMap=new Map(),salida=nuevaSalida(),stack=[],guardando=false;
+const $=id=>document.getElementById(id);
 
-`,!1,!1)}function deps(){return(guia?.departamentos||[]).filter(a=>!1!==a.activo).sort((a,t)=>(a.orden||0)-(t.orden||0))}function abrirDepartamentos(){if(!validarInicio())return;const a=deps();modal("Departamento",a.length?`<div class="grid">${a.map(a=>`<button class="tile" onclick="abrirFamilias('${escA(a.id)}')"><span class="ico">${esc(a.icono||"📦")}</span><span>${esc(a.nombre)}</span></button>`).join("")}</div>`:'<div class="empty">Sin departamentos activos.</div>',!1,!1)}function prodBtn(a,t){const e=prodByCod(a),i=e?nomProd(e,t):t;return`<button class="item" onclick="abrirCantidad('${escA(a)}','${escA(i)}')"><h4>${esc(i)}</h4><p>Código: <b>${esc(a)}</b></p></button>`}function abrirBusqueda(){validarInicio()&&modal("Buscar producto",'<input id="buscar" class="search" placeholder="Código o nombre..." oninput="renderBuscar()"><div id="resBuscar" class="empty">Escribe para buscar.</div>',!1,!1)}function abrirCarrito(){validarInicio()&&modal("Carrito",salida.articulos.length?salida.articulos.map((a,t)=>`<div class="item"><h4>${esc(a.nombre)}</h4><p>Código: <b>${esc(a.codigo)}</b></p><div class="cart-controls"><button onclick="chgQty(${t},-1)">−</button><div class="qty">${fmt(a.cantidad)}</div><button onclick="chgQty(${t},1)">+</button><button onclick="delItem(${t})">🗑️</button></div></div>`).join("")+'<button class="btn green" onclick="abrirDepartamentos()">Agregar otro</button><button class="btn primary" onclick="abrirNotas()">Continuar</button>':'<div class="empty">Carrito vacío.</div><button class="btn green" onclick="abrirDepartamentos()">Agregar producto</button>',!1,!1)}function abrirNotas(){if(!salida.articulos.length)return alert("Agrega mínimo un artículo.");modal("Notas generales",`<div class="field"><label>Notas generales</label><textarea id="notas">${esc(salida.notasGenerales)}</textarea></div><button class="btn primary" onclick="saveNotas()">Siguiente: firmas</button>`,!1,!1)}function abrirFirma(a){modal("entrega"===a?"Firma entrega":"Firma chofer",`<div class="sigbox"><canvas id="sig"></canvas></div><button class="btn gray" onclick="clearSig()">Limpiar</button><button class="btn primary" onclick="saveSig('${a}')">${"entrega"===a?"Siguiente":"Guardar salida"}</button>`,!1,!1),setTimeout(initSig,80)}document.addEventListener("DOMContentLoaded",async()=>{bind(),setLoad("Abriendo base local...",10),idb=await openIDB(),setLoad("Cargando cache local...",20),guia=await getKV("guia"),catalogo=await getKV("catalogo")||[],buildCatalogo(),setLoad("Descargando configuración...",35),await sync(),setLoad("Revisando borrador...",85);const a=await getKV("borrador");a&&a.iniciado&&confirm("Hay una salida pendiente. ¿Deseas continuarla?")?salida=a:a&&await delKV("borrador"),updateUI(),setLoad("Listo.",100),setTimeout(()=>$("loader").classList.add("hidden"),250)}),window.guardarDatos=async()=>{if(salida.recibe=$("recibe").value.trim(),salida.entrega=$("entrega").value.trim(),salida.destino=$("destino").value.trim(),salida.placas=$("placas").value.trim(),!salida.recibe||!salida.entrega||!salida.destino)return alert("Chofer, entrega y destino son obligatorios.");
+document.addEventListener("DOMContentLoaded",async()=>{
+  bind();
+  setLoad("Abriendo base local...",10);
+  idb=await openIDB();
+  setLoad("Cargando cache local...",20);
+  guia=await getKV("guia");
+  catalogo=await getKV("catalogo")||[];
+  buildCatalogo();
+  setLoad("Descargando configuración...",35);
+  await sync();
+  setLoad("Revisando borrador...",85);
+  const b=await getKV("borrador");
+  if(b&&b.iniciado&&confirm("Hay una salida pendiente. ¿Deseas continuarla?"))salida=b;
+  else if(b)await delKV("borrador");
+  updateUI();
+  setLoad("Listo.",100);
+  setTimeout(()=>$('loader').classList.add('hidden'),250);
+});
 
+function nuevaSalida(){
+  return{
+    iniciado:false,
+    fecha:hoy(),
+    folioTemporal:"",
+    entrega:"",
+    recibe:"",
+    destino:"",
+    placas:"",
+    notasGenerales:"",
+    articulos:[],
+    firmaEntrega:"",
+    firmaRecibe:""
+  };
+}
 
+function hoy(){return new Date().toISOString().slice(0,10)}
+function ymd(d){return`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`}
+function hms(d){return`${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}${String(d.getSeconds()).padStart(2,"0")}`}
+function folioTemp(){const d=new Date();return`BORRADOR-ZAP-${ymd(d)}-${hms(d)}`}
+function folioFinal(){const d=new Date();return`ZAP-${ymd(d)}-${hms(d)}`}
+function setLoad(m,p){$('loaderMsg').textContent=m;$('loaderBar').style.width=p+'%'}
+function fmt(n){return Number(n||0).toLocaleString('es-MX',{maximumFractionDigits:2})}
+function esc(t){return String(t??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function escA(t){return esc(t).replace(/`/g,"")}
+function slug(t){return String(t||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')}
+function normCod(v){const s=String(v??"").trim(),d=s.replace(/\D/g,"");return d?(d.replace(/^0+/,"")||"0"):s.toLowerCase()}
 
-  await saveDraft(),updateUI(),cerrarModal(),setTimeout(abrirDepartamentos,100)},window.abrirFamilias=a=>{const t=deps().find(t=>t.id===a),e=(t?.familias||[]).filter(a=>!1!==a.activo).sort((a,t)=>(a.orden||0)-(t.orden||0));modal(t?.nombre||"Familia",e.length?`<div class="grid">${e.map(a=>`<button class="tile" onclick="abrirProductos('${escA(t.id)}','${escA(a.id)}')"><span class="ico">${esc(a.icono||"📁")}</span><span>${esc(a.nombre)}</span><small>${(a.articulos||[]).filter(a=>!1!==a.activo).length} productos</small></button>`).join("")}</div>`:'<div class="empty">Sin familias activas.</div>',!0)},window.abrirProductos=(a,t)=>{const e=deps().find(t=>t.id===a),i=e?.familias?.find(a=>a.id===t),n=(i?.articulos||[]).filter(a=>!1!==a.activo).sort((a,t)=>(a.orden||0)-(t.orden||0));modal(i?.nombre||"Productos",n.length?n.map(a=>prodBtn(a.codigo,a.concepto)).join(""):'<div class="empty">Sin productos.</div>',!0)},window.abrirCantidad=(a,t)=>{modal("Cantidad",`<div class="item"> <h4>${esc(t)}</h4> <p>Código: <b>${esc(a)}</b></p> </div>
+function openIDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,DB_VERSION);
+    r.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains(STORE_KV))d.createObjectStore(STORE_KV);
+      if(!d.objectStoreNames.contains(STORE_HIST))d.createObjectStore(STORE_HIST,{keyPath:'folio'});
+    };
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
 
-```
- <div class="field">
-    <label>Cantidad</label>
-    <input
-      id="cant"
-      type="number"
-      min="0.01"
-      step="0.01"
-      inputmode="decimal">
- </div>
+function getKV(k){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_KV,'readonly'),r=tx.objectStore(STORE_KV).get(k);
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
 
- <button class="btn green"
-   onclick="addCart('${escA(a)}','${escA(t)}')">
-   Agregar
- </button>`,!0),setTimeout(()=>{const a=$("cant");a&&(a.addEventListener("focus",()=>{$("modal").classList.add("teclado-activo")}),a.addEventListener("blur",()=>{$("modal").classList.remove("teclado-activo")}),a.focus())},100)},window.addCart=async(a,t)=>{const e=Number($("cant").value||0);if(e<=0)return alert("Cantidad inválida.");const i=salida.articulos.findIndex(t=>normCod(t.codigo)===normCod(a));i>=0?salida.articulos[i].cantidad=Number(salida.articulos[i].cantidad||0)+e:salida.articulos.push({codigo:a,nombre:t,cantidad:e}),await saveDraft(),updateUI(),modal("Agregado",'<div class="notice">Producto agregado.</div><button class="btn green" onclick="abrirDepartamentos()">Agregar otro</button><button class="btn blue" onclick="abrirCarrito()">Ver carrito</button><button class="btn gray" onclick="cerrarModal()">Cerrar</button>',!1,!1)},window.renderBuscar=()=>{const a=$("buscar").value.trim().toLowerCase();if(a.length<2)return void($("resBuscar").innerHTML='<div class="empty">Escribe mínimo 2 caracteres.</div>');const t=catalogo.filter(t=>codProd(t).toLowerCase().includes(a)||nomProd(t).toLowerCase().includes(a)).slice(0,40);$("resBuscar").innerHTML=t.length?t.map(a=>prodBtn(codProd(a),nomProd(a))).join(""):'<div class="empty">Sin resultados.</div>'},window.chgQty=async(a,t)=>{if(!salida.articulos[a])return;const e=Number(salida.articulos[a].cantidad||0)+t;if(e<=0){if(!confirm("¿Eliminar artículo?"))return;salida.articulos.splice(a,1)}else salida.articulos[a].cantidad=e;await saveDraft(),updateUI(),abrirCarrito()},window.delItem=async a=>{confirm("¿Eliminar artículo?")&&(salida.articulos.splice(a,1),await saveDraft(),updateUI(),abrirCarrito())},window.saveNotas=async()=>{salida.notasGenerales=$("notas").value.trim(),await saveDraft(),abrirFirma("entrega")};let ctx,drawing=!1,hasSig=!1;function initSig(){const a=$("sig"),t=a.getBoundingClientRect();a.width=t.width*devicePixelRatio,a.height=t.height*devicePixelRatio,ctx=a.getContext("2d"),ctx.scale(devicePixelRatio,devicePixelRatio),ctx.lineWidth=2.3,ctx.lineCap="round",ctx.strokeStyle="#111827";const e=t=>{const e=a.getBoundingClientRect(),i=t.touches?t.touches[0]:t;return{x:i.clientX-e.left,y:i.clientY-e.top}},i=a=>{a.preventDefault(),drawing=!0,hasSig=!0;const t=e(a);ctx.beginPath(),ctx.moveTo(t.x,t.y)},n=a=>{if(!drawing)return;a.preventDefault();const t=e(a);ctx.lineTo(t.x,t.y),ctx.stroke()},o=a=>{a.preventDefault(),drawing=!1};["mousedown","touchstart"].forEach(t=>a.addEventListener(t,i,{passive:!1})),["mousemove","touchmove"].forEach(t=>a.addEventListener(t,n,{passive:!1})),["mouseup","mouseleave","touchend"].forEach(t=>a.addEventListener(t,o,{passive:!1}))}async function guardarFinal(){if(!guardando){if(!salida.firmaEntrega||!salida.firmaRecibe)return alert("Faltan firmas.");guardando=!0;try{const a=folioFinal(),t=salida.articulos.map(a=>({codigo:String(a.codigo).trim(),nombre:String(a.nombre).trim(),cantidad:Number(a.cantidad||0)})).filter(a=>a.codigo&&a.nombre&&a.cantidad>0),e=auth?.currentUser||null,i={folio:a,fecha:hoy(),timestamp:firebase.firestore.FieldValue.serverTimestamp(),entrega:salida.entrega,recibe:salida.recibe,destino:salida.destino,placas:salida.placas||"",notasGenerales:salida.notasGenerales||"",articulos:t,firmaEntrega:salida.firmaEntrega,firmaRecibe:salida.firmaRecibe,estado:"GUARDADA",origenApp:"APP_SALIDAS_ZAPATA_MOVIL",versionApp:APP_VERSION,dispositivo:navigator.userAgent,capturadoPorUid:e?.uid||"",capturadoPorEmail:e?.email||"",creadoEn:firebase.firestore.FieldValue.serverTimestamp()},n={...i,timestamp:null,creadoEn:null};await RUTAS.SALIDAS_REF.doc(a).set(i),await putHist({folio:a,fecha:i.fecha,destino:i.destino,entrega:i.entrega,recibe:i.recibe,totalArticulos:t.length,totalCantidad:t.reduce((a,t)=>a+t.cantidad,0),fechaGuardado:(new Date).toISOString(),payloadLocal:n}),await delKV("borrador"),imprimirRawBT(n),salida=nuevaSalida(),updateUI(),modal("Guardada",`
-  <div class="notice">
-    Salida guardada.<br>
-    <b>${a}</b><br><br>
-    Ticket enviado a RawBT. Las firmas quedan guardadas en la base de datos.
-  </div>
-  <button class="btn green" onclick="cerrarModal()">Terminar</button>
-`,!1,!1)}catch(a){alert("Error al guardar: "+a.message)}finally{guardando=!1}}}function imprimirRawBT(a){const t=a.articulos.reduce((a,t)=>a+Number(t.cantidad||0),0);let e="";e+="\n",e+="================================\n",e+="         SALIDA ZAPATA\n",e+="================================\n",e+="FOLIO: "+a.folio+"\n",e+="FECHA: "+a.fecha+"\n",e+="DESTINO: "+(a.destino||"")+"\n",e+="ENTREGA: "+(a.entrega||"")+"\n",e+="CHOFER: "+(a.recibe||"")+"\n",e+="PLACAS: "+(a.placas||"")+"\n",e+="--------------------------------\n",a.articulos.forEach(a=>{e+="================================\n",e+=String(a.codigo||"")+"\n",e+=String(a.nombre||"")+"\n",e+="CANTIDAD: "+String(a.cantidad||0)+"\n",e+="================================\n\n"}),e+="--------------------------------\n",e+="TOTAL ARTICULOS: "+a.articulos.length+"\n",e+="TOTAL PIEZAS: "+t+"\n",a.notasGenerales&&(e+="--------------------------------\n",e+="NOTAS:\n",e+=a.notasGenerales+"\n"),e+="--------------------------------\n\n",e+="ENTREGO:\n",e+=(a.entrega||"SIN DATO")+"\n",e+="(FIRMA DIGITAL RESGUARDADA EN BD)\n\n",e+="RECIBIO:\n",e+=(a.recibe||"SIN DATO")+"\n",e+="(FIRMA DIGITAL RESGUARDADA EN BD)\n\n",e+="\n",e+="================================\n",e+="PROVEEDORA DE DULCES\n",e+="Y DESECHABLES\n",e+="================================\n\n\n";const i=encodeURIComponent(e);window.location.href="intent:"+i+"#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;"}async function generarImagenTicket(a){const t=a.articulos.reduce((a,t)=>a+Number(t.cantidad||0),0),e=document.createElement("div");e.style.position="fixed",e.style.left="-9999px",e.style.top="0",e.style.width="320px",e.style.background="#fff",e.style.color="#000",e.style.fontFamily="Arial, sans-serif",e.style.padding="14px",e.style.fontSize="12px",e.style.lineHeight="1.25",e.innerHTML=`
-<div style="text-align:center;font-weight:900;font-size:16px;margin-bottom:8px;">
-  SALIDA ZAPATA
-</div>
+function setKV(k,v){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_KV,'readwrite');
+    tx.objectStore(STORE_KV).put(v,k);
+    tx.oncomplete=res;
+    tx.onerror=()=>rej(tx.error);
+  });
+}
 
-<div><b>FOLIO:</b> ${esc(a.folio)}</div>
-<div><b>FECHA:</b> ${esc(a.fecha)}</div>
-<div><b>DESTINO:</b> ${esc(a.destino||"")}</div>
-<div><b>ENTREGA:</b> ${esc(a.entrega||"")}</div>
-<div><b>CHOFER:</b> ${esc(a.recibe||"")}</div>
-<div><b>PLACAS:</b> ${esc(a.placas||"")}</div>
+function delKV(k){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_KV,'readwrite');
+    tx.objectStore(STORE_KV).delete(k);
+    tx.oncomplete=res;
+    tx.onerror=()=>rej(tx.error);
+  });
+}
 
-<hr>
+function putHist(v){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_HIST,'readwrite');
+    tx.objectStore(STORE_HIST).put(v);
+    tx.oncomplete=res;
+    tx.onerror=()=>rej(tx.error);
+  });
+}
 
-<table style="width:100%;border-collapse:collapse;font-size:11px;">
-  <thead>
-    <tr>
-      <th style="text-align:left;border-bottom:1px solid #000;">CODIGO</th>
-      <th style="text-align:left;border-bottom:1px solid #000;">CONCEPTO</th>
-      <th style="text-align:right;border-bottom:1px solid #000;">CANT</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${a.articulos.map(a=>`
-      <tr>
-        <td style="padding:4px 0;vertical-align:top;">${esc(a.codigo)}</td>
-        <td style="padding:4px 0;vertical-align:top;">${esc(a.nombre)}</td>
-        <td style="padding:4px 0;text-align:right;vertical-align:top;">${esc(a.cantidad)}</td>
-      </tr>
-    `).join("")}
-  </tbody>
-</table>
+function getHist(){
+  return new Promise((res,rej)=>{
+    const tx=idb.transaction(STORE_HIST,'readonly'),r=tx.objectStore(STORE_HIST).getAll();
+    r.onsuccess=()=>res((r.result||[]).sort((a,b)=>String(b.fechaGuardado).localeCompare(String(a.fechaGuardado))).slice(0,20));
+    r.onerror=()=>rej(r.error);
+  });
+}
 
-<hr>
+async function sync(){
+  let ok=false;
+  try{
+    const d=await RUTAS.CONFIG_DOC.get();
+    if(d.exists){
+      guia=normalizeGuia(d.data());
+      await setKV('guia',guia);
+      ok=true;
+    }
+  }catch(e){console.warn(e)}
 
-<div><b>TOTAL ARTICULOS:</b> ${a.articulos.length}</div>
-<div><b>TOTAL PIEZAS:</b> ${t}</div>
+  try{
+    const s=await RUTAS.PRODUCTOS_REF.where('activo','==',true).get();
+    catalogo=[];
+    s.forEach(d=>catalogo.push({id:d.id,...d.data()}));
+    buildCatalogo();
+    await setKV('catalogo',catalogo);
+    ok=true;
+  }catch(e){console.warn(e)}
 
-${a.notasGenerales?`<hr><div><b>NOTAS:</b></div><div>${esc(a.notasGenerales)}</div>`:""}
+  $('estadoConexion').textContent=ok?'Sincronizado':'Modo local';
+}
 
-<div style="display:flex;gap:12px;margin-top:18px;">
-  <div style="width:50%;text-align:center;">
-    <img src="${a.firmaEntrega}" style="width:120px;height:52px;object-fit:contain;">
-    <div style="border-top:1px solid #000;font-size:10px;">Firma entrega</div>
-  </div>
-  <div style="width:50%;text-align:center;">
-    <img src="${a.firmaRecibe}" style="width:120px;height:52px;object-fit:contain;">
-    <div style="border-top:1px solid #000;font-size:10px;">Firma chofer</div>
-  </div>
-</div>
+function normalizeGuia(raw){
+  const arts=Array.isArray(raw.articulos)?raw.articulos:[];
 
-<div style="text-align:center;font-weight:900;margin-top:16px;font-size:12px;">
-  PROVSOFT
-</div>
-```
+  if(Array.isArray(raw.departamentos)&&raw.departamentos.length){
+    return{
+      ...raw,
+      departamentos:raw.departamentos.map((d,i)=>({
+        id:slug(d.id||d.nombre),
+        nombre:d.nombre||'SIN DEPTO',
+        icono:d.icono||'📦',
+        activo:d.activo!==false,
+        orden:+(d.orden||i+1),
+        familias:(d.familias||[]).map((f,j)=>({
+          id:slug(f.id||f.nombre),
+          nombre:f.nombre||'SIN FAMILIA',
+          icono:f.icono||'📁',
+          activo:f.activo!==false,
+          orden:+(f.orden||j+1),
+          articulos:(f.articulos||[]).map((a,k)=>({
+            codigo:String(a.codigo||'').trim(),
+            concepto:a.concepto||a.nombre||'',
+            icono:a.icono||'📦',
+            activo:a.activo!==false,
+            orden:+(a.orden||k+1)
+          }))
+        }))
+      }))
+    };
+  }
 
-`,document.body.appendChild(e);const i=await html2canvas(e,{backgroundColor:"#ffffff",scale:2,useCORS:!0});document.body.removeChild(e),i.toBlob(t=>{const e=URL.createObjectURL(t),i=document.createElement("a");i.href=e,i.download=`${a.folio}.png`,document.body.appendChild(i),i.click(),document.body.removeChild(i),setTimeout(()=>{window.open(e,"_blank")},700)},"image/png")}async function abrirHistorial(){const a=await getHist();modal("Historial",a.length?a.map(a=>`<div class="item"><h4>${esc(a.folio)}</h4><p>${esc(a.fecha)} · ${esc(a.destino)} · ${a.totalArticulos} artículos</p><button class="btn blue" onclick="pdfHist('${escA(a.folio)}')">PDF</button></div>`).join(""):'<div class="empty">Sin historial local.</div>',!1,!1)}function abrirConfig(){const a=guia?.departamentos||[];modal("Configuración",a.length?'<div class="notice">Activa/desactiva departamentos. Se guarda en Firestore.</div>'+a.map((a,t)=>`<div class="item"><div class="switch"><div><h4>${esc(a.icono||"📦")} ${esc(a.nombre)}</h4><p>${(a.familias||[]).length} familias</p></div><button class="${!1===a.activo?"off":""}" onclick="toggleDep(${t})">${!1===a.activo?"OFF":"ON"}</button></div><button class="btn gray" onclick="abrirConfigFamilias(${t})">Familias</button></div>`).join(""):'<div class="empty">Sin configuración.</div>',!1,!1)}async function saveConfig(){try{const a={},t={};(guia?.departamentos||[]).forEach(e=>{const i=slug(e.id||e.nombre);a[i]=!1!==e.activo,(e.familias||[]).forEach(a=>{const e=slug(a.id||a.nombre);t[`${i}__${e}`]=!1!==a.activo})}),await RUTAS.CONFIG_DOC.set({estadoDepartamentos:a,estadoFamilias:t,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()},{merge:!0}),guia.estadoDepartamentos=a,guia.estadoFamilias=t,await setKV("guia",guia),updateUI()}catch(a){throw console.error("Error guardando configuración:",a),alert("No se pudo guardar la configuración: "+a.message),a}}window.clearSig=()=>{const a=$("sig");ctx.clearRect(0,0,a.width,a.height),hasSig=!1},window.saveSig=async a=>{if(!hasSig)return alert("Firma obligatoria.");const t=$("sig").toDataURL("image/png");"entrega"===a?(salida.firmaEntrega=t,await saveDraft(),abrirFirma("recibe")):(salida.firmaRecibe=t,await saveDraft(),guardarFinal())},window.pdfHist=async a=>{const t=(await getHist()).find(t=>t.folio===a);if(!t)return alert("No está en historial local.");generarImagenTicket(t.payloadLocal)},window.toggleDep=async a=>{guia.departamentos[a].activo=!1===guia.departamentos[a].activo,await saveConfig(),abrirConfig()},window.abrirConfigFamilias=a=>{const t=guia.departamentos[a];modal(t.nombre,(t.familias||[]).map((t,e)=>`<div class="item"><div class="switch"><div><h4>${esc(t.icono||"📁")} ${esc(t.nombre)}</h4><p>${(t.articulos||[]).length} productos</p></div><button class="${!1===t.activo?"off":""}" onclick="toggleFam(${a},${e})">${!1===t.activo?"OFF":"ON"}</button></div></div>`).join(""),!0)},window.toggleFam=async(a,t)=>{const e=guia?.departamentos?.[a],i=e?.familias?.[t];e&&i&&(i.activo=!1===i.activo,await saveConfig(),abrirConfigFamilias(a))};
+  const map=new Map();
 
+  arts.forEach((a,i)=>{
+    const dep=a.departamento||'SIN DEPARTAMENTO';
+    const fam=a.familia||'SIN FAMILIA';
+    const dk=slug(dep);
+    const fk=slug(fam);
 
+    if(!map.has(dk)){
+      map.set(dk,{
+        id:dk,
+        nombre:dep,
+        icono:'📦',
+        activo:true,
+        orden:i+1,
+        familiasMap:new Map()
+      });
+    }
+
+    const d=map.get(dk);
+
+    if(!d.familiasMap.has(fk)){
+      d.familiasMap.set(fk,{
+        id:fk,
+        nombre:fam,
+        icono:'📁',
+        activo:true,
+        orden:i+1,
+        articulos:[]
+      });
+    }
+
+    d.familiasMap.get(fk).articulos.push({
+      codigo:String(a.codigo||'').trim(),
+      concepto:a.concepto||'',
+      icono:'📦',
+      activo:a.activo!==false,
+      orden:+(a.orden||i+1)
+    });
+  });
+
+  const departamentos=[...map.values()].map(d=>{
+    const familias=[...d.familiasMap.values()]
+      .map(f=>({...f,articulos:f.articulos.sort((a,b)=>a.orden-b.orden)}))
+      .sort((a,b)=>a.orden-b.orden);
+
+    delete d.familiasMap;
+
+    return{...d,familias};
+  }).sort((a,b)=>a.orden-b.orden);
+
+  return{...raw,departamentos,articulos:arts};
+}
+
+function buildCatalogo(){
+  catalogoMap=new Map();
+  catalogo.forEach(p=>[
+    p.codigo,
+    p.Codigo,
+    p.CODIGO,
+    p.codigoBarra,
+    p.codigo_barra,
+    p.id
+  ].filter(Boolean).forEach(c=>catalogoMap.set(normCod(c),p)));
+}
+
+function prodByCod(c){return catalogoMap.get(normCod(c))}
+function codProd(p){return String(p.codigo||p.Codigo||p.CODIGO||p.codigoBarra||p.id||'').trim()}
+function nomProd(p,fb=''){return String(p.concepto||p.Concepto||p.descripcion||p.nombre||p.Nombre||fb||'').trim()}
+
+function bind(){
+  $('btnNuevaSalida').onclick=abrirDatos;
+  $('btnAgregarProducto').onclick=()=>abrirDepartamentos();
+  $('btnBuscarProducto').onclick=abrirBusqueda;
+  $('btnCarrito').onclick=abrirCarrito;
+  $('btnConfig').onclick=abrirConfig;
+  $('btnHistorial').onclick=abrirHistorial;
+  $('btnContinuarNotas').onclick=abrirNotas;
+  $('btnClose').onclick=cerrarModal;
+  $('btnBack').onclick=backModal;
+}
+
+function updateUI(){
+  const total=salida.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
+
+  $('badgeCarrito').textContent=salida.articulos.length;
+
+  if(!salida.iniciado){
+    $('tituloEstado').textContent='Nueva salida';
+    $('resumenSalida').textContent='Inicia una salida para comenzar.';
+    $('panelAcciones').classList.add('hidden');
+    $('btnNuevaSalida').classList.remove('hidden');
+    return;
+  }
+
+  $('tituloEstado').textContent=salida.folioTemporal;
+  $('resumenSalida').innerHTML=`<b>Destino:</b> ${esc(salida.destino||'SIN DESTINO')}<br><b>Entrega:</b> ${esc(salida.entrega||'')} · <b>Chofer:</b> ${esc(salida.recibe||'')}<br><b>Artículos:</b> ${salida.articulos.length} · <b>Cantidad:</b> ${fmt(total)}`;
+  $('panelAcciones').classList.remove('hidden');
+  $('btnNuevaSalida').classList.add('hidden');
+}
+
+function contarGuia(){
+  return(guia?.departamentos||[]).flatMap(d=>d.familias||[]).flatMap(f=>f.articulos||[]).length;
+}
+
+function modal(title,html,back=false,push=true){
+  $('modalTitle').textContent=title;
+  $('modalBody').innerHTML=html;
+  $('modal').classList.remove('hidden');
+  $('btnBack').classList.toggle('hidden',!back);
+  if(push)stack.push({title,html,back});
+}
+
+function cerrarModal(){
+  $('modal').classList.add('hidden');
+  $('modalBody').innerHTML='';
+  stack=[];
+}
+
+function backModal(){
+  stack.pop();
+  const p=stack.pop();
+  if(!p)return cerrarModal();
+  modal(p.title,p.html,p.back,true);
+}
+
+function validarInicio(){
+  if(!salida.iniciado){
+    alert('Primero inicia una salida.');
+    return false;
+  }
+  return true;
+}
+
+async function saveDraft(){
+  if(salida.iniciado)await setKV('borrador',salida);
+}
+
+function abrirDatos(){
+  if(!salida.iniciado){
+    salida=nuevaSalida();
+    salida.iniciado=true;
+    salida.folioTemporal=folioTemp();
+  }
+
+  modal('Datos generales',`
+    <div class="field">
+      <label>Chofer *</label>
+      <select id="recibe">
+        <option value="">Selecciona chofer</option>
+        ${opcionesSelect(CHOFERES,salida.recibe)}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Quién entrega *</label>
+      <select id="entrega">
+        <option value="">Selecciona quién entrega</option>
+        ${opcionesSelect(QUIEN_ENTREGA,salida.entrega)}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Destino *</label>
+      <select id="destino">
+        <option value="">Selecciona destino</option>
+        ${opcionesSelect(DESTINOS,salida.destino)}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Placas</label>
+      <input id="placas" value="${escA(salida.placas)}">
+    </div>
+
+    <button class="btn primary" onclick="guardarDatos()">Continuar</button>
+  `,false,false);
+}
+
+window.guardarDatos=async()=>{
+  salida.recibe=$('recibe').value.trim();
+  salida.entrega=$('entrega').value.trim();
+  salida.destino=$('destino').value.trim();
+  salida.placas=$('placas').value.trim();
+
+  if(!salida.recibe||!salida.entrega||!salida.destino){
+    return alert('Chofer, entrega y destino son obligatorios.');
+  }
+
+  await saveDraft();
+  updateUI();
+  cerrarModal();
+  setTimeout(abrirDepartamentos,100);
+};
+
+function deps(){
+  return(guia?.departamentos||[]).filter(d=>d.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0));
+}
+
+function abrirDepartamentos(){
+  if(!validarInicio())return;
+  const d=deps();
+
+  modal(
+    'Departamento',
+    d.length
+      ? `<div class="grid">${d.map(x=>`<button class="tile" onclick="abrirFamilias('${escA(x.id)}')"><span class="ico">${esc(x.icono||'📦')}</span><span>${esc(x.nombre)}</span></button>`).join('')}</div>`
+      : `<div class="empty">Sin departamentos activos.</div>`,
+    false,
+    false
+  );
+}
+
+window.abrirFamilias=id=>{
+  const d=deps().find(x=>x.id===id);
+  const f=(d?.familias||[]).filter(x=>x.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0));
+
+  modal(
+    d?.nombre||'Familia',
+    f.length
+      ? `<div class="grid">${f.map(x=>`<button class="tile" onclick="abrirProductos('${escA(d.id)}','${escA(x.id)}')"><span class="ico">${esc(x.icono||'📁')}</span><span>${esc(x.nombre)}</span><small>${(x.articulos||[]).filter(a=>a.activo!==false).length} productos</small></button>`).join('')}</div>`
+      : `<div class="empty">Sin familias activas.</div>`,
+    true
+  );
+};
+
+window.abrirProductos=(depId,famId)=>{
+  const d=deps().find(x=>x.id===depId);
+  const f=d?.familias?.find(x=>x.id===famId);
+  const arts=(f?.articulos||[]).filter(a=>a.activo!==false).sort((a,b)=>(a.orden||0)-(b.orden||0));
+
+  modal(
+    f?.nombre||'Productos',
+    arts.length
+      ? arts.map(a=>prodBtn(a.codigo,a.concepto)).join('')
+      : `<div class="empty">Sin productos.</div>`,
+    true
+  );
+};
+
+function prodBtn(c,n){
+  const p=prodByCod(c);
+  const nombre=p?nomProd(p,n):n;
+
+  return`<button class="item" onclick="abrirCantidad('${escA(c)}','${escA(nombre)}')"><h4>${esc(nombre)}</h4><p>Código: <b>${esc(c)}</b></p></button>`;
+}
+
+window.abrirCantidad=(c,n)=>{
+  modal(
+    'Cantidad',
+    `<div class="item">
+        <h4>${esc(n)}</h4>
+        <p>Código: <b>${esc(c)}</b></p>
+     </div>
+
+     <div class="field">
+        <label>Cantidad</label>
+        <input
+          id="cant"
+          type="number"
+          min="0.01"
+          step="0.01"
+          inputmode="decimal">
+     </div>
+
+     <button class="btn green"
+       onclick="addCart('${escA(c)}','${escA(n)}')">
+       Agregar
+     </button>`,
+    true
+  );
+
+  setTimeout(()=>{
+    const input=$('cant');
+
+    if(input){
+
+      input.addEventListener('focus',()=>{
+        $('modal').classList.add('teclado-activo');
+      });
+
+      input.addEventListener('blur',()=>{
+        $('modal').classList.remove('teclado-activo');
+      });
+
+      input.focus();
+    }
+
+  },100);
+};
+
+window.addCart=async(c,n)=>{
+  const q=Number($('cant').value||0);
+
+  if(q<=0)return alert('Cantidad inválida.');
+
+  const i=salida.articulos.findIndex(a=>normCod(a.codigo)===normCod(c));
+
+  if(i>=0)salida.articulos[i].cantidad=Number(salida.articulos[i].cantidad||0)+q;
+  else salida.articulos.push({codigo:c,nombre:n,cantidad:q});
+
+  await saveDraft();
+  updateUI();
+
+  modal(
+    'Agregado',
+    `<div class="notice">Producto agregado.</div><button class="btn green" onclick="abrirDepartamentos()">Agregar otro</button><button class="btn blue" onclick="abrirCarrito()">Ver carrito</button><button class="btn gray" onclick="cerrarModal()">Cerrar</button>`,
+    false,
+    false
+  );
+};
+
+function abrirBusqueda(){
+  if(!validarInicio())return;
+
+  modal(
+    'Buscar producto',
+    `<input id="buscar" class="search" placeholder="Código o nombre..." oninput="renderBuscar()"><div id="resBuscar" class="empty">Escribe para buscar.</div>`,
+    false,
+    false
+  );
+}
+
+window.renderBuscar=()=>{
+  const q=$('buscar').value.trim().toLowerCase();
+
+  if(q.length<2){
+    $('resBuscar').innerHTML=`<div class="empty">Escribe mínimo 2 caracteres.</div>`;
+    return;
+  }
+
+  const r=catalogo.filter(p=>codProd(p).toLowerCase().includes(q)||nomProd(p).toLowerCase().includes(q)).slice(0,40);
+
+  $('resBuscar').innerHTML=r.length
+    ? r.map(p=>prodBtn(codProd(p),nomProd(p))).join('')
+    : `<div class="empty">Sin resultados.</div>`;
+};
+
+function abrirCarrito(){
+  if(!validarInicio())return;
+
+  modal(
+    'Carrito',
+    salida.articulos.length
+      ? salida.articulos.map((a,i)=>`<div class="item"><h4>${esc(a.nombre)}</h4><p>Código: <b>${esc(a.codigo)}</b></p><div class="cart-controls"><button onclick="chgQty(${i},-1)">−</button><div class="qty">${fmt(a.cantidad)}</div><button onclick="chgQty(${i},1)">+</button><button onclick="delItem(${i})">🗑️</button></div></div>`).join('')+`<button class="btn green" onclick="abrirDepartamentos()">Agregar otro</button><button class="btn primary" onclick="abrirNotas()">Continuar</button>`
+      : `<div class="empty">Carrito vacío.</div><button class="btn green" onclick="abrirDepartamentos()">Agregar producto</button>`,
+    false,
+    false
+  );
+}
+
+window.chgQty=async(i,d)=>{
+  if(!salida.articulos[i])return;
+
+  const n=Number(salida.articulos[i].cantidad||0)+d;
+
+  if(n<=0){
+    if(!confirm('¿Eliminar artículo?'))return;
+    salida.articulos.splice(i,1);
+  }else{
+    salida.articulos[i].cantidad=n;
+  }
+
+  await saveDraft();
+  updateUI();
+  abrirCarrito();
+};
+
+window.delItem=async i=>{
+  if(!confirm('¿Eliminar artículo?'))return;
+  salida.articulos.splice(i,1);
+  await saveDraft();
+  updateUI();
+  abrirCarrito();
+};
+
+function abrirNotas(){
+  if(!salida.articulos.length)return alert('Agrega mínimo un artículo.');
+
+  modal(
+    'Notas generales',
+    `<div class="field"><label>Notas generales</label><textarea id="notas">${esc(salida.notasGenerales)}</textarea></div><button class="btn primary" onclick="saveNotas()">Siguiente: firmas</button>`,
+    false,
+    false
+  );
+}
+
+window.saveNotas=async()=>{
+  salida.notasGenerales=$('notas').value.trim();
+  await saveDraft();
+  abrirFirma('entrega');
+};
+
+function abrirFirma(tipo){
+  modal(
+    tipo==='entrega'?'Firma entrega':'Firma chofer',
+    `<div class="sigbox"><canvas id="sig"></canvas></div><button class="btn gray" onclick="clearSig()">Limpiar</button><button class="btn primary" onclick="saveSig('${tipo}')">${tipo==='entrega'?'Siguiente':'Guardar salida'}</button>`,
+    false,
+    false
+  );
+
+  setTimeout(initSig,80);
+}
+
+let ctx,drawing=false,hasSig=false;
+
+function initSig(){
+  const c=$('sig');
+  const r=c.getBoundingClientRect();
+
+  c.width=r.width*devicePixelRatio;
+  c.height=r.height*devicePixelRatio;
+
+  ctx=c.getContext('2d');
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.lineWidth=2.3;
+  ctx.lineCap='round';
+  ctx.strokeStyle='#111827';
+
+  const pos=e=>{
+    const rr=c.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    return{x:t.clientX-rr.left,y:t.clientY-rr.top};
+  };
+
+  const st=e=>{
+    e.preventDefault();
+    drawing=true;
+    hasSig=true;
+    const p=pos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x,p.y);
+  };
+
+  const mv=e=>{
+    if(!drawing)return;
+    e.preventDefault();
+    const p=pos(e);
+    ctx.lineTo(p.x,p.y);
+    ctx.stroke();
+  };
+
+  const en=e=>{
+    e.preventDefault();
+    drawing=false;
+  };
+
+  ['mousedown','touchstart'].forEach(ev=>c.addEventListener(ev,st,{passive:false}));
+  ['mousemove','touchmove'].forEach(ev=>c.addEventListener(ev,mv,{passive:false}));
+  ['mouseup','mouseleave','touchend'].forEach(ev=>c.addEventListener(ev,en,{passive:false}));
+}
+
+window.clearSig=()=>{
+  const c=$('sig');
+  ctx.clearRect(0,0,c.width,c.height);
+  hasSig=false;
+};
+
+window.saveSig=async tipo=>{
+  if(!hasSig)return alert('Firma obligatoria.');
+
+  const data=$('sig').toDataURL('image/png');
+
+  if(tipo==='entrega'){
+    salida.firmaEntrega=data;
+    await saveDraft();
+    abrirFirma('recibe');
+  }else{
+    salida.firmaRecibe=data;
+    await saveDraft();
+    guardarFinal();
+  }
+};
+
+async function guardarFinal(){
+  if(guardando)return;
+  if(!salida.firmaEntrega||!salida.firmaRecibe)return alert('Faltan firmas.');
+
+  guardando=true;
+
+  try{
+    const folio=folioFinal();
+
+    const arts=salida.articulos
+      .map(a=>({
+        codigo:String(a.codigo).trim(),
+        nombre:String(a.nombre).trim(),
+        cantidad:Number(a.cantidad||0)
+      }))
+      .filter(a=>a.codigo&&a.nombre&&a.cantidad>0);
+
+    const user=auth?.currentUser||null;
+
+    const payload={
+      folio,
+      fecha:hoy(),
+      timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+      entrega:salida.entrega,
+      recibe:salida.recibe,
+      destino:salida.destino,
+      placas:salida.placas||'',
+      notasGenerales:salida.notasGenerales||'',
+      articulos:arts,
+      firmaEntrega:salida.firmaEntrega,
+      firmaRecibe:salida.firmaRecibe,
+      estado:'GUARDADA',
+      origenApp:'APP_SALIDAS_ZAPATA_MOVIL',
+      versionApp:APP_VERSION,
+      dispositivo:navigator.userAgent,
+      capturadoPorUid:user?.uid||'',
+      capturadoPorEmail:user?.email||'',
+      creadoEn:firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const payloadLocal={...payload,timestamp:null,creadoEn:null};
+
+    await RUTAS.SALIDAS_REF.doc(folio).set(payload);
+
+    await putHist({
+      folio,
+      fecha:payload.fecha,
+      destino:payload.destino,
+      entrega:payload.entrega,
+      recibe:payload.recibe,
+      totalArticulos:arts.length,
+      totalCantidad:arts.reduce((s,a)=>s+a.cantidad,0),
+      fechaGuardado:new Date().toISOString(),
+      payloadLocal
+    });
+
+    await delKV('borrador');
+
+    imprimirRawBT(payloadLocal);
+
+    salida=nuevaSalida();
+    updateUI();
+
+    modal('Guardada',`
+      <div class="notice">
+        Salida guardada.<br>
+        <b>${folio}</b><br><br>
+        Ticket enviado a RawBT. Las firmas quedan guardadas en la base de datos.
+      </div>
+      <button class="btn green" onclick="cerrarModal()">Terminar</button>
+    `,false,false);
+
+  }catch(e){
+    alert('Error al guardar: '+e.message);
+  }finally{
+    guardando=false;
+  }
+}
+function imprimirRawBT(p){
+  const totalCantidad = p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
+
+  let txt = "";
+
+txt += "\n";
+txt += "================================\n";
+txt += "         SALIDA ZAPATA\n";
+txt += "================================\n";
+  txt += "FOLIO: " + p.folio + "\n";
+  txt += "FECHA: " + p.fecha + "\n";
+  txt += "DESTINO: " + (p.destino || "") + "\n";
+  txt += "ENTREGA: " + (p.entrega || "") + "\n";
+  txt += "CHOFER: " + (p.recibe || "") + "\n";
+  txt += "PLACAS: " + (p.placas || "") + "\n";
+  txt += "--------------------------------\n";
+
+p.articulos.forEach(a=>{
+
+  txt += "================================\n";
+
+  txt += String(a.codigo || "") + "\n";
+
+  txt += String(a.nombre || "") + "\n";
+
+  txt += "CANTIDAD: " + String(a.cantidad || 0) + "\n";
+
+  txt += "================================\n\n";
+
+});
+  
+  txt += "--------------------------------\n";
+  txt += "TOTAL ARTICULOS: " + p.articulos.length + "\n";
+  txt += "TOTAL PIEZAS: " + totalCantidad + "\n";
+
+  if(p.notasGenerales){
+    txt += "--------------------------------\n";
+    txt += "NOTAS:\n";
+    txt += p.notasGenerales + "\n";
+  }
+
+  txt += "--------------------------------\n\n";
+
+txt += "ENTREGO:\n";
+txt += (p.entrega || "SIN DATO") + "\n";
+txt += "(FIRMA DIGITAL RESGUARDADA EN BD)\n\n";
+
+txt += "RECIBIO:\n";
+txt += (p.recibe || "SIN DATO") + "\n";
+txt += "(FIRMA DIGITAL RESGUARDADA EN BD)\n\n";
+
+txt += "\n";
+txt += "================================\n";
+txt += "PROVEEDORA DE DULCES\n";
+txt += "Y DESECHABLES\n";
+txt += "================================\n\n\n";
+
+const encoded = encodeURIComponent(txt);
+
+window.location.href =
+  "intent:" + encoded +
+  "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+  }
+  
+async function generarImagenTicket(p){
+  const totalCantidad=p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
+
+  const ticket=document.createElement('div');
+  ticket.style.position='fixed';
+  ticket.style.left='-9999px';
+  ticket.style.top='0';
+  ticket.style.width='320px';
+  ticket.style.background='#fff';
+  ticket.style.color='#000';
+  ticket.style.fontFamily='Arial, sans-serif';
+  ticket.style.padding='14px';
+  ticket.style.fontSize='12px';
+  ticket.style.lineHeight='1.25';
+
+  ticket.innerHTML=`
+    <div style="text-align:center;font-weight:900;font-size:16px;margin-bottom:8px;">
+      SALIDA ZAPATA
+    </div>
+
+    <div><b>FOLIO:</b> ${esc(p.folio)}</div>
+    <div><b>FECHA:</b> ${esc(p.fecha)}</div>
+    <div><b>DESTINO:</b> ${esc(p.destino||'')}</div>
+    <div><b>ENTREGA:</b> ${esc(p.entrega||'')}</div>
+    <div><b>CHOFER:</b> ${esc(p.recibe||'')}</div>
+    <div><b>PLACAS:</b> ${esc(p.placas||'')}</div>
+
+    <hr>
+
+    <table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;border-bottom:1px solid #000;">CODIGO</th>
+          <th style="text-align:left;border-bottom:1px solid #000;">CONCEPTO</th>
+          <th style="text-align:right;border-bottom:1px solid #000;">CANT</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${p.articulos.map(a=>`
+          <tr>
+            <td style="padding:4px 0;vertical-align:top;">${esc(a.codigo)}</td>
+            <td style="padding:4px 0;vertical-align:top;">${esc(a.nombre)}</td>
+            <td style="padding:4px 0;text-align:right;vertical-align:top;">${esc(a.cantidad)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+
+    <hr>
+
+    <div><b>TOTAL ARTICULOS:</b> ${p.articulos.length}</div>
+    <div><b>TOTAL PIEZAS:</b> ${totalCantidad}</div>
+
+    ${
+      p.notasGenerales
+      ? `<hr><div><b>NOTAS:</b></div><div>${esc(p.notasGenerales)}</div>`
+      : ''
+    }
+
+    <div style="display:flex;gap:12px;margin-top:18px;">
+      <div style="width:50%;text-align:center;">
+        <img src="${p.firmaEntrega}" style="width:120px;height:52px;object-fit:contain;">
+        <div style="border-top:1px solid #000;font-size:10px;">Firma entrega</div>
+      </div>
+      <div style="width:50%;text-align:center;">
+        <img src="${p.firmaRecibe}" style="width:120px;height:52px;object-fit:contain;">
+        <div style="border-top:1px solid #000;font-size:10px;">Firma chofer</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-weight:900;margin-top:16px;font-size:12px;">
+      PROVSOFT
+    </div>
+  `;
+
+  document.body.appendChild(ticket);
+
+  const canvas=await html2canvas(ticket,{
+    backgroundColor:'#ffffff',
+    scale:2,
+    useCORS:true
+  });
+
+  document.body.removeChild(ticket);
+
+  canvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`${p.folio}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(()=>{
+      window.open(url,'_blank');
+    },700);
+  },'image/png');
+}
+
+async function abrirHistorial(){
+  const h=await getHist();
+
+  modal(
+    'Historial',
+    h.length
+      ? h.map(x=>`<div class="item"><h4>${esc(x.folio)}</h4><p>${esc(x.fecha)} · ${esc(x.destino)} · ${x.totalArticulos} artículos</p><button class="btn blue" onclick="pdfHist('${escA(x.folio)}')">PDF</button></div>`).join('')
+      : `<div class="empty">Sin historial local.</div>`,
+    false,
+    false
+  );
+}
+
+window.pdfHist=async(folio)=>{
+  const h=await getHist();
+  const it=h.find(x=>x.folio===folio);
+
+  if(!it){
+    return alert('No está en historial local.');
+  }
+
+  generarImagenTicket(it.payloadLocal);
+};
+
+function abrirConfig(){
+  const all=guia?.departamentos||[];
+
+  modal(
+    'Configuración',
+    all.length
+      ? `<div class="notice">Activa/desactiva departamentos. Se guarda en Firestore.</div>`+all.map((d,i)=>`<div class="item"><div class="switch"><div><h4>${esc(d.icono||'📦')} ${esc(d.nombre)}</h4><p>${(d.familias||[]).length} familias</p></div><button class="${d.activo===false?'off':''}" onclick="toggleDep(${i})">${d.activo===false?'OFF':'ON'}</button></div><button class="btn gray" onclick="abrirConfigFamilias(${i})">Familias</button></div>`).join('')
+      : `<div class="empty">Sin configuración.</div>`,
+    false,
+    false
+  );
+}
+
+window.toggleDep=async i=>{
+  guia.departamentos[i].activo=guia.departamentos[i].activo===false;
+  await saveConfig();
+  abrirConfig();
+};
+
+window.abrirConfigFamilias=i=>{
+  const d=guia.departamentos[i];
+
+  modal(
+    d.nombre,
+    (d.familias||[]).map((f,j)=>`<div class="item"><div class="switch"><div><h4>${esc(f.icono||'📁')} ${esc(f.nombre)}</h4><p>${(f.articulos||[]).length} productos</p></div><button class="${f.activo===false?'off':''}" onclick="toggleFam(${i},${j})">${f.activo===false?'OFF':'ON'}</button></div></div>`).join(''),
+    true
+  );
+};
+
+window.toggleFam=async(i,j)=>{
+  guia.departamentos[i].familias[j].activo=guia.departamentos[i].familias[j].activo===false;
+  await saveConfig();
+  abrirConfigFamilias(i);
+};
+
+async function saveConfig(){
+  await RUTAS.CONFIG_DOC.set({...guia,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+  await setKV('guia',guia);
+  updateUI();
+}

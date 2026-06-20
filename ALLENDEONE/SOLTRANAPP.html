@@ -555,6 +555,51 @@ html,body{
   padding-top:30px;
 }
 
+.foto-contador{
+  position:absolute;
+  right:8px;
+  bottom:8px;
+  background:rgba(0,0,0,.68);
+  color:white;
+  font-size:11px;
+  font-weight:900;
+  border-radius:12px;
+  padding:4px 8px;
+  z-index:6;
+}
+
+.btn-foto-next{
+  position:absolute;
+  right:8px;
+  top:36px;
+  z-index:7;
+  border:none;
+  border-radius:14px;
+  padding:6px 10px;
+  font-weight:900;
+  background:#e31b23;
+  color:white;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.22);
+}
+
+.btn-foto-next:active{
+  transform:scale(.96);
+}
+
+.foto-ayuda{
+  position:absolute;
+  left:8px;
+  bottom:8px;
+  background:rgba(255,255,255,.9);
+  color:#475569;
+  font-size:10px;
+  font-weight:800;
+  border-radius:10px;
+  padding:3px 7px;
+  z-index:6;
+}
+
 @keyframes logoBaile{
   0%{
     transform:translateY(0) rotate(0deg) scale(1);
@@ -674,14 +719,25 @@ html,body{
   </div>
 
   <div>
-    <div class="foto-panel" onclick="abrirUltimaFoto()">
+    <div class="foto-panel">
+
       <div class="foto-panel-title">
-        ULTIMA FOTO
+        FOTO PRODUCTO
       </div>
 
-      <div id="ultimaFotoBox" class="foto-vacia">
+      <div id="ultimaFotoBox" class="foto-vacia" onclick="abrirUltimaFoto()">
         Sin foto
       </div>
+
+      <button
+        type="button"
+        class="btn-foto-next"
+        onclick="siguienteFoto()"
+        title="Cambiar foto"
+      >
+        ↻
+      </button>
+
     </div>
   </div>
 
@@ -1434,9 +1490,9 @@ const urlsFotos =
   : [];
 
 if(urlsFotos.length){
-  mostrarUltimaFoto(urlsFotos[0]);
+  mostrarFotosProducto(urlsFotos);
 }else{
-  mostrarUltimaFoto("");
+  mostrarFotosProducto([]);
 }  
   const existente =
     carrito.find(x=>x.id === productoTemporal.id);
@@ -1602,21 +1658,48 @@ window.abrirFoto = function(url){
   window.open(url,"_blank");
 
 }
+let fotosProductoActual = [];
+let indiceFotoActual = 0;
 let ultimaFotoUrl = "";
 
-function mostrarUltimaFoto(url){
+function mostrarFotosProducto(urls){
 
-  ultimaFotoUrl = url || "";
+  fotosProductoActual =
+    Array.isArray(urls)
+    ? urls.filter(x=>String(x || "").trim())
+    : [];
 
-  const box = document.getElementById("ultimaFotoBox");
+  indiceFotoActual = 0;
+
+  if(!fotosProductoActual.length){
+
+    ultimaFotoUrl = "";
+
+    const box =
+      document.getElementById("ultimaFotoBox");
+
+    if(box){
+      box.className = "foto-vacia";
+      box.innerHTML = "Sin foto";
+    }
+
+    return;
+
+  }
+
+  pintarFotoActual();
+
+}
+
+function pintarFotoActual(){
+
+  const box =
+    document.getElementById("ultimaFotoBox");
 
   if(!box) return;
 
-  if(!ultimaFotoUrl){
-    box.className = "foto-vacia";
-    box.innerHTML = "Sin foto";
-    return;
-  }
+  ultimaFotoUrl =
+    fotosProductoActual[indiceFotoActual];
 
   box.className = "";
 
@@ -1626,7 +1709,30 @@ function mostrarUltimaFoto(url){
       src="${ultimaFotoUrl}"
       alt="Foto producto"
     >
+
+    <div class="foto-contador">
+      ${indiceFotoActual + 1} / ${fotosProductoActual.length}
+    </div>
+
+    <div class="foto-ayuda">
+      Clic abre
+    </div>
   `;
+
+}
+
+window.siguienteFoto = function(){
+
+  if(!fotosProductoActual.length) return;
+
+  indiceFotoActual++;
+
+  if(indiceFotoActual >= fotosProductoActual.length){
+    indiceFotoActual = 0;
+  }
+
+  pintarFotoActual();
+
 }
 
 window.abrirUltimaFoto = function(){
@@ -1778,6 +1884,10 @@ async function iniciar(){
 
   await cargarCatalogo();
 
+  setLoading("Cargando fotos de productos...",90);
+
+  await descargarFotosMetaSegundoPlano();
+
   actualizarUI();
 
   setLoading("Aplicación lista.",100);
@@ -1794,9 +1904,7 @@ async function iniciar(){
 
     ocultarLoading();
 
-    setTimeout(()=>{
-      descargarFotosMetaSegundoPlano();
-    },1200);
+    // Fotos ya cargadas al iniciar.
 
   }, restante);
 
@@ -1888,4 +1996,3 @@ await iniciar();
 </script>
 </body>
 </html>
-

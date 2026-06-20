@@ -507,6 +507,112 @@ html,body{
   font-weight:700;
 }
 
+
+.main-work-area{
+  flex:1;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns: 1fr 255px;
+  gap:8px;
+}
+
+.foto-panel{
+  background:#ffffff;
+  border:1px solid #e5e7eb;
+  height:210px;
+  border-radius:18px;
+  overflow:hidden;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.foto-panel-title{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  background:#facc15;
+  padding:8px 12px;
+  font-size:13px;
+  font-weight:900;
+  color:#7c2d12;
+  z-index:2;
+  text-align:center;
+}
+
+#ultimaFotoImg{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  padding:34px 8px 8px;
+}
+
+.foto-vacia{
+  font-size:13px;
+  font-weight:800;
+  color:#94a3b8;
+  padding-top:30px;
+}
+
+.foto-contador{
+  position:absolute;
+  right:8px;
+  bottom:8px;
+  background:rgba(0,0,0,.68);
+  color:white;
+  font-size:11px;
+  font-weight:900;
+  border-radius:12px;
+  padding:4px 8px;
+  z-index:6;
+}
+
+.btn-foto-next{
+  position:absolute;
+  right:8px;
+  top:36px;
+  z-index:7;
+  border:none;
+  border-radius:14px;
+  padding:6px 10px;
+  font-weight:900;
+  background:#e31b23;
+  color:white;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.22);
+}
+
+.btn-foto-next:active{
+  transform:scale(.96);
+}
+
+.foto-ayuda{
+  position:absolute;
+  left:8px;
+  bottom:8px;
+  background:rgba(255,255,255,.9);
+  color:#475569;
+  font-size:10px;
+  font-weight:800;
+  border-radius:10px;
+  padding:3px 7px;
+  z-index:6;
+}
+
+@media (max-width:760px){
+  .main-work-area{
+    grid-template-columns:1fr;
+  }
+
+  .foto-panel{
+    height:170px;
+  }
+}
+
 @keyframes logoBaile{
   0%{
     transform:translateY(0) rotate(0deg) scale(1);
@@ -597,27 +703,58 @@ html,body{
 
   <div class="main-work-area">
 
-    <div class="captura-card">
-      <div class="manual-title">
-        Captura manual guiada
+    <div style="
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      overflow:hidden;
+    ">
+
+      <div class="captura-card">
+        <div class="manual-title">
+          Captura manual guiada
+        </div>
+
+        <div class="manual-sub">
+          El usuario agrega artículos por código o nombre usando modales controlados.
+        </div>
+
+        <button class="btn-agregar" id="btnAbrirAgregar">
+          ➕ AGREGAR ARTÍCULO
+        </button>
       </div>
 
-      <div class="manual-sub">
-        El usuario agrega artículos por código o nombre usando modales controlados.
+      <div class="lista-container">
+        <div id="listaItems" class="table-container"></div>
       </div>
 
-      <button class="btn-agregar" id="btnAbrirAgregar">
-        ➕ AGREGAR ARTÍCULO
-      </button>
     </div>
 
-    <div class="lista-container">
-      <div id="listaItems" class="table-container"></div>
+    <div>
+      <div class="foto-panel">
+
+        <div class="foto-panel-title">
+          FOTO PRODUCTO
+        </div>
+
+        <div id="ultimaFotoBox" class="foto-vacia" onclick="abrirUltimaFoto()">
+          Sin foto
+        </div>
+
+        <button
+          type="button"
+          class="btn-foto-next"
+          onclick="siguienteFoto()"
+          title="Cambiar foto"
+        >
+          ↻
+        </button>
+
+      </div>
     </div>
 
   </div>
 
-</div>
 
 <div class="modal-backdrop" id="modalMenu">
   <div class="modal-card">
@@ -1352,6 +1489,8 @@ window.confirmarComentario = async function(){
     fotosMeta && Array.isArray(fotosMeta.urlsFotos)
     ? fotosMeta.urlsFotos
     : [];
+
+  mostrarFotosProducto(urlsFotos);
   
   const existente =
     carrito.find(x=>x.id === productoTemporal.id);
@@ -1468,33 +1607,6 @@ function actualizarUI(){
               : ""
             }
 
-            ${
-              item.tieneFotos
-              ? `
-                <div class="comentario-preview">
-
-                  ${item.fotos.map((url,n)=>`
-
-                    <button
-                      onclick="abrirFoto('${url}')"
-                      style="
-                        border:none;
-                        background:#e2e8f0;
-                        border-radius:8px;
-                        padding:4px 7px;
-                        margin-right:4px;
-                        cursor:pointer;
-                      "
-                    >
-                      📷 ${n+1}
-                    </button>
-
-                  `).join("")}
-
-                </div>
-              `
-              : ""
-            }
 
           </div>
 
@@ -1545,6 +1657,91 @@ window.abrirFoto = function(url){
   if(!url) return;
 
   window.open(url,"_blank");
+
+}
+
+let fotosProductoActual = [];
+let indiceFotoActual = 0;
+let ultimaFotoUrl = "";
+
+function mostrarFotosProducto(urls){
+
+  fotosProductoActual =
+    Array.isArray(urls)
+    ? urls.filter(x=>String(x || "").trim())
+    : [];
+
+  indiceFotoActual = 0;
+
+  if(!fotosProductoActual.length){
+
+    ultimaFotoUrl = "";
+
+    const box =
+      document.getElementById("ultimaFotoBox");
+
+    if(box){
+      box.className = "foto-vacia";
+      box.innerHTML = "Sin foto";
+    }
+
+    return;
+
+  }
+
+  pintarFotoActual();
+
+}
+
+function pintarFotoActual(){
+
+  const box =
+    document.getElementById("ultimaFotoBox");
+
+  if(!box) return;
+
+  ultimaFotoUrl =
+    fotosProductoActual[indiceFotoActual];
+
+  box.className = "";
+
+  box.innerHTML = `
+    <img
+      id="ultimaFotoImg"
+      src="${ultimaFotoUrl}"
+      alt="Foto producto"
+    >
+
+    <div class="foto-contador">
+      ${indiceFotoActual + 1} / ${fotosProductoActual.length}
+    </div>
+
+    <div class="foto-ayuda">
+      Clic abre
+    </div>
+  `;
+
+}
+
+window.siguienteFoto = function(){
+
+  if(!fotosProductoActual.length) return;
+
+  indiceFotoActual++;
+
+  if(indiceFotoActual >= fotosProductoActual.length){
+    indiceFotoActual = 0;
+  }
+
+  pintarFotoActual();
+
+}
+
+window.abrirUltimaFoto = function(){
+
+  if(!ultimaFotoUrl) return;
+
+  window.open(ultimaFotoUrl,"_blank");
 
 }
 
@@ -1683,6 +1880,10 @@ async function iniciar(){
 
   await cargarCatalogo();
 
+  setLoading("Cargando fotos de productos...",90);
+
+  await descargarFotosMetaSegundoPlano();
+
   actualizarUI();
 
   setLoading("Aplicación lista.",100);
@@ -1698,10 +1899,6 @@ async function iniciar(){
   setTimeout(()=>{
 
     ocultarLoading();
-
-    setTimeout(()=>{
-      descargarFotosMetaSegundoPlano();
-    },1200);
 
   }, restante);
 

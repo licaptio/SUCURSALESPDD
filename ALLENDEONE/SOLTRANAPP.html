@@ -1465,8 +1465,6 @@ if(urlsFotos.length){
       precio:Number(productoTemporal.precioPublico || 0),
       activo:productoTemporal.activo === true,
       comentario:comentario,
-      fotos: urlsFotos,
-      tieneFotos: urlsFotos.length > 0
 
     });
 
@@ -1550,34 +1548,6 @@ function actualizarUI(){
 ${
   item.comentario
   ? `<div class="comentario-preview">📝 ${escapeHtml(item.comentario)}</div>`
-  : ""
-}
-
-${
-  item.tieneFotos
-  ? `
-    <div class="comentario-preview">
-
-      ${item.fotos.map((url,n)=>`
-
-        <button
-          onclick="abrirFoto('${url}')"
-          style="
-            border:none;
-            background:#e2e8f0;
-            border-radius:8px;
-            padding:4px 7px;
-            margin-right:4px;
-            cursor:pointer;
-          "
-        >
-          📷 ${n+1}
-        </button>
-
-      `).join("")}
-
-    </div>
-  `
   : ""
 }
 

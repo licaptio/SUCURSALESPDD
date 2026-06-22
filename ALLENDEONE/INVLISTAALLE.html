@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventario vs Ventas por Fecha - PROVSOFT</title>
+  <title>Inventario semanal vs Ventas - PROVSOFT</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -261,6 +261,13 @@
     th.trans-col { background: var(--trans-head); }
     td.trans-col { background: var(--trans-cell); }
 
+    th.ini-col { background: #cffafe; }
+    td.ini-col {
+      background: #ecfeff;
+      font-weight: 900;
+      color: #155e75;
+    }
+
     th.aju-col {
       background: #c4b5fd !important;
       color: #3b0764;
@@ -476,9 +483,9 @@
       <div class="card">
         <div class="topbar">
           <button class="icon-btn" id="btnAbrirConfig" title="Configuración">⚙</button>
-          <h1>Inventario vs Ventas por Fecha - <span id="tituloTienda">ALLENDE 1</span></h1>
+          <h1>Inventario semanal vs Ventas - <span id="tituloTienda">ALLENDE 1</span></h1>
           <p>
-            Reporte operativo con alias del catálogo, ajustes auditados, inventarios, transferencias, intercambios, devoluciones, mermas y ventas.
+            Reporte semanal con inventario inicial arrastrado, alias del catálogo, ajustes auditados, inventarios, transferencias, intercambios, devoluciones, mermas y ventas.
           </p>
         </div>
 
@@ -486,6 +493,19 @@
           <div class="field">
             <label>Tienda</label>
             <input type="text" id="tiendaInput" value="ALLENDE 1" placeholder="Ej. ALLENDE 1" />
+          </div>
+
+          <div class="field">
+            <label>Semana</label>
+            <input type="week" id="semanaInput" />
+          </div>
+
+          <div class="field">
+            <label>Navegar semana</label>
+            <div style="display:flex; gap:10px;">
+              <button id="btnSemanaAnterior" class="warn" style="flex:1;" type="button">← Semana</button>
+              <button id="btnSemanaSiguiente" class="warn" style="flex:1;" type="button">Semana →</button>
+            </div>
           </div>
 
           <div class="field">
@@ -501,7 +521,7 @@
           <div class="field">
             <label>&nbsp;</label>
             <div style="display:flex; gap:10px;">
-              <button id="btnCargar" style="flex:1;">Cargar</button>
+              <button id="btnCargar" style="flex:1;">Cargar semana</button>
               <button id="btnExportar" class="sec" style="flex:1;">Exportar Excel</button>
             </div>
           </div>
@@ -770,6 +790,150 @@
       const d = new Date(valor);
       const ms = d.getTime();
       return Number.isFinite(ms) ? ms : 0;
+    }
+
+
+    function fechaLocalDesdeISO(iso) {
+      const [yyyy, mm, dd] = String(iso || "").split("-").map(Number);
+      if (!yyyy || !mm || !dd) return null;
+      return new Date(yyyy, mm - 1, dd);
+    }
+
+    function fechaISODesdeDate(d) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function inicioSemanaLunes(d) {
+      const base = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dia = base.getDay(); // domingo=0, lunes=1
+      const ajuste = dia === 0 ? -6 : 1 - dia;
+      base.setDate(base.getDate() + ajuste);
+      base.setHours(0, 0, 0, 0);
+      return base;
+    }
+
+    function getISOWeekInfo(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return {
+        year: d.getUTCFullYear(),
+        week: weekNo
+      };
+    }
+
+    function setSemanaInputDesdeFecha(fecha) {
+      const info = getISOWeekInfo(fecha);
+      $("semanaInput").value = `${info.year}-W${String(info.week).padStart(2, "0")}`;
+    }
+
+    function getRangoSemanaSeleccionada() {
+      const valor = String($("semanaInput").value || "").trim();
+      if (!valor) {
+        setSemanaInputDesdeFecha(new Date());
+      }
+
+      const limpio = String($("semanaInput").value || "").trim();
+      const match = limpio.match(/^(\d{4})-W(\d{2})$/);
+      if (!match) {
+        throw new Error("Selecciona una semana válida.");
+      }
+
+      const year = Number(match[1]);
+      const week = Number(match[2]);
+
+      const jan4 = new Date(year, 0, 4);
+      const inicioWeek1 = inicioSemanaLunes(jan4);
+      const inicio = new Date(inicioWeek1);
+      inicio.setDate(inicioWeek1.getDate() + ((week - 1) * 7));
+      inicio.setHours(0, 0, 0, 0);
+
+      const fin = new Date(inicio);
+      fin.setDate(inicio.getDate() + 6);
+      fin.setHours(23, 59, 59, 999);
+
+      return {
+        semana: limpio,
+        inicio,
+        fin,
+        inicioISO: fechaISODesdeDate(inicio),
+        finISO: fechaISODesdeDate(fin),
+        inicioMs: inicio.getTime(),
+        finMs: fin.getTime()
+      };
+    }
+
+    function moverSemana(delta) {
+      const rango = getRangoSemanaSeleccionada();
+      const nueva = new Date(rango.inicio);
+      nueva.setDate(nueva.getDate() + (delta * 7));
+      setSemanaInputDesdeFecha(nueva);
+      cargarTodo();
+    }
+
+    function fechaItemMsSeguro(item) {
+      const directo = Number(item.fechaMs || 0);
+      if (Number.isFinite(directo) && directo > 0) return directo;
+
+      const fecha = fechaLocalDesdeISO(item.fecha);
+      return fecha ? fecha.getTime() : 0;
+    }
+
+    function construirRegistrosSemanaConArrastre(registros, rangoSemana) {
+      const anteriores = [];
+      const semana = [];
+
+      for (const item of registros) {
+        const fecha = String(item.fecha || "").trim();
+        if (!fecha) continue;
+
+        const ms = fechaItemMsSeguro(item);
+        if (!ms) continue;
+
+        if (ms < rangoSemana.inicioMs) {
+          anteriores.push(item);
+        } else if (ms <= rangoSemana.finMs) {
+          semana.push(item);
+        }
+      }
+
+      const pivotAnterior = anteriores.length
+        ? construirPivotSeparado(anteriores)
+        : { rows: [] };
+
+      const iniciales = [];
+
+      for (const row of pivotAnterior.rows || []) {
+        const saldo = Number(row.neto || 0);
+        if (!Number.isFinite(saldo) || saldo === 0) continue;
+
+        iniciales.push({
+          origen: "INI",
+          id: `INI_${rangoSemana.semana}_${row.codigoKey}`,
+          codigo: row.codigo,
+          codigoKey: row.codigoKey,
+          descripcion: row.descripcion || "",
+          fecha: rangoSemana.inicioISO,
+          fechaMs: rangoSemana.inicioMs,
+          cantidad: saldo,
+          arrastrado: true
+        });
+      }
+
+      return {
+        registros: [...iniciales, ...semana],
+        totalAnteriores: anteriores.length,
+        totalSemana: semana.length,
+        totalIniciales: iniciales.length,
+        semana: rangoSemana.semana,
+        inicioISO: rangoSemana.inicioISO,
+        finISO: rangoSemana.finISO
+      };
     }
 
     function normalizarCodigo(valor) {
@@ -1628,7 +1792,8 @@ codigoKey: codigoVendidoKey,
       try {
         actualizarTitulosTienda();
         limpiarTabla();
-        setStatus("Consultando inventarios, transferencias, intercambios, devoluciones, mermas, ventas y alias equivalentes...");
+        const rangoSemana = getRangoSemanaSeleccionada();
+        setStatus(`Consultando semana ${rangoSemana.semana} (${rangoSemana.inicioISO} a ${rangoSemana.finISO}) con inventario arrastrado...`);
 
         await cargarEquivalencias(); // Se conserva para no romper el módulo viejo, pero el inventario usa codigosEquivalentes del catálogo.
         const equivalentesCatalogoData = await cargarEquivalentesCatalogo();
@@ -1692,9 +1857,18 @@ codigoKey: codigoVendidoKey,
         ];
 
         const empaqueData = aplicarEquivalenciasEmpaque(registros);
-registros = empaqueData.registros;
+        registros = empaqueData.registros;
+
+        const semanaData = construirRegistrosSemanaConArrastre(registros, rangoSemana);
+        registros = semanaData.registros;
         
         const equivalenciasData = {
+          semana: semanaData.semana,
+          inicioISO: semanaData.inicioISO,
+          finISO: semanaData.finISO,
+          totalAnteriores: semanaData.totalAnteriores,
+          totalSemana: semanaData.totalSemana,
+          totalIniciales: semanaData.totalIniciales,
 totalVirtuales: empaqueData.totalVirtuales,
 totalVirtualesInv: empaqueData.totalVirtualesInv,
 totalVirtualesVta: empaqueData.totalVirtualesVta,
@@ -1727,7 +1901,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
           const fb = String(b.fecha || "");
           if (fa !== fb) return fa.localeCompare(fb, "es");
 
-          const ordenOrigen = { AJU: 1, INV: 2, TRANS: 3, INTER: 4, VTA: 5, DEV: 6, MERMA: 7 };
+          const ordenOrigen = { INI: 0, AJU: 1, INV: 2, TRANS: 3, INTER: 4, VTA: 5, DEV: 6, MERMA: 7 };
           if (a.origen !== b.origen) {
             return (ordenOrigen[a.origen] || 99) - (ordenOrigen[b.origen] || 99);
           }
@@ -1747,7 +1921,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
         pintarTabla(pivot);
 
         setStatus(
-          `Listo. Ajustes: ${ajustesData.docs.length} | Inventarios: ${inventariosData.docs.length} | Transferencias: ${transferenciasData.docs.length} | Intercambios: ${intercambiosData.docs.length} | Ventas: ${ventasData.docs.length} | Devoluciones: ${devolucionesData.docs.length} | Mermas: ${mermasData.docs.length} | Alias catálogo: ${equivalenciasData.totalAliasesCatalogo} | Ventas reasignadas por alias: ${equivalenciasData.totalAliasAplicados} | Filtrados: ${registros.length}`,
+          `Listo semana ${semanaData.semana} (${semanaData.inicioISO} a ${semanaData.finISO}). Arrastres: ${semanaData.totalIniciales} | Movimientos semana: ${semanaData.totalSemana} | Históricos usados para arrastre: ${semanaData.totalAnteriores} | Filtrados: ${registros.length}`,
           "ok"
         );
       } catch (err) {
@@ -1759,6 +1933,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
     function construirPivotSeparado(registros) {
       const mapa = new Map();
 
+      const totalIniPorFecha = {};
       const totalAjuPorFecha = {};
       const totalInvPorFecha = {};
       const totalTransPorFecha = {};
@@ -1786,6 +1961,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
             codigo: String(item.codigo || "").trim(),
             codigoKey,
             descripcion: String(item.descripcion || "").trim(),
+            iniPorFecha: {},
             ajuPorFecha: {},
             invPorFecha: {},
             transPorFecha: {},
@@ -1797,6 +1973,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
             totalAju: 0,
             ultimoAjusteFecha: "",
             ultimoAjusteCantidad: null,
+            totalIni: 0,
             totalInvBase: 0,
             totalTrans: 0,
             totalInter: 0,
@@ -1815,7 +1992,12 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
         if (item.codigo && !row.codigo) row.codigo = item.codigo;
         if (item.descripcion && !row.descripcion) row.descripcion = item.descripcion;
 
-        if (origen === "AJU") {
+        if (origen === "INI") {
+          row.iniPorFecha[fecha] = (row.iniPorFecha[fecha] || 0) + cantidad;
+          row.totalIni += cantidad;
+          totalIniPorFecha[fecha] = (totalIniPorFecha[fecha] || 0) + cantidad;
+
+        } else if (origen === "AJU") {
           row.ajuPorFecha[fecha] = cantidad;
           row.ajustesEventos.push({
             fecha,
@@ -1873,6 +2055,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
 
       const columnas = [];
       for (const fecha of fechas) {
+        if (totalIniPorFecha[fecha] !== undefined) columnas.push({ fecha, tipo: "INI" });
         if (totalAjuPorFecha[fecha] !== undefined) columnas.push({ fecha, tipo: "AJU" });
         if (totalInvPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "INV" });
         if (totalTransPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "TRANS" });
@@ -1882,6 +2065,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
         if (totalMermaPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "MERMA" });
       }
 
+      let totalIniGeneral = 0;
       let totalInvGeneralBase = 0;
       let totalTransGeneral = 0;
       let totalInterGeneral = 0;
@@ -1917,7 +2101,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
           row.ultimoAjusteCantidad = Number(ultimo.cantidad || 0);
           row.totalInvBase = row.ultimoAjusteCantidad + sumarDesde(row.invPorFecha, fechasMsMap);
         } else {
-          row.totalInvBase = sumarDesde(row.invPorFecha, fechasMsMap);
+          row.totalInvBase = Number(row.totalIni || 0) + sumarDesde(row.invPorFecha, fechasMsMap);
         }
 
         row.totalTrans = sumarDesde(row.transPorFecha, fechasMsMap);
@@ -1929,6 +2113,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
         row.totalInv = row.totalInvBase + row.totalTrans + row.totalInter;
         row.neto = row.totalInv - row.totalVta - row.totalDev - row.totalMerma;
 
+        totalIniGeneral += row.totalIni || 0;
         totalAjuGeneral += row.ultimoAjusteCantidad || 0;
         totalInvGeneralBase += row.totalInvBase || 0;
         totalTransGeneral += row.totalTrans || 0;
@@ -1955,6 +2140,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
         fechas,
         columnas,
         rows,
+        totalIniPorFecha,
         totalAjuPorFecha,
         totalInvPorFecha,
         totalTransPorFecha,
@@ -1962,6 +2148,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
         totalVtaPorFecha,
         totalDevPorFecha,
         totalMermaPorFecha,
+        totalIniGeneral,
         totalAjuGeneral,
         totalInvGeneralBase,
         totalTransGeneral,
@@ -1976,6 +2163,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
     }
 
     function pintarResumen(registros, pivot, equivalenciasData = {}) {
+      const totalIniRegs = registros.filter(x => x.origen === "INI").length;
       const totalInvRegs = registros.filter(x => x.origen === "INV").length;
       const totalTransRegs = registros.filter(x => x.origen === "TRANS").length;
       const totalInterRegs = registros.filter(x => x.origen === "INTER").length;
@@ -1984,6 +2172,11 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
       const totalMermaRegs = registros.filter(x => x.origen === "MERMA").length;
 
       $("summary").innerHTML = `
+        <div class="pill">Semana: ${escapeHtml(equivalenciasData.semana || "")}</div>
+        <div class="pill">Rango: ${escapeHtml(equivalenciasData.inicioISO || "")} a ${escapeHtml(equivalenciasData.finISO || "")}</div>
+        <div class="pill">Inventarios arrastrados: ${fmtNum(totalIniRegs)}</div>
+        <div class="pill">Movimientos semana: ${fmtNum(equivalenciasData.totalSemana || 0)}</div>
+        <div class="pill">Históricos para arrastre: ${fmtNum(equivalenciasData.totalAnteriores || 0)}</div>
         <div class="pill">Ajustes auditados: ${fmtNum(equivalenciasData.totalAjustes || 0)}</div>
         <div class="pill">Registros inventario: ${fmtNum(totalInvRegs)}</div>
         <div class="pill">Registros transferencias: ${fmtNum(totalTransRegs)}</div>
@@ -1996,6 +2189,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
         <div class="pill">Reglas factor antiguas: ${fmtNum(Object.keys(equivalenciasMap).length)}</div>
         <div class="pill">Códigos únicos: ${fmtNum(pivot.totalCodigos)}</div>
         <div class="pill">Fechas: ${fmtNum(pivot.fechas.length)}</div>
+        <div class="pill">Inventario inicial arrastrado: ${fmtNum(pivot.totalIniGeneral || 0)}</div>
         <div class="pill">Últimas aperturas AJU: ${fmtNum(pivot.totalAjuGeneral || 0)}</div>
         <div class="pill">Inventario base/auditado: ${fmtNum(pivot.totalInvGeneralBase)}</div>
         <div class="pill">Transferencias: ${fmtNum(pivot.totalTransGeneral)}</div>
@@ -2009,6 +2203,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
     }
 
     function claseColumna(tipo) {
+      if (tipo === "INI") return "ini-col";
       if (tipo === "AJU") return "aju-col";
       if (tipo === "INV") return "inv-col";
       if (tipo === "TRANS") return "trans-col";
@@ -2020,6 +2215,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
     }
 
     function valorColumnaRow(row, col) {
+      if (col.tipo === "INI") return row.iniPorFecha[col.fecha] || 0;
       if (col.tipo === "AJU") return row.ajuPorFecha[col.fecha];
       if (col.tipo === "INV") return row.invPorFecha[col.fecha] || 0;
       if (col.tipo === "TRANS") return row.transPorFecha[col.fecha] || 0;
@@ -2031,6 +2227,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
     }
 
     function valorColumnaTotal(pivot, col) {
+      if (col.tipo === "INI") return pivot.totalIniPorFecha[col.fecha] || 0;
       if (col.tipo === "AJU") return pivot.totalAjuPorFecha[col.fecha] || 0;
       if (col.tipo === "INV") return pivot.totalInvPorFecha[col.fecha] || 0;
       if (col.tipo === "TRANS") return pivot.totalTransPorFecha[col.fecha] || 0;
@@ -2278,7 +2475,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
 
       XLSX.writeFile(
         wb,
-        `inventario_vs_ventas_${getTiendaActual().replace(/\s+/g, "_")}_${Date.now()}.xlsx`
+        `inventario_semanal_${getTiendaActual().replace(/\s+/g, "_")}_${$("semanaInput").value || "semana"}_${Date.now()}.xlsx`
       );
     }
 
@@ -2341,6 +2538,10 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
     $("btnEliminar").addEventListener("click", eliminarReglaFormulario);
     $("btnRecargarConfig").addEventListener("click", cargarEquivalencias);
 
+    $("btnSemanaAnterior").addEventListener("click", () => moverSemana(-1));
+    $("btnSemanaSiguiente").addEventListener("click", () => moverSemana(1));
+    $("semanaInput").addEventListener("change", cargarTodo);
+
     $("btnCargar").addEventListener("click", cargarTodo);
     $("btnExportar").addEventListener("click", exportarExcel);
 
@@ -2365,6 +2566,7 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
 
     window.addEventListener("load", async () => {
       actualizarTitulosTienda();
+      setSemanaInputDesdeFecha(new Date());
       limpiarFormularioConfig();
       await cargarTodo();
     });

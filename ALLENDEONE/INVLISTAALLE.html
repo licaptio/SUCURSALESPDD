@@ -527,9 +527,9 @@
           </div>
         </div>
 
-        <div id="status" class="status">Esperando consulta...</div>
-        <div id="summary" class="summary"></div>
-
+<div id="status" class="status" style="display:none;"></div>
+<div id="summary" class="summary" style="display:none;"></div>
+        
         <div class="table-wrap">
           <table id="tablaPivot">
             <thead></thead>
@@ -1917,13 +1917,10 @@ totalVirtualesVta: empaqueData.totalVirtualesVta,
         const pivot = construirPivotSeparado(registros);
         ultimaPivot = pivot;
 
-        pintarResumen(registros, pivot, equivalenciasData);
         pintarTabla(pivot);
 
-        setStatus(
-          `Listo semana ${semanaData.semana} (${semanaData.inicioISO} a ${semanaData.finISO}). Arrastres: ${semanaData.totalIniciales} | Movimientos semana: ${semanaData.totalSemana} | Históricos usados para arrastre: ${semanaData.totalAnteriores} | Filtrados: ${registros.length}`,
-          "ok"
-        );
+setStatus("", "");
+        
       } catch (err) {
         console.error(err);
         setStatus("Error al consultar Firestore: " + err.message, "error");

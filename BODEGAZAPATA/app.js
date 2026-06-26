@@ -25,6 +25,13 @@ const REF_ENTRADAS_ZAPATA = collection(
   "entradas"
 );
 
+const REF_AJUSTES_INVENTARIO_ZAPATA = collection(
+  db,
+  "almacenes",
+  "almacen_zapata",
+  "ajustes_inventario"
+);
+
 const REF_PROVEEDORES_AUTORIZADOS_ZAPATA = collection(
   db,
   "almacenes",
@@ -47,8 +54,13 @@ const $ = (id) => document.getElementById(id);
 
 let registrosDetalleSemana = [];
 let registrosDetalleAcumuladoAnterior = [];
+
 let registrosEntradasSemana = [];
 let registrosEntradasAcumuladoAnterior = [];
+
+let registrosAjustesSemana = [];
+let registrosAjustesAcumuladoAnterior = [];
+
 let registrosDetalleMovimientoSemana = [];
 let registrosPivot = [];
 let fechasColumnas = [];
@@ -299,6 +311,15 @@ function obtenerProveedoresEntradaPorFecha(fecha) {
   return [...new Set(proveedores)].join(" / ");
 }
 
+function obtenerFoliosAjustePorFecha(fecha) {
+  const folios = registrosAjustesSemana
+    .filter(x => x.fecha === fecha)
+    .map(x => String(x.folio || "").trim())
+    .filter(Boolean);
+
+  return [...new Set(folios)].join(" / ");
+}
+
 async function cargarInventarioInicial() {
   const inventario = {};
 
@@ -504,6 +525,92 @@ async function consultarEntradas(inicio, fin) {
   };
 }
 
+async function consultarAjustesInventario(inicio, fin) {
+  if (fin < inicio) return { detalle: [], totalDocs: 0 };
+
+  const snapAjustes = await getDocs(REF_AJUSTES_INVENTARIO_ZAPATA);
+  const detalle = [];
+  const docsVistos = new Set();
+
+  for (const ajusteDoc of snapAjustes.docs) {
+    const ajusteId = ajusteDoc.id;
+    const ajusteData = ajusteDoc.data() || {};
+
+    const refPartidas = collection(
+      db,
+      "almacenes",
+      "almacen_zapata",
+      "ajustes_inventario",
+      ajusteId,
+      "PARTIDAS"
+    );
+
+    const partidasSnap = await getDocs(refPartidas);
+
+    partidasSnap.forEach((partidaDoc) => {
+      const p = partidaDoc.data() || {};
+
+      if (p.eliminado === true) return;
+
+      const fecha = normalizarFecha(
+        p.fecha_movimiento ||
+        ajusteData.fecha_movimiento ||
+        ajusteData.fecha ||
+        p.creado_en ||
+        ajusteData.creado_en ||
+        ""
+      );
+
+      if (!fecha || fecha < inicio || fecha > fin) return;
+      if (fecha < FECHA_INICIO_MINIMA) return;
+
+      const codigoOriginal = String(p.codigo || p.codigoKey || "").trim();
+      const codigoKey = normalizarCodigo(p.codigoKey || codigoOriginal);
+      const nombre = String(p.nombre || p.descripcion || "").trim();
+
+      const diferencia = Number(p.diferencia || 0);
+      const existenciaFisica = Number(p.existencia_fisica || 0);
+      const existenciaTeorica = Number(p.existencia_teorica || 0);
+
+      if (!codigoKey && !nombre && !diferencia) return;
+
+      docsVistos.add(ajusteId);
+
+      const fechaDDMMYY = fecha.replaceAll("-", "").substring(2);
+      const folioAju = String(ajusteData.folio || ajusteId || "").trim();
+
+      detalle.push({
+        tipo: "AJUINV",
+        docId: ajusteId,
+        partida: p.partida || partidaDoc.id || "",
+        folio: folioAju || `AJUINV-${fechaDDMMYY}`,
+        fecha,
+        hora: String(p.hora_movimiento || ajusteData.hora_movimiento || "").trim(),
+        destino: "AJUSTE INVENTARIO",
+        entrega: "AJUINV",
+        recibe: String(ajusteData.usuario || ajusteData.usuario_nombre || "").trim(),
+        folioCincho: "",
+        proveedor: "",
+        alias_pivot: "",
+        rfc_emisor: "",
+        razon_social_emisor: "",
+        codigo: codigoOriginal,
+        codigoKey,
+        nombre,
+        cantidad: diferencia,
+        diferencia,
+        existencia_fisica: existenciaFisica,
+        existencia_teorica: existenciaTeorica
+      });
+    });
+  }
+
+  return {
+    detalle,
+    totalDocs: docsVistos.size
+  };
+}
+
 async function cargarSalidasZapata() {
   try {
     const rango = obtenerRangoSemana();
@@ -518,6 +625,7 @@ async function cargarSalidasZapata() {
 
     const consultaSemana = await consultarSalidas(rango.inicio, rango.fin);
     const consultaEntradasSemana = await consultarEntradas(rango.inicio, rango.fin);
+    const consultaAjustesSemana = await consultarAjustesInventario(rango.inicio, rango.fin);
 
     setProgress(55);
 
@@ -527,6 +635,11 @@ async function cargarSalidasZapata() {
     };
 
     let consultaEntradasAcumuladoAnterior = {
+      detalle: [],
+      totalDocs: 0
+    };
+
+    let consultaAjustesAcumuladoAnterior = {
       detalle: [],
       totalDocs: 0
     };
@@ -541,6 +654,11 @@ async function cargarSalidasZapata() {
         FECHA_BASE_INVENTARIO,
         rango.acumuladoAnteriorFin
       );
+
+      consultaAjustesAcumuladoAnterior = await consultarAjustesInventario(
+        FECHA_BASE_INVENTARIO,
+        rango.acumuladoAnteriorFin
+      );
     }
 
     setProgress(75);
@@ -551,11 +669,18 @@ async function cargarSalidasZapata() {
     registrosEntradasSemana = consultaEntradasSemana.detalle;
     registrosEntradasAcumuladoAnterior = consultaEntradasAcumuladoAnterior.detalle;
 
+    registrosAjustesSemana = consultaAjustesSemana.detalle;
+    registrosAjustesAcumuladoAnterior = consultaAjustesAcumuladoAnterior.detalle;
+
     registrosDetalleMovimientoSemana = [
       ...registrosEntradasSemana,
-      ...registrosDetalleSemana
+      ...registrosDetalleSemana,
+      ...registrosAjustesSemana
     ].sort((a, b) => {
       if (a.fecha !== b.fecha) return String(b.fecha).localeCompare(String(a.fecha));
+      if (String(a.hora || "") !== String(b.hora || "")) {
+        return String(b.hora || "").localeCompare(String(a.hora || ""));
+      }
       return String(a.tipo).localeCompare(String(b.tipo));
     });
 
@@ -564,20 +689,23 @@ async function cargarSalidasZapata() {
       registrosDetalleAcumuladoAnterior,
       registrosEntradasSemana,
       registrosEntradasAcumuladoAnterior,
+      registrosAjustesSemana,
+      registrosAjustesAcumuladoAnterior,
       rango.inicio,
       rango.fin
     );
 
     actualizarResumenSuperior(
       consultaSemana.totalDocs,
-      consultaEntradasSemana.totalDocs
+      consultaEntradasSemana.totalDocs,
+      consultaAjustesSemana.totalDocs
     );
 
     pintarTabla();
 
     setProgress(100);
     setStatus(
-      `Consulta lista. Semana: ${fechaCorta(rango.inicio)} a ${fechaCorta(rango.fin)}. Entradas semana: ${registrosEntradasSemana.length}. Salidas semana: ${registrosDetalleSemana.length}.`
+      `Consulta lista. Semana: ${fechaCorta(rango.inicio)} a ${fechaCorta(rango.fin)}. Entradas: ${registrosEntradasSemana.length}. Salidas: ${registrosDetalleSemana.length}. Ajustes: ${registrosAjustesSemana.length}.`
     );
 
     ocultarLoader();
@@ -599,11 +727,14 @@ function asegurarRow(mapa, item) {
       inviniOriginal: 0,
       entradasAcumuladasAnteriores: 0,
       salidasAcumuladasAnteriores: 0,
+      ajustesAcumuladosAnteriores: 0,
       inviniSemana: 0,
       entradasPorFecha: {},
       salidasPorFecha: {},
+      ajustesPorFecha: {},
       totalEntradasSemana: 0,
       totalSalidasSemana: 0,
+      totalAjustesSemana: 0,
       existenciaFinalSemana: 0
     });
   }
@@ -616,11 +747,21 @@ function asegurarRow(mapa, item) {
   return row;
 }
 
+function recalcularExistenciaFinal(row) {
+  row.existenciaFinalSemana =
+    Number(row.inviniSemana || 0) +
+    Number(row.totalEntradasSemana || 0) -
+    Number(row.totalSalidasSemana || 0) +
+    Number(row.totalAjustesSemana || 0);
+}
+
 function construirPivot(
   detalleSemana,
   detalleAcumuladoAnterior,
   entradasSemana,
   entradasAcumuladoAnterior,
+  ajustesSemana,
+  ajustesAcumuladoAnterior,
   inicioSemana,
   finSemana
 ) {
@@ -638,11 +779,14 @@ function construirPivot(
       inviniOriginal: Number(inv.inviniOriginal || 0),
       entradasAcumuladasAnteriores: 0,
       salidasAcumuladasAnteriores: 0,
+      ajustesAcumuladosAnteriores: 0,
       inviniSemana: Number(inv.inviniOriginal || 0),
       entradasPorFecha: {},
       salidasPorFecha: {},
+      ajustesPorFecha: {},
       totalEntradasSemana: 0,
       totalSalidasSemana: 0,
+      totalAjustesSemana: 0,
       existenciaFinalSemana: Number(inv.inviniOriginal || 0)
     });
   });
@@ -657,11 +801,17 @@ function construirPivot(
     row.salidasAcumuladasAnteriores += Number(item.cantidad || 0);
   });
 
+  ajustesAcumuladoAnterior.forEach((item) => {
+    const row = asegurarRow(mapa, item);
+    row.ajustesAcumuladosAnteriores += Number(item.diferencia || item.cantidad || 0);
+  });
+
   mapa.forEach((row) => {
     row.inviniSemana =
       Number(row.inviniOriginal || 0) +
       Number(row.entradasAcumuladasAnteriores || 0) -
-      Number(row.salidasAcumuladasAnteriores || 0);
+      Number(row.salidasAcumuladasAnteriores || 0) +
+      Number(row.ajustesAcumuladosAnteriores || 0);
 
     row.existenciaFinalSemana = row.inviniSemana;
   });
@@ -674,10 +824,7 @@ function construirPivot(
 
     row.totalEntradasSemana += Number(item.cantidad || 0);
 
-    row.existenciaFinalSemana =
-      Number(row.inviniSemana || 0) +
-      Number(row.totalEntradasSemana || 0) -
-      Number(row.totalSalidasSemana || 0);
+    recalcularExistenciaFinal(row);
   });
 
   detalleSemana.forEach((item) => {
@@ -688,17 +835,27 @@ function construirPivot(
 
     row.totalSalidasSemana += Number(item.cantidad || 0);
 
-    row.existenciaFinalSemana =
-      Number(row.inviniSemana || 0) +
-      Number(row.totalEntradasSemana || 0) -
-      Number(row.totalSalidasSemana || 0);
+    recalcularExistenciaFinal(row);
+  });
+
+  ajustesSemana.forEach((item) => {
+    const row = asegurarRow(mapa, item);
+
+    const diferencia = Number(item.diferencia || item.cantidad || 0);
+
+    row.ajustesPorFecha[item.fecha] =
+      Number(row.ajustesPorFecha[item.fecha] || 0) + diferencia;
+
+    row.totalAjustesSemana += diferencia;
+
+    recalcularExistenciaFinal(row);
   });
 
   registrosPivot = Array.from(mapa.values())
     .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), "es"));
 }
 
-function actualizarResumenSuperior(totalDocsSemana, totalDocsEntradasSemana) {
+function actualizarResumenSuperior(totalDocsSemana, totalDocsEntradasSemana, totalDocsAjustesSemana) {
   const totalCantidadSalidasSemana = registrosDetalleSemana.reduce(
     (sum, x) => sum + Number(x.cantidad || 0),
     0
@@ -709,9 +866,16 @@ function actualizarResumenSuperior(totalDocsSemana, totalDocsEntradasSemana) {
     0
   );
 
+  const totalCantidadAjustesSemana = registrosAjustesSemana.reduce(
+    (sum, x) => sum + Number(x.diferencia || x.cantidad || 0),
+    0
+  );
+
   if ($("totalDocs")) {
     $("totalDocs").textContent =
-      Number(totalDocsSemana || 0) + Number(totalDocsEntradasSemana || 0);
+      Number(totalDocsSemana || 0) +
+      Number(totalDocsEntradasSemana || 0) +
+      Number(totalDocsAjustesSemana || 0);
   }
 
   if ($("totalPartidas")) {
@@ -720,7 +884,7 @@ function actualizarResumenSuperior(totalDocsSemana, totalDocsEntradasSemana) {
 
   if ($("totalCantidad")) {
     $("totalCantidad").textContent =
-      `E ${fmtNum(totalCantidadEntradasSemana)} / S ${fmtNum(totalCantidadSalidasSemana)}`;
+      `E ${fmtNum(totalCantidadEntradasSemana)} / S ${fmtNum(totalCantidadSalidasSemana)} / AJU ${fmtNum(totalCantidadAjustesSemana)}`;
   }
 
   if ($("totalCodigos")) $("totalCodigos").textContent = registrosPivot.length;
@@ -779,6 +943,10 @@ function pintarPivotPorSemana() {
     registrosEntradasSemana.some(x => x.fecha === f)
   );
 
+  const fechasConAjuste = fechasColumnas.filter(f =>
+    registrosAjustesSemana.some(x => x.fecha === f)
+  );
+
   thead.innerHTML = `
     <tr>
       <th class="left">Código</th>
@@ -787,7 +955,9 @@ function pintarPivotPorSemana() {
 
       ${fechasColumnas.map(f => {
         const proveedor = obtenerProveedoresEntradaPorFecha(f);
+        const foliosAjuste = obtenerFoliosAjustePorFecha(f);
         const tieneEntrada = fechasConEntrada.includes(f);
+        const tieneAjuste = fechasConAjuste.includes(f);
 
         return `
           ${
@@ -799,15 +969,27 @@ function pintarPivotPorSemana() {
                 </th>`
               : ""
           }
+
           <th class="salida-head">
             ${fechaCorta(f)}<br>
             SALIDA
           </th>
+
+          ${
+            tieneAjuste
+              ? `<th class="ajuste-head">
+                  ${fechaCorta(f)}<br>
+                  AJUINV<br>
+                  <small>${escapeHtml(foliosAjuste || "AJUSTE")}</small>
+                </th>`
+              : ""
+          }
         `;
       }).join("")}
 
       <th>TOTAL<br>ENTRADAS</th>
       <th>TOTAL<br>SALIDAS</th>
+      <th>TOTAL<br>AJUINV</th>
       <th>EXISTENCIA<br>FINAL</th>
     </tr>
   `;
@@ -821,7 +1003,10 @@ function pintarPivotPorSemana() {
       ${fechasColumnas.map(f => {
         const entrada = Number(r.entradasPorFecha[f] || 0);
         const salida = Number(r.salidasPorFecha[f] || 0);
+        const ajuste = Number(r.ajustesPorFecha[f] || 0);
+
         const tieneEntrada = fechasConEntrada.includes(f);
+        const tieneAjuste = fechasConAjuste.includes(f);
 
         return `
           ${
@@ -831,36 +1016,50 @@ function pintarPivotPorSemana() {
                 </td>`
               : ""
           }
+
           <td class="salida-col ${salida ? "cantidad" : ""}">
             ${fmtCelda(salida)}
           </td>
+
+          ${
+            tieneAjuste
+              ? `<td class="ajuste-col ${ajuste ? "cantidad" : ""}">
+                  ${fmtCelda(ajuste)}
+                </td>`
+              : ""
+          }
         `;
       }).join("")}
 
       <td class="cantidad entrada-total">${fmtNum(r.totalEntradasSemana)}</td>
       <td class="cantidad">${fmtNum(r.totalSalidasSemana)}</td>
+      <td class="cantidad">${fmtNum(r.totalAjustesSemana)}</td>
       <td class="cantidad">${fmtNum(r.existenciaFinalSemana)}</td>
     </tr>
   `).join("");
 
   const totalEntradasPorFecha = {};
   const totalSalidasPorFecha = {};
+  const totalAjustesPorFecha = {};
 
   fechasColumnas.forEach(f => {
     totalEntradasPorFecha[f] = 0;
     totalSalidasPorFecha[f] = 0;
+    totalAjustesPorFecha[f] = 0;
   });
 
   rows.forEach(r => {
     fechasColumnas.forEach(f => {
       totalEntradasPorFecha[f] += Number(r.entradasPorFecha[f] || 0);
       totalSalidasPorFecha[f] += Number(r.salidasPorFecha[f] || 0);
+      totalAjustesPorFecha[f] += Number(r.ajustesPorFecha[f] || 0);
     });
   });
 
   const totalInviniSemana = rows.reduce((sum, r) => sum + Number(r.inviniSemana || 0), 0);
   const totalEntradasSemana = rows.reduce((sum, r) => sum + Number(r.totalEntradasSemana || 0), 0);
   const totalSalidasSemana = rows.reduce((sum, r) => sum + Number(r.totalSalidasSemana || 0), 0);
+  const totalAjustesSemana = rows.reduce((sum, r) => sum + Number(r.totalAjustesSemana || 0), 0);
   const totalExistenciaFinal = rows.reduce((sum, r) => sum + Number(r.existenciaFinalSemana || 0), 0);
 
   tfoot.innerHTML = `
@@ -870,6 +1069,7 @@ function pintarPivotPorSemana() {
 
       ${fechasColumnas.map(f => {
         const tieneEntrada = fechasConEntrada.includes(f);
+        const tieneAjuste = fechasConAjuste.includes(f);
 
         return `
           ${
@@ -877,12 +1077,20 @@ function pintarPivotPorSemana() {
               ? `<td class="entrada-col">${fmtNum(totalEntradasPorFecha[f])}</td>`
               : ""
           }
+
           <td class="salida-col">${fmtNum(totalSalidasPorFecha[f])}</td>
+
+          ${
+            tieneAjuste
+              ? `<td class="ajuste-col">${fmtNum(totalAjustesPorFecha[f])}</td>`
+              : ""
+          }
         `;
       }).join("")}
 
       <td>${fmtNum(totalEntradasSemana)}</td>
       <td>${fmtNum(totalSalidasSemana)}</td>
+      <td>${fmtNum(totalAjustesSemana)}</td>
       <td>${fmtNum(totalExistenciaFinal)}</td>
     </tr>
   `;
@@ -904,10 +1112,15 @@ function pintarDetalle() {
     .filter(x => x.tipo === "SALIDA")
     .reduce((sum, x) => sum + Number(x.cantidad || 0), 0);
 
+  const totalAjustes = rows
+    .filter(x => x.tipo === "AJUINV")
+    .reduce((sum, x) => sum + Number(x.diferencia || x.cantidad || 0), 0);
+
   thead.innerHTML = `
     <tr>
       <th>Tipo</th>
       <th>Fecha</th>
+      <th>Hora</th>
       <th class="left">Folio</th>
       <th class="left">Destino / Proveedor</th>
       <th class="left">Entrega / Emisor</th>
@@ -915,7 +1128,9 @@ function pintarDetalle() {
       <th>Partida</th>
       <th class="left">Código</th>
       <th class="left">Nombre</th>
-      <th>Cantidad</th>
+      <th>Cantidad / Diferencia</th>
+      <th>Teórica</th>
+      <th>Física</th>
     </tr>
   `;
 
@@ -923,25 +1138,32 @@ function pintarDetalle() {
     <tr>
       <td>${escapeHtml(r.tipo)}</td>
       <td>${escapeHtml(r.fecha)}</td>
+      <td>${escapeHtml(r.hora || "")}</td>
       <td class="left">${escapeHtml(r.folio)}</td>
       <td class="left">${escapeHtml(r.destino)}</td>
       <td class="left">${escapeHtml(r.entrega)}</td>
       <td class="left">${escapeHtml(r.recibe)}</td>
-      <td>${r.partida}</td>
+      <td>${escapeHtml(r.partida)}</td>
       <td class="left codigo">${escapeHtml(r.codigo)}</td>
       <td class="left">${escapeHtml(r.nombre)}</td>
-      <td class="cantidad">${fmtNum(r.cantidad)}</td>
+      <td class="cantidad">${fmtNum(r.tipo === "AJUINV" ? r.diferencia : r.cantidad)}</td>
+      <td class="cantidad">${r.tipo === "AJUINV" ? fmtNum(r.existencia_teorica) : ""}</td>
+      <td class="cantidad">${r.tipo === "AJUINV" ? fmtNum(r.existencia_fisica) : ""}</td>
     </tr>
   `).join("");
 
   tfoot.innerHTML = `
     <tr>
-      <td class="left" colspan="9">TOTAL ENTRADAS SEMANA</td>
+      <td class="left" colspan="12">TOTAL ENTRADAS SEMANA</td>
       <td>${fmtNum(totalEntradas)}</td>
     </tr>
     <tr>
-      <td class="left" colspan="9">TOTAL SALIDAS SEMANA</td>
+      <td class="left" colspan="12">TOTAL SALIDAS SEMANA</td>
       <td>${fmtNum(totalSalidas)}</td>
+    </tr>
+    <tr>
+      <td class="left" colspan="12">TOTAL AJUINV SEMANA</td>
+      <td>${fmtNum(totalAjustes)}</td>
     </tr>
   `;
 }
@@ -953,6 +1175,7 @@ function exportarExcel() {
     rows = registrosDetalleMovimientoSemana.filter(pasaFiltroDetalle).map((r) => ({
       Tipo: r.tipo,
       Fecha: r.fecha,
+      Hora: r.hora || "",
       Folio: r.folio,
       Destino_Proveedor: r.destino,
       Entrega_Emisor: r.entrega,
@@ -963,7 +1186,9 @@ function exportarExcel() {
       Partida: r.partida,
       Codigo: r.codigo,
       Nombre: r.nombre,
-      Cantidad: r.cantidad
+      Cantidad_Diferencia: r.tipo === "AJUINV" ? Number(r.diferencia || 0) : Number(r.cantidad || 0),
+      Existencia_Teorica: r.tipo === "AJUINV" ? Number(r.existencia_teorica || 0) : "",
+      Existencia_Fisica: r.tipo === "AJUINV" ? Number(r.existencia_fisica || 0) : ""
     }));
   } else {
     rows = registrosPivot.filter(pasaFiltroPivot).map((r) => {
@@ -976,10 +1201,12 @@ function exportarExcel() {
       fechasColumnas.forEach((f) => {
         obj[`ENTRADA ${fechaCorta(f)}`] = Number(r.entradasPorFecha[f] || 0);
         obj[`SALIDA ${fechaCorta(f)}`] = Number(r.salidasPorFecha[f] || 0);
+        obj[`AJUINV ${fechaCorta(f)}`] = Number(r.ajustesPorFecha[f] || 0);
       });
 
       obj["TOTAL ENTRADAS"] = Number(r.totalEntradasSemana || 0);
       obj["TOTAL SALIDAS"] = Number(r.totalSalidasSemana || 0);
+      obj["TOTAL AJUINV"] = Number(r.totalAjustesSemana || 0);
       obj["EXISTENCIA FINAL"] = Number(r.existenciaFinalSemana || 0);
 
       return obj;

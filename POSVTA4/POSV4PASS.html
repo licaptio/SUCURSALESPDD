@@ -318,8 +318,10 @@ window.haySesionActiva = function() {
 (async () => {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
 const { 
-  getFirestore, collection, addDoc, setDoc, serverTimestamp,
-  runTransaction, doc, getDoc, getDocs, getDocFromServer, query, where, limit 
+getFirestore, collection, addDoc, setDoc, serverTimestamp,
+runTransaction, doc, getDoc, getDocs, getDocFromServer,
+query, where, limit, updateDoc
+  
 } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   const { enableIndexedDbPersistence } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   const { obtenerUbicacionRobusta } = await import("./geoHelper.js");
@@ -348,6 +350,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 enableIndexedDbPersistence(db).catch(err => console.warn("⚠️ Persistence off:", err));
+const { iniciarCorteRuta } = await import("./modulos/corteRuta.js");  
 
 
 /* ===========================================================
@@ -358,6 +361,17 @@ let carrito = [];
 let catalogo = [];
 let rutaId = null;
 let USUARIO_LOGUEADO = null;
+iniciarCorteRuta({
+  db,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  updateDoc,
+  doc,
+  getUsuario: () => USUARIO_LOGUEADO
+});
 let clienteSeleccionado = null;
 let origenEscaneo = null; // "camara" | "hid" 👈 AQUÍ
 // 🔒 Anti-doble-disparo de escáner
@@ -2625,12 +2639,6 @@ body.sesion-activa #bottomBar {
   }
 
 </style>
-<script>
-document.getElementById("btnCorteRuta").addEventListener("click", () => {
-  window.location.href = "corterutamovil.html";
-});
-
-</script>
 <footer class="provsoft-footer">
   PROVSOFT POS · v3.0 2026
 </footer>

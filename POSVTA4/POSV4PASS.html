@@ -663,7 +663,11 @@ if (cacheValido && catalogoSW && Array.isArray(catalogoSW) && catalogoSW.length 
     medioMayoreo: Number(x.medioMayoreo || 0),
     ivaTasa: Number(x.ivaTasa || 0),
     iepsTasa: Number(x.iepsTasa || 0),
-    equivalentes: Array.isArray(x.equivalentes) ? x.equivalentes : [],
+    equivalentes: Array.isArray(x.codigosEquivalentes)
+  ? x.codigosEquivalentes.map(e => String(e).trim())
+  : Array.isArray(x.equivalentes)
+    ? x.equivalentes.map(e => String(e).trim())
+    : [],
     claveSat: x.claveSat || null,
     unidadMedidaSat: x.unidadSat || x.unidadMedidaSat || null,
     departamento_id: x.departamento_id || null,
@@ -845,21 +849,22 @@ const resultados = catalogo.filter(p => {
    ⚖️ SECCIÓN 6.2: DECODIFICAR CÓDIGOS DE BALANZA
    =========================================================== */
 function decodificarBalanza(codigo) {
+  const limpio = String(codigo || "").replace(/\D/g, "");
 
-  if (!codigo.startsWith("2")) return { esBalanza: false };
+  if (!limpio.startsWith("2")) return { esBalanza: false };
+  if (limpio.length < 12) return { esBalanza: false };
 
-  // aceptar códigos 2xxxxxxxxxxxxx de 13 a 15 dígitos
-  if (codigo.length < 13 || codigo.length > 15) {
-    return { esBalanza: false };
-  }
+  const codigoProducto = limpio.substring(0, 7); // ejemplo 2000019
+  const pesoBruto = limpio.substring(7, 12);     // ejemplo 00180
+  const pesoKg = Number(pesoBruto) / 1000;
 
-  const codigoProducto = codigo.substring(0, 7);  
-  const pesoBruto = codigo.substring(7, 12);      
-  const pesoKg = parseFloat(pesoBruto) / 1000;    
-
-  return { esBalanza: true, codigoProducto, pesoKg };
+  return {
+    esBalanza: true,
+    codigoProducto,
+    pesoKg
+  };
 }
-
+  
 /* ===========================================================
    🧮 SECCIÓN 7: CARRITO DE COMPRAS
    =========================================================== */

@@ -185,12 +185,6 @@ header,#loginScreen,.btn,#modalCobro,#qrReaderContainer{display:none!important}
 
   <!-- 🎯 BLOQUE 3.1 — CONTROLES SUPERIORES -->
   <section id="pantallaVenta" class="controls">
-    <!-- 🧍‍♂️ CAMPO CLIENTE -->
-    <div class="field">
-      <label>Cliente</label>
-      <input id="cliente" list="clientesList" type="text" placeholder="Nombre del cliente"/>
-      <datalist id="clientesList"></datalist>
-    </div>
 
     <!-- 🔍 BUSCADOR DE PRODUCTOS CON CÁMARA -->
     <div class="field searchbox">
@@ -241,6 +235,7 @@ header,#loginScreen,.btn,#modalCobro,#qrReaderContainer{display:none!important}
 </div> <!-- 👈 cierre de #posApp --> 
 <!-- 📸 LIBRERÍAS EXTERNAS -->
 
+<input id="cliente" type="hidden" value="PÚBLICO EN GENERAL">
 <script src="./html5-qrcode.min.js"></script> <!-- 👈 Asegúrate de que esta ruta sea correcta -->
 
 <!-- 💳 MODAL DE COBRO CON AUTORIZACIÓN DE DESCUENTO -->
@@ -1735,7 +1730,7 @@ const venta = {
   folio,
   folio_local_uid,
   rutaId,
-      cliente: $("#cliente").value || "PÚBLICO EN GENERAL",
+      cliente: document.getElementById("cliente").value,
       moneda: "MXN",
       tipoCambio: 1,
       cortado: false,
@@ -2102,18 +2097,19 @@ Cajero: ${cajero}
 /* ===========================================================
    🙋‍♂️ SECCIÓN 15: CLIENTE PÚBLICO AUTOMÁTICO
    =========================================================== */
-async function fijarClientePublico(){
-  try{
-    const q=query(collection(db,"clientes"),where("nombre","==","PUBLICO EN GENERAL"));
-    const snap=await getDocs(q);
-    if(!snap.empty){
-      const c=snap.docs[0].data();
-      clienteSeleccionado={id:snap.docs[0].id,nombre:c.nombre};
-      const el=$("#cliente");
-      el.value=c.nombre; el.readOnly=true;
-      el.style.background="#e5e7eb"; el.style.color="#555";
-    }
-  }catch(e){console.warn("Cliente público no encontrado");}
+async function fijarClientePublico() {
+
+  clienteSeleccionado = {
+    id: "PUBLICO_GENERAL",
+    nombre: "PÚBLICO EN GENERAL"
+  };
+
+  const el = document.getElementById("cliente");
+
+  if (el) {
+    el.value = "PÚBLICO EN GENERAL";
+  }
+
 }
 // 👇 AGREGA ESTO AL FINAL
 /* ===========================================================
@@ -2648,5 +2644,9 @@ body.sesion-activa #bottomBar {
   PROVSOFT POS · v3.0 2026
 </footer>
 <div class="snow"></div>
+<input
+    id="cliente"
+    type="hidden"
+    value="PÚBLICO EN GENERAL">
 </body>
 </html>

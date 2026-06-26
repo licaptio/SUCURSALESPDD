@@ -733,7 +733,12 @@ catalogo = snap.docs.map(doc => {
     medioMayoreo: Number(x.medioMayoreo || 0),
     ivaTasa: Number(x.ivaTasa || 0),
     iepsTasa: Number(x.iepsTasa || 0),
-    equivalentes: Array.isArray(x.equivalentes) ? x.equivalentes : [],
+    equivalentes: Array.isArray(x.codigosEquivalentes)
+  ? x.codigosEquivalentes.map(e => String(e).trim())
+  : Array.isArray(x.equivalentes)
+    ? x.equivalentes.map(e => String(e).trim())
+    : [],
+    
     departamento_id: x.departamento_id || null,
     departamento: x.departamento || null,   // 🔥 ESTE FALTABA
     costoUnit: Number(x.costoUnit || x.costoSinImpuesto || 0),

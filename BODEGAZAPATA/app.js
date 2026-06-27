@@ -1081,13 +1081,13 @@ function pintarPivotPorSemana() {
             ${fmtCelda(salida)}
           </td>
 
-          ${
-            tieneAjuste
-              <td class="ajuste-col ${ajuste ? "cantidad ajuinv-parpadeo" : ""}">
-  ${fmtCelda(ajuste)}
-</td>
-              : ""
-          }
+${
+  tieneAjuste
+    ? `<td class="ajuste-col ${ajuste ? "cantidad ajuinv-parpadeo" : ""}">
+        ${fmtCelda(ajuste)}
+      </td>`
+    : ""
+}
         `;
       }).join("")}
 

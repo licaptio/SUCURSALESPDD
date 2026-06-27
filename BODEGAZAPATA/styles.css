@@ -315,3 +315,25 @@ td.entrada-total {
     height: calc(100vh - 310px);
   }
 }
+
+.ajuinv-parpadeo {
+  background: #006eff !important;
+  color: white !important;
+  font-weight: 900;
+  animation: ajuinvBlink 0.8s infinite;
+}
+
+@keyframes ajuinvBlink {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+

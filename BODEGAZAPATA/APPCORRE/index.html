@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PROVSOFT · Corrección Inventario</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <div id="loader" class="loader">
+    <div class="loader-card">
+      <div class="brand-mark">P</div>
+      <h1>CARGANDO APLICACIÓN</h1>
+      <p id="loaderText">Preparando módulo de corrección...</p>
+      <div class="bar"><div id="loaderBar"></div></div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">P</div>
+        <div>
+          <strong>PROVSOFT</strong>
+          <span>ERP Inventarios</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-view="inicio">Inicio</button>
+        <button class="nav-btn" data-view="nuevo">Nuevo movimiento</button>
+        <button class="nav-btn" data-view="grabados">Movimientos grabados</button>
+      </nav>
+
+      <div class="side-footer">
+        <span>ALMACÉN</span>
+        <strong>ZAPATA</strong>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">AUDITORÍA · INVENTARIO FÍSICO</span>
+          <h1 id="tituloVista">Menú inicial</h1>
+        </div>
+        <div class="top-actions">
+          <button id="btnVerCarrito" class="ghost hidden">Ver carrito <span id="badgeCarrito">0</span></button>
+        </div>
+      </header>
+
+      <section id="viewInicio" class="view active">
+        <div class="hero-card">
+          <h2>Corrección de inventario guiada</h2>
+          <p>Primero se capturan los datos del movimiento. Después se agregan partidas mediante búsqueda guiada. El documento se graba al final.</p>
+          <div class="hero-actions">
+            <button id="btnInicioNuevo" class="primary big">Iniciar nuevo movimiento</button>
+            <button id="btnInicioGrabados" class="secondary big">Ver movimientos grabados</button>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="mini-card">
+            <span>Estado</span>
+            <strong id="estadoSistema">Listo</strong>
+          </article>
+          <article class="mini-card">
+            <span>Catálogo movimientos</span>
+            <strong id="totalCatalogo">0</strong>
+          </article>
+          <article class="mini-card">
+            <span>Documento actual</span>
+            <strong id="docActualMini">Sin documento</strong>
+          </article>
+        </div>
+      </section>
+
+      <section id="viewNuevo" class="view">
+        <div class="empty-workspace" id="workspaceSinDoc">
+          <div class="doc-icon">+</div>
+          <h2>Nuevo movimiento de ajuste</h2>
+          <p>Presiona el botón para abrir el asistente. La captura será por modales, paso por paso.</p>
+          <button id="btnCrearDesdeWorkspace" class="primary big">Nuevo movimiento</button>
+        </div>
+
+        <div class="document-panel hidden" id="workspaceDoc">
+          <div class="document-header">
+            <div>
+              <span class="eyebrow">DOCUMENTO TEMPORAL</span>
+              <h2 id="folioTemporal">SIN FOLIO</h2>
+            </div>
+            <div class="doc-meta">
+              <div><span>Fecha entrada</span><strong id="metaFechaEntrada">-</strong></div>
+              <div><span>Fecha movimiento</span><strong id="metaFechaMov">-</strong></div>
+              <div><span>Hora</span><strong id="metaHoraMov">-</strong></div>
+              <div><span>Motivo</span><strong id="metaMotivo">-</strong></div>
+            </div>
+          </div>
+
+          <div class="work-actions">
+            <button id="btnAgregarArticulo" class="primary big">+ Agregar artículo</button>
+            <button id="btnEditarDatosDocumento" class="secondary big">Editar datos del documento</button>
+            <button id="btnVerCarritoWorkspace" class="secondary big">Revisar carrito</button>
+            <button id="btnGuardarMovimiento" class="success big" disabled>Grabar movimiento</button>
+            <button id="btnCancelarMovimiento" class="danger ghost-danger big">Cancelar</button>
+          </div>
+
+          <div class="summary-strip">
+            <div><span>Partidas</span><strong id="sumPartidas">0</strong></div>
+            <div><span>Diferencia total</span><strong id="sumDiferencia">0.00</strong></div>
+            <div><span>Usuario</span><strong id="sumUsuario">USUARIO</strong></div>
+            <div><span>Estado</span><strong>EN CAPTURA</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="viewGrabados" class="view">
+        <div class="list-header">
+          <div>
+            <h2>Movimientos grabados</h2>
+            <p>Desde aquí se abre el documento completo para modificar fecha, hora, datos generales, agregar, eliminar o cambiar partidas.</p>
+          </div>
+          <button id="btnRecargarGrabados" class="secondary">Recargar</button>
+        </div>
+        <div id="listaGrabados" class="records-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+
+  <section id="modalDatos" class="modal hidden" role="dialog" aria-modal="true">
+    <header class="modal-head">
+      <div>
+        <span class="eyebrow">PASO 1</span>
+        <h2>Datos del movimiento</h2>
+      </div>
+      <button class="icon-btn" data-close-modal>×</button>
+    </header>
+    <div class="modal-body grid-form">
+      <label>Fecha de entrada
+        <input id="fechaEntrada" type="date" />
+      </label>
+      <label>Fecha de movimiento
+        <input id="fechaMovimiento" type="date" />
+      </label>
+      <label>Hora de movimiento
+        <input id="horaMovimiento" type="time" />
+      </label>
+      <label>Usuario
+        <input id="usuarioMovimiento" type="text" placeholder="Ej. GERARDO RIOS" />
+      </label>
+      <label>Motivo
+        <select id="motivoMovimiento">
+          <option value="CONTEO FÍSICO">CONTEO FÍSICO</option>
+          <option value="DIFERENCIA AUDITORÍA">DIFERENCIA AUDITORÍA</option>
+          <option value="CORRECCIÓN INVENTARIO">CORRECCIÓN INVENTARIO</option>
+          <option value="OTRO">OTRO</option>
+        </select>
+      </label>
+      <label class="span-2">Observaciones
+        <textarea id="observacionesMovimiento" placeholder="Observaciones del movimiento"></textarea>
+      </label>
+    </div>
+    <footer class="modal-foot">
+      <button class="secondary" data-close-modal>Cancelar</button>
+      <button id="btnSiguienteDatos" class="primary">Siguiente</button>
+    </footer>
+  </section>
+
+  <section id="modalArticulo" class="modal modal-wide hidden" role="dialog" aria-modal="true">
+    <header class="modal-head">
+      <div>
+        <span class="eyebrow">PASO 2</span>
+        <h2>Agregar artículo</h2>
+      </div>
+      <button class="icon-btn" data-close-articulo>×</button>
+    </header>
+    <div class="modal-body article-layout">
+      <div class="search-pane">
+        <label>Buscar código o descripción
+          <input id="buscarArticulo" type="search" placeholder="Escribe: 365 o REYMA CHAROLA" autocomplete="off" />
+        </label>
+        <div id="resultadosArticulo" class="results"></div>
+      </div>
+
+      <div class="capture-pane">
+        <div class="selected-box">
+          <span>Producto seleccionado</span>
+          <strong id="productoSeleccionado">Sin seleccionar</strong>
+        </div>
+        <div class="metrics-row">
+          <div><span>Teórico</span><strong id="teoricoArticulo">0.00</strong></div>
+          <div><span>Físico</span><strong id="fisicoPreview">0.00</strong></div>
+          <div><span>Diferencia</span><strong id="diferenciaPreview">0.00</strong></div>
+        </div>
+        <label>Existencia física correcta
+          <input id="fisicoArticulo" type="number" step="0.01" placeholder="Ej. 78" disabled />
+        </label>
+        <button id="btnPregrabarPartida" class="primary big" disabled>Pregrabar en carrito</button>
+        <p class="hint">La partida queda en carrito oculto hasta grabar el movimiento completo.</p>
+      </div>
+    </div>
+    <footer class="modal-foot">
+      <button id="btnAbrirCarritoDesdeArticulo" class="secondary">Ver carrito</button>
+      <button class="secondary" data-close-articulo>Cerrar</button>
+    </footer>
+  </section>
+
+  <section id="modalCarrito" class="modal modal-xl hidden" role="dialog" aria-modal="true">
+    <header class="modal-head">
+      <div>
+        <span class="eyebrow">REVISIÓN</span>
+        <h2>Carrito de partidas</h2>
+      </div>
+      <button class="icon-btn" data-close-carrito>×</button>
+    </header>
+    <div class="modal-body">
+      <div class="cart-summary">
+        <div><span>Partidas</span><strong id="cartPartidas">0</strong></div>
+        <div><span>Diferencia total</span><strong id="cartDiferencia">0.00</strong></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Código</th>
+              <th class="left">Producto</th>
+              <th>Teórico</th>
+              <th>Físico</th>
+              <th>Diferencia</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaCarrito"></tbody>
+        </table>
+      </div>
+    </div>
+    <footer class="modal-foot">
+      <button id="btnAgregarDesdeCarrito" class="primary">+ Agregar partida</button>
+      <button class="secondary" data-close-carrito>Cerrar</button>
+      <button id="btnGuardarDesdeCarrito" class="success" disabled>Grabar movimiento</button>
+    </footer>
+  </section>
+
+  <section id="modalConfirm" class="modal modal-small hidden" role="dialog" aria-modal="true">
+    <header class="modal-head"><h2 id="confirmTitle">Confirmar</h2></header>
+    <div class="modal-body"><p id="confirmText">¿Continuar?</p></div>
+    <footer class="modal-foot">
+      <button id="confirmNo" class="secondary">No</button>
+      <button id="confirmSi" class="danger">Sí</button>
+    </footer>
+  </section>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

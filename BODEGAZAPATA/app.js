@@ -852,18 +852,64 @@ detalleSemana.forEach((item) => {
   });
 });
   
-  ajustesSemana.forEach((item) => {
-    const row = asegurarRow(mapa, item);
+ajustesSemana.forEach((item) => {
+  const row = asegurarRow(mapa, item);
 
-    const diferencia = Number(item.diferencia || item.cantidad || 0);
+  const diferencia = Number(item.diferencia || item.cantidad || 0);
+  const existenciaFisica = Number(item.existencia_fisica || 0);
+  const existenciaTeorica = Number(item.existencia_teorica || 0);
 
-    row.ajustesPorFecha[item.fecha] =
-      Number(row.ajustesPorFecha[item.fecha] || 0) + diferencia;
+  row.ajustesPorFecha[item.fecha] =
+    Number(row.ajustesPorFecha[item.fecha] || 0) + diferencia;
 
-    row.totalAjustesSemana += diferencia;
+  row.totalAjustesSemana += diferencia;
 
-    recalcularExistenciaFinal(row);
+  row.movimientosSemana.push({
+    tipo: "AJUINV",
+    fecha: item.fecha,
+    hora: item.hora || "00:00",
+    cantidad: diferencia,
+    diferencia,
+    existencia_fisica: existenciaFisica,
+    existencia_teorica: existenciaTeorica,
+    item
   });
+});
+
+  mapa.forEach((row) => {
+  let existencia = Number(row.inviniSemana || 0);
+
+  row.movimientosSemana.sort((a, b) => {
+    if (a.fecha !== b.fecha) return String(a.fecha).localeCompare(String(b.fecha));
+    if (String(a.hora || "") !== String(b.hora || "")) {
+      return String(a.hora || "").localeCompare(String(b.hora || ""));
+    }
+
+    const orden = {
+      ENTRADA: 1,
+      SALIDA: 2,
+      AJUINV: 3
+    };
+
+    return Number(orden[a.tipo] || 99) - Number(orden[b.tipo] || 99);
+  });
+
+  row.movimientosSemana.forEach((mov) => {
+    if (mov.tipo === "ENTRADA") {
+      existencia += Number(mov.cantidad || 0);
+    }
+
+    if (mov.tipo === "SALIDA") {
+      existencia -= Number(mov.cantidad || 0);
+    }
+
+    if (mov.tipo === "AJUINV") {
+      existencia = Number(mov.existencia_fisica || 0);
+    }
+  });
+
+  row.existenciaFinalSemana = existencia;
+});
 
   registrosPivot = Array.from(mapa.values())
     .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), "es"));

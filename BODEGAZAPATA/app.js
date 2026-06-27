@@ -1064,7 +1064,7 @@ function pintarPivotPorSemana() {
         const entrada = Number(r.entradasPorFecha[f] || 0);
         const salida = Number(r.salidasPorFecha[f] || 0);
         const ajuste = Number(r.ajustesPorFecha[f] || 0);
-
+        const tieneAjusteFisico = ajuste !== 0;
         const tieneEntrada = fechasConEntrada.includes(f);
         const tieneAjuste = fechasConAjuste.includes(f);
 
@@ -1083,9 +1083,9 @@ function pintarPivotPorSemana() {
 
           ${
             tieneAjuste
-              ? `<td class="ajuste-col ${ajuste ? "cantidad" : ""}">
-                  ${fmtCelda(ajuste)}
-                </td>`
+              <td class="ajuste-col ${ajuste ? "cantidad ajuinv-parpadeo" : ""}">
+  ${fmtCelda(ajuste)}
+</td>
               : ""
           }
         `;

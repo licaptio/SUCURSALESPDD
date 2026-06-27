@@ -806,16 +806,18 @@ function construirPivot(
     row.ajustesAcumuladosAnteriores += Number(item.diferencia || item.cantidad || 0);
   });
 
-  mapa.forEach((row) => {
-    row.inviniSemana =
-      Number(row.inviniOriginal || 0) +
-      Number(row.entradasAcumuladasAnteriores || 0) -
-      Number(row.salidasAcumuladasAnteriores || 0) +
-      Number(row.ajustesAcumuladosAnteriores || 0);
+mapa.forEach((row) => {
+  row.inviniSemana =
+    Number(row.inviniOriginal || 0) +
+    Number(row.entradasAcumuladasAnteriores || 0) -
+    Number(row.salidasAcumuladasAnteriores || 0) +
+    Number(row.ajustesAcumuladosAnteriores || 0);
 
-    row.existenciaFinalSemana = row.inviniSemana;
-  });
+  row.existenciaFinalSemana = row.inviniSemana;
 
+  // Motor cronológico de la semana
+  row.movimientosSemana = [];
+});
   entradasSemana.forEach((item) => {
     const row = asegurarRow(mapa, item);
 

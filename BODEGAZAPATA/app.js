@@ -818,28 +818,40 @@ mapa.forEach((row) => {
   // Motor cronológico de la semana
   row.movimientosSemana = [];
 });
-  entradasSemana.forEach((item) => {
-    const row = asegurarRow(mapa, item);
+entradasSemana.forEach((item) => {
+  const row = asegurarRow(mapa, item);
 
-    row.entradasPorFecha[item.fecha] =
-      Number(row.entradasPorFecha[item.fecha] || 0) + Number(item.cantidad || 0);
+  row.entradasPorFecha[item.fecha] =
+    Number(row.entradasPorFecha[item.fecha] || 0) + Number(item.cantidad || 0);
 
-    row.totalEntradasSemana += Number(item.cantidad || 0);
+  row.totalEntradasSemana += Number(item.cantidad || 0);
 
-    recalcularExistenciaFinal(row);
+  row.movimientosSemana.push({
+    tipo: "ENTRADA",
+    fecha: item.fecha,
+    hora: item.hora || "00:00",
+    cantidad: Number(item.cantidad || 0),
+    item
   });
+});
+  
+detalleSemana.forEach((item) => {
+  const row = asegurarRow(mapa, item);
 
-  detalleSemana.forEach((item) => {
-    const row = asegurarRow(mapa, item);
+  row.salidasPorFecha[item.fecha] =
+    Number(row.salidasPorFecha[item.fecha] || 0) + Number(item.cantidad || 0);
 
-    row.salidasPorFecha[item.fecha] =
-      Number(row.salidasPorFecha[item.fecha] || 0) + Number(item.cantidad || 0);
+  row.totalSalidasSemana += Number(item.cantidad || 0);
 
-    row.totalSalidasSemana += Number(item.cantidad || 0);
-
-    recalcularExistenciaFinal(row);
+  row.movimientosSemana.push({
+    tipo: "SALIDA",
+    fecha: item.fecha,
+    hora: item.hora || "00:00",
+    cantidad: Number(item.cantidad || 0),
+    item
   });
-
+});
+  
   ajustesSemana.forEach((item) => {
     const row = asegurarRow(mapa, item);
 

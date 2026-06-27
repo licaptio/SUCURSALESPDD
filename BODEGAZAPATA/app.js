@@ -732,6 +732,7 @@ function asegurarRow(mapa, item) {
       entradasPorFecha: {},
       salidasPorFecha: {},
       ajustesPorFecha: {},
+      movimientosSemana: [],
       totalEntradasSemana: 0,
       totalSalidasSemana: 0,
       totalAjustesSemana: 0,

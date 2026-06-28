@@ -1,5 +1,6 @@
 const EMPLEADOS = [
   "MARIO ALBERTO AGUAYO PEREZ",
+  "PERSONAL TURNO PISO MATRIZ",
   "GERARDO RIOS QUEZADA",
   "EDGARDO MORENO RODRIGUEZ",
   "BLANCA JEANETTE OVIEDO MARIN",
@@ -96,8 +97,6 @@ const EMPLEADOS = [
   "JUAN MARTIN SANCHEZ TOLENTINO",
   "JUAN FRANCISCO HERNANDEZ ARANDA",
   "DIEGO AZAEL CAVAZOS CISNEROS",
-
-  // Nombres utilizados anteriormente que no aparecen en el PDF
   "OSCAR LAURENT",
   "MARTIN GARZA PETACA"
 ];
@@ -305,8 +304,6 @@ function iniciarEscuchaConfiguracion(){
         throw new Error('No existe catalogo_guiado');
       }
 
-      // Si Firestore solo responde desde cache, se marca como error visual.
-      // La app debe trabajar con catálogo vigente del servidor.
       if(snap.metadata.fromCache){
         $('estadoConexion').textContent='ERROR: catálogo no confirmado en servidor';
         return;
@@ -440,8 +437,6 @@ function normalizeGuia(raw){
     });
   }
 
-  // Fuente única: el documento catalogo_guiado.
-  // Acepta la forma anidada departamentos -> familias -> articulos.
   if(Array.isArray(raw.departamentos)){
     raw.departamentos.forEach((d,i)=>{
       const depNombre=d.nombre||d.departamento||'SIN DEPARTAMENTO';
@@ -464,8 +459,6 @@ function normalizeGuia(raw){
     });
   }
 
-  // También acepta el arreglo plano articulos[] del mismo catalogo_guiado.
-  // Sirve si el administrador guarda producto con departamento/familia directo.
   if(Array.isArray(raw.articulos)){
     raw.articulos.forEach(a=>addArticulo(a,a.departamento,a.familia));
   }
@@ -486,8 +479,6 @@ function normalizeGuia(raw){
   };
 }
 
-// Catálogo único: /almacenes/almacen_zapata/configuracion/catalogo_guiado
-// No se consulta PRODUCTOS_REF para evitar nombres viejos o inconsistentes.
 function buildCatalogo(){}
 function prodByCod(c){return articulosGuiaPlana().find(p=>normCod(p.codigo)===normCod(c))}
 function codProd(p){return String(p.codigo||'').trim()}
@@ -519,7 +510,7 @@ function updateUI(){
   }
 
   $('tituloEstado').textContent=salida.folioTemporal;
-  $('resumenSalida').innerHTML=`<b>Destino:</b> ${esc(salida.destino||'SIN DESTINO')}<br><b>Entrega:</b> ${esc(salida.entrega||'')} · <b>Chofer:</b> ${esc(salida.recibe||'')}<br><b>Artículos:</b> ${salida.articulos.length} · <b>Cantidad:</b> ${fmt(total)}`;
+  $('resumenSalida').innerHTML=`<b>Destino:</b> ${esc(salida.destino||'SIN DESTINO')}<br><b>Entrega:</b> ${esc(salida.entrega||'')} · <b>Empleado:</b> ${esc(salida.recibe||'')}<br><b>Artículos:</b> ${salida.articulos.length} · <b>Cantidad:</b> ${fmt(total)}`;
   $('panelAcciones').classList.remove('hidden');
   $('btnNuevaSalida').classList.add('hidden');
 }
@@ -589,10 +580,10 @@ function abrirDatos(){
 
   modal('Datos generales',`
     <div class="field">
-      <label>Chofer *</label>
+      <label>Empleado *</label>
       <select id="recibe">
-        <option value="">Selecciona chofer</option>
-        ${opcionesSelect(CHOFERES,salida.recibe)}
+        <option value="">Selecciona empleado</option>
+        ${opcionesSelect(EMPLEADOS,salida.recibe)}
       </select>
     </div>
 
@@ -628,7 +619,7 @@ window.guardarDatos=async()=>{
   salida.placas=$('placas').value.trim();
 
   if(!salida.recibe||!salida.entrega||!salida.destino){
-    return alert('Chofer, entrega y destino son obligatorios.');
+    return alert('Empleado, entrega y destino son obligatorios.');
   }
 
   await saveDraft();
@@ -719,7 +710,6 @@ window.abrirCantidad=(c,n)=>{
     const input=$('cant');
 
     if(input){
-
       input.addEventListener('focus',()=>{
         $('modal').classList.add('teclado-activo');
       });
@@ -730,7 +720,6 @@ window.abrirCantidad=(c,n)=>{
 
       input.focus();
     }
-
   },100);
 };
 
@@ -840,7 +829,7 @@ window.saveNotas=async()=>{
 
 function abrirFirma(tipo){
   modal(
-    tipo==='entrega'?'Firma entrega':'Firma chofer',
+    tipo==='entrega'?'Firma entrega':'Firma empleado',
     `<div class="sigbox"><canvas id="sig"></canvas></div><button class="btn gray" onclick="clearSig()">Limpiar</button><button class="btn primary" onclick="saveSig('${tipo}')">${tipo==='entrega'?'Siguiente':'Guardar salida'}</button>`,
     false,
     false
@@ -997,36 +986,31 @@ async function guardarFinal(){
     guardando=false;
   }
 }
+
 function imprimirRawBT(p){
   const totalCantidad = p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
 
   let txt = "";
 
-txt += "\n";
-txt += "================================\n";
-txt += "         SALIDA CIGARRO ALMACEN\n";
-txt += "================================\n";
+  txt += "\n";
+  txt += "================================\n";
+  txt += "         SALIDA CIGARRO ALMACEN\n";
+  txt += "================================\n";
   txt += "FOLIO: " + p.folio + "\n";
   txt += "FECHA: " + p.fecha + "\n";
   txt += "DESTINO: " + (p.destino || "") + "\n";
   txt += "ENTREGA: " + (p.entrega || "") + "\n";
-  txt += "CHOFER: " + (p.recibe || "") + "\n";
+  txt += "EMPLEADO: " + (p.recibe || "") + "\n";
   txt += "PLACAS: " + (p.placas || "") + "\n";
   txt += "--------------------------------\n";
 
-p.articulos.forEach(a=>{
-
-  txt += "================================\n";
-
-  txt += String(a.codigo || "") + "\n";
-
-  txt += String(a.nombre || "") + "\n";
-
-  txt += "CANTIDAD: " + String(a.cantidad || 0) + "\n";
-
-  txt += "================================\n\n";
-
-});
+  p.articulos.forEach(a=>{
+    txt += "================================\n";
+    txt += String(a.codigo || "") + "\n";
+    txt += String(a.nombre || "") + "\n";
+    txt += "CANTIDAD: " + String(a.cantidad || 0) + "\n";
+    txt += "================================\n\n";
+  });
   
   txt += "--------------------------------\n";
   txt += "TOTAL ARTICULOS: " + p.articulos.length + "\n";
@@ -1040,26 +1024,26 @@ p.articulos.forEach(a=>{
 
   txt += "--------------------------------\n\n";
 
-txt += "ENTREGO:\n";
-txt += (p.entrega || "SIN DATO") + "\n";
-txt += "(FIRMA DIGITAL RESGUARDADA EN BD)\n\n";
+  txt += "ENTREGO:\n";
+  txt += (p.entrega || "SIN DATO") + "\n";
+  txt += "(FIRMA DIGITAL RESGUARDADA EN BD)\n\n";
 
-txt += "RECIBIO:\n";
-txt += (p.recibe || "SIN DATO") + "\n";
-txt += "(FIRMA DIGITAL RESGUARDADA EN BD)\n\n";
+  txt += "RECIBIO:\n";
+  txt += (p.recibe || "SIN DATO") + "\n";
+  txt += "(FIRMA DIGITAL RESGUARDADA EN BD)\n\n";
 
-txt += "\n";
-txt += "================================\n";
-txt += "PROVEEDORA DE DULCES\n";
-txt += "Y DESECHABLES\n";
-txt += "================================\n\n\n";
+  txt += "\n";
+  txt += "================================\n";
+  txt += "PROVEEDORA DE DULCES\n";
+  txt += "Y DESECHABLES\n";
+  txt += "================================\n\n\n";
 
-const encoded = encodeURIComponent(txt);
+  const encoded = encodeURIComponent(txt);
 
-window.location.href =
-  "intent:" + encoded +
-  "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
-  }
+  window.location.href =
+    "intent:" + encoded +
+    "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+}
   
 async function generarImagenTicket(p){
   const totalCantidad=p.articulos.reduce((s,a)=>s+Number(a.cantidad||0),0);
@@ -1085,7 +1069,7 @@ async function generarImagenTicket(p){
     <div><b>FECHA:</b> ${esc(p.fecha)}</div>
     <div><b>DESTINO:</b> ${esc(p.destino||'')}</div>
     <div><b>ENTREGA:</b> ${esc(p.entrega||'')}</div>
-    <div><b>CHOFER:</b> ${esc(p.recibe||'')}</div>
+    <div><b>EMPLEADO:</b> ${esc(p.recibe||'')}</div>
     <div><b>PLACAS:</b> ${esc(p.placas||'')}</div>
 
     <hr>
@@ -1127,7 +1111,7 @@ async function generarImagenTicket(p){
       </div>
       <div style="width:50%;text-align:center;">
         <img src="${p.firmaRecibe}" style="width:120px;height:52px;object-fit:contain;">
-        <div style="border-top:1px solid #000;font-size:10px;">Firma chofer</div>
+        <div style="border-top:1px solid #000;font-size:10px;">Firma empleado</div>
       </div>
     </div>
 

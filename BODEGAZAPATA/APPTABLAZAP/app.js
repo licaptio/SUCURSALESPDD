@@ -1038,11 +1038,10 @@ function pintarPivotPorSemana() {
 
           ${
             tieneAjuste
-              ? `<th class="ajuste-head">
-                  ${fechaCorta(f)}<br>
-                  AJUINV<br>
-                  <small>${escapeHtml(foliosAjuste || "AJUSTE")}</small>
-                </th>`
+? `<th class="ajuste-head">
+    ${fechaCorta(f)}<br>
+    AJUINV
+  </th>`
               : ""
           }
         `;

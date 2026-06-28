@@ -89,8 +89,15 @@ function nuevaSalida(){
 function hoy(){return new Date().toISOString().slice(0,10)}
 function ymd(d){return`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`}
 function hms(d){return`${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}${String(d.getSeconds()).padStart(2,"0")}`}
-function folioTemp(){const d=new Date();return`BORRADOR-ZAP-${ymd(d)}-${hms(d)}`}
-function folioFinal(){const d=new Date();return`ZAP-${ymd(d)}-${hms(d)}`}
+function folioTemp(){
+  const d=new Date();
+  return `BORRADOR-CIG-${ymd(d)}-${hms(d)}`;
+}
+
+function folioFinal(){
+  const d=new Date();
+  return `CIG-${ymd(d)}-${hms(d)}`;
+}
 function setLoad(m,p){$('loaderMsg').textContent=m;$('loaderBar').style.width=p+'%'}
 function fmt(n){return Number(n||0).toLocaleString('es-MX',{maximumFractionDigits:2})}
 function esc(t){return String(t??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
@@ -904,7 +911,7 @@ function imprimirRawBT(p){
 
 txt += "\n";
 txt += "================================\n";
-txt += "         SALIDA ZAPATA\n";
+txt += "         SALIDA CIGARRO ALMACEN\n";
 txt += "================================\n";
   txt += "FOLIO: " + p.folio + "\n";
   txt += "FECHA: " + p.fecha + "\n";
@@ -978,7 +985,7 @@ async function generarImagenTicket(p){
 
   ticket.innerHTML=`
     <div style="text-align:center;font-weight:900;font-size:16px;margin-bottom:8px;">
-      SALIDA ZAPATA
+      SALIDA CIGARROS
     </div>
 
     <div><b>FOLIO:</b> ${esc(p.folio)}</div>

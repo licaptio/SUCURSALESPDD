@@ -574,11 +574,16 @@ function ordenarMasReciente(lista){
 
 function prepararListas(){
   const pendientes = ordenarMasReciente(
-    transferencias.filter(t => t.tipo === 'PENDIENTE')
+    transferencias.filter(t =>
+      t.tipo === 'PENDIENTE' &&
+      !esSurtida(t)
+    )
   ).slice(0, MAX_VISIBLES);
 
   const surtidas = ordenarMasReciente(
-    transferencias.filter(t => t.tipo === 'SURTIDA')
+    transferencias.filter(t =>
+      t.tipo === 'SURTIDA'
+    )
   ).slice(0, MAX_VISIBLES);
 
   return { pendientes, surtidas };
@@ -592,7 +597,7 @@ function badgeEstatus(t){
   
 function renderCard(t){
   return `
-    <div class="card" data-key="${escapeHtml(t.tipo)}|${escapeHtml(t.origen)}|${escapeHtml(t.id)}"
+    <div class="card" data-key="${escapeHtml(t.tipo)}|${escapeHtml(t.origen)}|${escapeHtml(t.id)}">
       <div class="card-head">
         <div class="folio">${escapeHtml(t.sucursal || t.origen)}</div>
         ${badgeEstatus(t)}
@@ -606,7 +611,7 @@ function renderCard(t){
     </div>
   `;
 }
-
+  
 function renderListado(){
   const {
     pendientes,

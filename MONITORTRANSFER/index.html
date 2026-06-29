@@ -592,7 +592,7 @@ function badgeEstatus(t){
 
 function renderCard(t){
   return `
-    <div class="card" data-key="${escapeHtml(t.origen)}|${escapeHtml(t.id)}">
+    <div class="card" data-key="${escapeHtml(t.tipo)}|${escapeHtml(t.origen)}|${escapeHtml(t.id)}"
       <div class="card-head">
         <div class="folio">${escapeHtml(t.sucursal || t.origen)}</div>
         ${badgeEstatus(t)}
@@ -630,12 +630,14 @@ function renderListado(){
   document.querySelectorAll('.card[data-key]').forEach(card => {
     card.onclick = () => {
       const key = card.dataset.key;
-      const [origen, id] = key.split('|');
+const [tipo, origen, id] = key.split('|');
 
-      const t = transferencias.find(x =>
-        x.origen === origen &&
-        x.id === id
-      );
+const t = transferencias.find(x =>
+  x.tipo === tipo &&
+  x.origen === origen &&
+  x.id === id
+);
+      
 
       if (t) abrirDetalle(t);
     };

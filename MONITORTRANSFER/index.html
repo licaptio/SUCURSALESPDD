@@ -585,11 +585,11 @@ function prepararListas(){
 }
   
 function badgeEstatus(t){
-  return esSurtida(t)
+  return t.tipo === 'SURTIDA'
     ? '<span class="badge done">SURTIDA</span>'
     : '<span class="badge pending">PENDIENTE</span>';
 }
-
+  
 function renderCard(t){
   return `
     <div class="card" data-key="${escapeHtml(t.tipo)}|${escapeHtml(t.origen)}|${escapeHtml(t.id)}"

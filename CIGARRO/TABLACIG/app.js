@@ -10,9 +10,10 @@ import {
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const FECHA_BASE_INVENTARIO = "2026-06-01";
-const FECHA_INICIO_MINIMA = "2026-06-01";
-const CONTEO_ID_INVENTARIO = "CIGARRO010626";
+const FECHA_BASE_INVENTARIO = "2026-06-23";
+const FECHA_INICIO_MINIMA = "2026-06-23";
+const CONTEO_ID_INVENTARIO = "CIGARRO230626";
+const ID_INVENTARIO_INICIAL = "2026-06-23";
 
 const REF_SALIDAS_CIGARRO = collection(
   db,
@@ -33,6 +34,15 @@ const REF_AJUSTES_INVENTARIO_CIGARRO = collection(
   "almacenes",
   "almacen_cigarro",
   "ajustes_inventario"
+);
+
+const REF_INVENTARIO_INICIAL_CIGARRO = collection(
+  db,
+  "almacenes",
+  "almacen_cigarro",
+  "inventarioinicial",
+  ID_INVENTARIO_INICIAL,
+  "productos"
 );
 
 const REF_PROVEEDORES_AUTORIZADOS_CIGARRO = collection(
@@ -609,13 +619,58 @@ function obtenerFoliosAjustePorFecha(fecha) {
 }
 
 async function cargarInventarioInicial() {
-  // Almacén cigarro no usa inventario inicial.
-  // La existencia se reconstruye desde FECHA_INICIO_MINIMA:
-  // entradas - salidas + ajustes, desde 2026-06-01.
   inventarioInicialOriginal = {};
-  setStatus(`Inventario inicial omitido. Base de cálculo desde ${FECHA_INICIO_MINIMA}.`);
+
+  const snap = await getDocs(REF_INVENTARIO_INICIAL_CIGARRO);
+
+  snap.forEach((docu) => {
+    const data = docu.data() || {};
+
+    const codigoOriginal = String(
+      data.codigo ||
+      data.codigoKey ||
+      docu.id ||
+      ""
+    ).trim();
+
+    const codigoKey = normalizarCodigo(
+      data.codigoKey ||
+      data.codigo ||
+      docu.id ||
+      ""
+    );
+
+    const nombre = String(
+      data.nombre ||
+      data.descripcion ||
+      data.producto ||
+      ""
+    ).trim();
+
+    const existencia = Number(
+      data.existencia ??
+      data.cantidad ??
+      data.invini ??
+      data.inviniOriginal ??
+      0
+    );
+
+    if (!codigoKey) return;
+
+    inventarioInicialOriginal[codigoKey] = {
+      codigo: codigoOriginal,
+      codigoKey,
+      nombre,
+      inviniOriginal: existencia
+    };
+  });
+
+  setStatus(
+    `Inventario inicial cargado ${ID_INVENTARIO_INICIAL}: ${Object.keys(inventarioInicialOriginal).length} artículos.`
+  );
+
   setProgress(8);
-  return {};
+  return inventarioInicialOriginal;
 }
 
 async function consultarSalidas(inicio, fin) {

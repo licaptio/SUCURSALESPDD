@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Inventario Cigarro - PROVSOFT</title>
+
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+</head>
+
+<body>
+  <div id="loader" class="app-loader">
+    <div class="loader-box">
+      <img
+        src="logo.jfif"
+        class="loader-logo"
+        alt="Logo empresa"
+        onerror="this.style.display='none'"
+      />
+
+      <h2 class="loader-title">PROVEEDORA DE DULCES Y DESECHABLES</h2>
+
+      <div class="loader-subtitle">
+        ALMACÉN CIGARRO · ENTRADAS · SALIDAS · INVENTARIO SEMANAL
+      </div>
+
+      <div class="progress-shell">
+        <div id="loaderBar" class="progress-bar"></div>
+      </div>
+
+      <p id="loaderMsg" class="loader-msg">Preparando consulta...</p>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section class="card">
+      <header class="topbar">
+        <div>
+          <h1>Inventario Cigarro</h1>
+
+          <p>
+            Sin inventario inicial. Cálculo desde 01/06/2026:
+            /almacenes/almacen_cigarro/entradas - /almacenes/almacen_cigarro/salidas1.0
+          </p>
+
+          <p>
+            Base original: 25/05/2026 · Vista semanal domingo a sábado ·
+            Inventario inicial visible = acumulado anterior desde 01/06/2026.
+          </p>
+
+          <p>
+            Entradas tomadas de:
+            /almacenes/almacen_cigarro/entradas
+          </p>
+        </div>
+
+        <div class="actions">
+          <label>
+            Semana
+            <input id="selectorSemana" type="week" />
+          </label>
+
+          <label>
+            Fecha inicio
+            <input
+              id="fechaInicio"
+              type="date"
+              min="2026-06-01"
+              value="2026-06-01"
+              readonly
+            />
+          </label>
+
+          <label>
+            Fecha fin
+            <input
+              id="fechaFin"
+              type="date"
+              readonly
+            />
+          </label>
+
+          <input
+            id="busqueda"
+            type="search"
+            placeholder="Buscar código, nombre, folio, proveedor, destino..."
+          />
+
+          <button id="btnVerInventarios">Ver inventarios</button>
+          <button id="btnRecargar">Recargar</button>
+          <button id="btnExportar">Exportar Excel</button>
+        </div>
+      </header>
+
+      <section class="tabs">
+        <button id="tabResumen" class="active">Pivot semanal</button>
+        <button id="tabDetalle">Detalle semana</button>
+      </section>
+
+      <section id="panelInventarios" class="panel-inventarios pantalla-inventarios oculto">
+        <div class="panel-inventarios-head">
+          <div>
+            <strong>Ver inventarios</strong>
+            <span>Listados resumen por proveedor</span>
+          </div>
+
+          <div class="panel-inventarios-actions">
+            <button id="btnCerrarInventarios" type="button">Regresar a tabla principal</button>
+          </div>
+        </div>
+
+        <div id="vistaMenuInventarios" class="menu-inventarios">
+          <button id="btnIrVerListadosResumen" type="button" class="opcion-inventario">
+            <strong>Ver listado configurado</strong>
+            <span>Consulta REIMA, CONVERMEX, BONLATTI, etc. usando solo el inventario teórico final ya calculado.</span>
+          </button>
+
+          <button id="btnIrConfigurarListados" type="button" class="opcion-inventario">
+            <strong>Configurar listados</strong>
+            <span>Crear, modificar, agregar o quitar artículos de cada proveedor.</span>
+          </button>
+        </div>
+
+        <div id="vistaListadosResumen" class="pantalla-secundaria-inventarios oculto">
+          <div class="subpantalla-head">
+            <div>
+              <h2>Ver listado configurado</h2>
+              <p>Esta vista no resume la tabla principal. Solo lee los códigos configurados y toma el inventario teórico final ya calculado.</p>
+            </div>
+            <button id="btnVolverMenuInventarios1" type="button">Volver</button>
+          </div>
+
+          <div class="barra-listado-resumen">
+            <label>
+              Listado
+              <select id="selectorListadoResumen"></select>
+            </label>
+
+            <button id="btnCargarListadoResumen" type="button">Ver inventario</button>
+          </div>
+
+          <div id="contenedorTablaListadoResumen" class="tabla-listado-resumen oculto">
+            <table id="tablaListadoResumen">
+              <thead></thead>
+              <tbody></tbody>
+              <tfoot></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div id="vistaConfigurarListados" class="pantalla-secundaria-inventarios oculto">
+          <div class="subpantalla-head">
+            <div>
+              <h2>Configurar listados</h2>
+              <p>Guarda únicamente los códigos que quieres ver por proveedor.</p>
+            </div>
+            <button id="btnVolverMenuInventarios2" type="button">Volver</button>
+          </div>
+
+          <div class="config-grid">
+            <label>
+              Listado existente
+              <select id="selectorListadoConfig"></select>
+            </label>
+
+            <label>
+              Nombre del listado/proveedor
+              <input id="nombreListadoProveedor" type="text" placeholder="REIMA, CONVERMEX, BONLATTI..." />
+            </label>
+
+            <button id="btnNuevoListadoProveedor" type="button">Nuevo</button>
+            <button id="btnGuardarListadoProveedor" type="button">Guardar listado</button>
+            <button id="btnEliminarListadoProveedor" type="button">Eliminar listado</button>
+          </div>
+
+          <div class="config-articulos">
+            <label>
+              Buscar artículo del inventario
+              <input id="buscarArticuloListado" type="search" placeholder="Código o nombre del artículo..." />
+            </label>
+
+            <div id="resultadosBusquedaListado" class="resultados-articulos"></div>
+
+            <div>
+              <h3>Artículos incluidos</h3>
+              <div id="articulosListadoActual" class="articulos-seleccionados"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="table-wrap">
+        <table id="tabla">
+          <thead></thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </section>
+
+      <p id="status" class="status">
+        Listo. El inventario inicial se calcula recorriendo el conteo; las entradas suman y las salidas restan.
+      </p>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -13,6 +13,5 @@ const APP_VERSION = "1.0.2-catalogo-guiado-articulos";
 const RUTAS = {
   CONFIG_DOC: db.collection("almacenes").doc("almacen_zapata").collection("configuracion").doc("catalogo_guiado"),
   SALIDAS_REF: db.collection("almacenes").doc("almacen_zapata").collection("salidas1.0"),
-  PRODUCTOS_REF: db.collection("productos")
+  PRODUCTOS_REF: db.collection("productos"
 };
-

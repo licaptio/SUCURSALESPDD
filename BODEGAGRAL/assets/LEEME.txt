@@ -1,0 +1,9 @@
+Coloca aquí los recursos de tu proyecto si no están incluidos.
+
+El HTML hace referencia a:
+- logo.jfif
+- manifest.json
+- config.js
+- icons/icon-192.png
+
+Si ya los tienes en tu proyecto, copia esos archivos a esta estructura conservando los nombres.

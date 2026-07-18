@@ -1473,13 +1473,16 @@ function dibujarFirma(e){
   const pos =
     obtenerPosicion(e);
 
-  ctxFirma.lineWidth = 2;
+ctxFirma.lineWidth = 3;
 
-  ctxFirma.lineCap =
-    "round";
+ctxFirma.lineCap =
+  "round";
 
-  ctxFirma.strokeStyle =
-    "#000";
+ctxFirma.lineJoin =
+  "round";
+
+ctxFirma.strokeStyle =
+  "#000000";
 
   ctxFirma.lineTo(
     pos.x,
@@ -1766,7 +1769,14 @@ async function generarPDF(salida){
     salida.folio;
 
   el.compFecha.textContent =
-    salida.fecha;
+    new Date(salida.fecha)
+      .toLocaleString(
+        "es-MX",
+        {
+          dateStyle: "short",
+          timeStyle: "short"
+        }
+      );
 
   el.compEntrega.textContent =
     salida.entrega;
@@ -1810,53 +1820,112 @@ async function generarPDF(salida){
     "oculto"
   );
 
+  await esperarImagenes(
+    el.comprobante
+  );
+
+  if(document.fonts?.ready){
+    await document.fonts.ready;
+  }
+
   const canvas =
     await html2canvas(
       el.comprobante,
       {
-        scale:2
+        scale: 4,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        imageTimeout: 10000,
+        scrollX: 0,
+        scrollY: 0,
+        onclone: documentoClonado => {
+
+          const comprobanteClonado =
+            documentoClonado.getElementById(
+              "comprobante"
+            );
+
+          if(comprobanteClonado){
+
+            comprobanteClonado.style.display =
+              "block";
+
+            comprobanteClonado.style.background =
+              "#ffffff";
+
+            comprobanteClonado.style.color =
+              "#000000";
+
+            comprobanteClonado.style.opacity =
+              "1";
+
+            comprobanteClonado.style.transform =
+              "none";
+
+            comprobanteClonado.style.filter =
+              "none";
+
+          }
+
+        }
       }
     );
 
   const imagen =
     canvas.toDataURL(
-      "image/png"
+      "image/png",
+      1
     );
 
   const { jsPDF } =
     window.jspdf;
 
-const anchoTicket = 58;
+  const anchoTicket = 58;
 
-const altoTicket =
-  (canvas.height * anchoTicket / canvas.width) + 10;
+  const margenHorizontal =
+    1.5;
 
-const pdf =
-  new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: [altoTicket, anchoTicket]
-  });
-  
+  const margenSuperior =
+    1.5;
 
-const margen = 2;
+  const anchoImagen =
+    anchoTicket -
+    (margenHorizontal * 2);
 
-const ancho = 54;
+  const altoImagen =
+    canvas.height *
+    anchoImagen /
+    canvas.width;
 
-const alto =
-  canvas.height *
-  ancho /
-  canvas.width;
+  const altoTicket =
+    altoImagen +
+    margenSuperior +
+    3;
 
-pdf.addImage(
-  imagen,
-  "PNG",
-  margen,
-  margen,
-  ancho,
-  alto
-);
-  
+  const pdf =
+    new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: [
+        anchoTicket,
+        altoTicket
+      ],
+      compress: false,
+      putOnlyUsedFonts: true
+    });
+
+  pdf.addImage(
+    imagen,
+    "PNG",
+    margenHorizontal,
+    margenSuperior,
+    anchoImagen,
+    altoImagen,
+    undefined,
+    "NONE"
+  );
 
   pdf.save(
     `${salida.folio}.pdf`
@@ -1864,6 +1933,41 @@ pdf.addImage(
 
   el.comprobante.classList.add(
     "oculto"
+  );
+
+}
+function esperarImagenes(contenedor){
+
+  const imagenes =
+    Array.from(
+      contenedor.querySelectorAll(
+        "img"
+      )
+    );
+
+  return Promise.all(
+    imagenes.map(img=>{
+
+      if(
+        img.complete &&
+        img.naturalWidth > 0
+      ){
+        return Promise.resolve();
+      }
+
+      return new Promise(
+        resolve=>{
+
+          img.onload =
+            resolve;
+
+          img.onerror =
+            resolve;
+
+        }
+      );
+
+    })
   );
 
 }

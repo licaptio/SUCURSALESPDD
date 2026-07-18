@@ -377,18 +377,34 @@ body{
 
 .comprobante,
 #comprobante{
-  width:58mm;
-  max-width:58mm;
-  background:white;
-  color:#111;
-  padding:3mm;
-  font-family:Arial, sans-serif;
-  font-size:10px;
+  width:55mm;
+  max-width:55mm;
+  margin:0;
+  padding:1.5mm;
+
+  background:#ffffff !important;
+  color:#000000 !important;
+
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:11px;
+  font-weight:700;
+  line-height:1.25;
+
+  box-sizing:border-box;
+  text-rendering:geometricPrecision;
+}
+
+.comprobante *,
+#comprobante *{
+  box-sizing:border-box;
+  color:#000000 !important;
+  text-shadow:none !important;
+  opacity:1 !important;
 }
 
 .comp-header{
   text-align:center;
-  border-bottom:1px solid #f97316;
+  border-bottom:2px solid #000000;
   padding-bottom:4px;
   margin-bottom:5px;
 }
@@ -396,43 +412,77 @@ body{
 .comp-header img{
   width:42mm;
   max-width:100%;
-  border-radius:6px;
+  border-radius:0;
+
+  filter:grayscale(100%) contrast(180%);
+  image-rendering:crisp-edges;
 }
 
 .comp-header h2{
   margin:5px 0 2px;
-  color:#c2410c;
-  font-size:13px;
+  color:#000000 !important;
+  font-size:14px;
+  font-weight:900;
 }
 
 .comprobante p,
 #comprobante p{
   margin:2px 0;
-  font-size:9px;
+  font-size:10px;
+  font-weight:700;
+  color:#000000 !important;
 }
 
 .comprobante table,
 #comprobante table{
   width:100%;
   border-collapse:collapse;
+  table-layout:fixed;
   margin-top:5px;
-  font-size:8px;
+  font-size:10px;
 }
 
 .comprobante th,
 .comprobante td,
 #comprobante th,
 #comprobante td{
-  border:1px solid #ccc;
-  padding:2px;
-  font-size:8px;
+  border:1px solid #000000;
+  padding:3px 1px;
+  font-size:10px;
+  color:#000000 !important;
+  background:#ffffff !important;
   word-break:break-word;
+  overflow-wrap:anywhere;
+  vertical-align:top;
 }
 
 .comprobante th,
 #comprobante th{
-  background:#f97316;
-  color:white;
+  font-weight:900;
+  border-bottom:2px solid #000000;
+}
+
+.comprobante th:nth-child(1),
+.comprobante td:nth-child(1),
+#comprobante th:nth-child(1),
+#comprobante td:nth-child(1){
+  width:30%;
+}
+
+.comprobante th:nth-child(2),
+.comprobante td:nth-child(2),
+#comprobante th:nth-child(2),
+#comprobante td:nth-child(2){
+  width:55%;
+}
+
+.comprobante th:nth-child(3),
+.comprobante td:nth-child(3),
+#comprobante th:nth-child(3),
+#comprobante td:nth-child(3){
+  width:15%;
+  text-align:center;
+  font-weight:900;
 }
 
 .comp-firmas{
@@ -443,13 +493,21 @@ body{
 .comp-firmas div{
   text-align:center;
   margin-top:8px;
-  font-size:9px;
+  font-size:10px;
+  font-weight:700;
+  color:#000000 !important;
 }
 
 .comp-firmas img{
   width:45mm;
   max-width:100%;
-  border:1px solid #ccc;
+  max-height:22mm;
+  object-fit:contain;
+
+  border:1px solid #000000;
+
+  filter:grayscale(100%) contrast(200%);
+  image-rendering:crisp-edges;
 }
 
 @media(max-width:480px){

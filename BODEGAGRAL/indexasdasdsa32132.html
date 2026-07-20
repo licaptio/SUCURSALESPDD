@@ -3851,12 +3851,11 @@ function conceptoPdfLimpio(item) {
   }
 
   function imprimirCuadrosFirmas() {
-    ensureSpace(88);
+    ensureSpace(56);
 
     const firmaY = y;
-    const firmaH = 38;
+    const firmaH = 44;
     const firmaW = (pageWidth - 20) / 2;
-    const totalH = firmaH * 2;
 
     pdf.setDrawColor(0, 65, 106);
     pdf.setLineWidth(.45);
@@ -3865,51 +3864,31 @@ function conceptoPdfLimpio(item) {
       10,
       firmaY,
       pageWidth - 20,
-      totalH
+      firmaH
     );
 
     pdf.line(
       10 + firmaW,
       firmaY,
       10 + firmaW,
-      firmaY + totalH
-    );
-
-    pdf.line(
-      10,
-      firmaY + firmaH,
-      pageWidth - 10,
       firmaY + firmaH
     );
 
     const firmas = [
       {
-        titulo: 'CAPTURÓ',
-        subtitulo: '',
-        nombre: payload.quien_captura || ''
-      },
-      {
-        titulo: 'SURTIÓ',
-        subtitulo: '',
-        nombre: payload.quien_surte || ''
-      },
-      {
-        titulo: 'LLEVÓ',
-        subtitulo: '',
-        nombre: payload.quien_lleva || ''
-      },
-      {
         titulo: 'AUTORIZÓ',
         subtitulo: 'JEFE DE ALMACÉN EN TURNO',
         nombre: payload.jefe_almacen_autoriza || payload.quien_autoriza || ''
+      },
+      {
+        titulo: 'RECIBIÓ DE CONFORMIDAD',
+        subtitulo: 'JEFE DE SUCURSAL',
+        nombre: ''
       }
     ];
 
     firmas.forEach((firma, i) => {
-      const columna = i % 2;
-      const fila = Math.floor(i / 2);
-      const x = 10 + (firmaW * columna);
-      const bloqueY = firmaY + (firmaH * fila);
+      const x = 10 + (firmaW * i);
 
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(9);
@@ -3918,57 +3897,59 @@ function conceptoPdfLimpio(item) {
       pdf.text(
         firma.titulo,
         x + (firmaW / 2),
-        bloqueY + 7,
+        firmaY + 8,
         { align: 'center' }
       );
 
-      if (firma.subtitulo) {
-        pdf.setFontSize(6.6);
+      pdf.setFontSize(6.8);
+      pdf.text(
+        firma.subtitulo,
+        x + (firmaW / 2),
+        firmaY + 13,
+        { align: 'center' }
+      );
+
+      if (i === 0 && firma.nombre) {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7.2);
+        pdf.setTextColor(0, 0, 0);
+
         pdf.text(
-          firma.subtitulo,
+          limpiarTexto(firma.nombre),
           x + (firmaW / 2),
-          bloqueY + 11,
-          { align: 'center' }
+          firmaY + 21,
+          {
+            align: 'center',
+            maxWidth: firmaW - 12
+          }
         );
       }
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(7.2);
-      pdf.setTextColor(0, 0, 0);
-
-      pdf.text(
-        limpiarTexto(firma.nombre),
-        x + (firmaW / 2),
-        bloqueY + 18,
-        {
-          align: 'center',
-          maxWidth: firmaW - 12
-        }
-      );
 
       pdf.setDrawColor(0, 0, 0);
       pdf.line(
         x + 13,
-        bloqueY + 29,
+        firmaY + 33,
         x + firmaW - 13,
-        bloqueY + 29
+        firmaY + 33
       );
 
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(6.8);
+      pdf.setTextColor(0, 0, 0);
+
       pdf.text(
-        'FIRMA',
+        i === 0 ? 'FIRMA' : 'NOMBRE Y FIRMA',
         x + (firmaW / 2),
-        bloqueY + 34,
+        firmaY + 39,
         { align: 'center' }
       );
     });
 
-    y = firmaY + totalH + 9;
+    y = firmaY + firmaH + 9;
   }
 
   function imprimirDatosInformativos(totalSolicitado, totalSurtido) {
-    ensureSpace(48);
+    ensureSpace(62);
 
     pdf.setDrawColor(
       0,
@@ -3979,7 +3960,7 @@ function conceptoPdfLimpio(item) {
     pdf.setLineWidth(.35);
 
     const boxY = y;
-    const boxH = 42;
+    const boxH = 54;
 
     pdf.rect(
       10,
@@ -4007,7 +3988,7 @@ function conceptoPdfLimpio(item) {
       boxY + 7
     );
 
-    pdf.setFontSize(7.8);
+    pdf.setFontSize(7.6);
 
     pdf.setTextColor(
       0,
@@ -4027,21 +4008,29 @@ function conceptoPdfLimpio(item) {
       [
         'Almacén origen',
         payload.almacen_origen || '-'
+      ],
+      [
+        'Fecha',
+        fechaMx(payload.fecha_guardado)
       ]
     ];
 
     const datosDer = [
       [
-        'Fecha',
-        fechaMx(payload.fecha_guardado)
+        'Capturó',
+        payload.quien_captura || '-'
+      ],
+      [
+        'Surtió',
+        payload.quien_surte || '-'
+      ],
+      [
+        'Llevó',
+        payload.quien_lleva || '-'
       ],
       [
         'Estatus',
         payload.estatus || '-'
-      ],
-      [
-        'Quién surtió',
-        payload.quien_surte || '-'
       ]
     ];
 
@@ -4097,10 +4086,10 @@ function conceptoPdfLimpio(item) {
 
       pdf.text(
         String(dato[1] || '-'),
-        142,
+        137,
         yy,
         {
-          maxWidth: 58
+          maxWidth: 63
         }
       );
     });
@@ -4115,13 +4104,13 @@ function conceptoPdfLimpio(item) {
     pdf.text(
       `Importe solicitado: ${money(totalSolicitado)}`,
       14,
-      boxY + 38
+      boxY + 50
     );
 
     pdf.text(
       `Importe surtido: ${money(totalSurtido)}`,
       112,
-      boxY + 38
+      boxY + 50
     );
 
     y = boxY + boxH + 8;

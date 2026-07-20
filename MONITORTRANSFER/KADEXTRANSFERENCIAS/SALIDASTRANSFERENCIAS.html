@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kárdex SKU | PROVSOFT</title>
+  <meta name="theme-color" content="#0f4f86">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./assets/css/app.css">
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <h1>Kárdex SKU Multidireccional</h1>
+      <p>Consulta cronológica de entradas y salidas por artículo.</p>
+    </div>
+    <span class="brand">PROVSOFT</span>
+  </header>
+
+  <main class="page">
+    <section class="card filters-card">
+      <div class="filters-grid single-search">
+        <label class="field search-field">
+          <span>SKU, código o descripción</span>
+          <input type="text" id="busqueda" autocomplete="off" placeholder="Ej. BIG 3.3, COLA BIG o 750...">
+          <div id="sugerencias" class="suggestions" hidden></div>
+        </label>
+
+        <button id="btnBuscar" class="btn btn-primary">Buscar historial</button>
+        <button id="btnLimpiar" class="btn btn-secondary">Limpiar</button>
+      </div>
+
+      <div id="productoSeleccionado" class="selected-product" hidden>
+        <div>
+          <span>Artículo seleccionado</span>
+          <strong id="productoCodigo">-</strong>
+          <b id="productoDescripcion">-</b>
+        </div>
+      </div>
+      <div id="estado" class="status">Capture un código o descripción y seleccione el artículo.</div>
+    </section>
+
+    <section class="card results-card">
+      <div class="results-head">
+        <div>
+          <h2 id="tituloResultado">Historial de movimientos</h2>
+          <p id="subtituloResultado">Sin consulta.</p>
+        </div>
+        <button id="btnImprimir" class="btn btn-secondary" disabled>Imprimir página</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Movimiento</th>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Cantidad</th>
+              <th>Origen</th>
+              <th>Destino / almacén</th>
+              <th>Folio</th>
+              <th>Responsable</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyResultados">
+            <tr><td colspan="9" class="empty">No hay resultados.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button id="btnAnterior" class="btn btn-secondary" disabled>← Anterior</button>
+        <span id="paginaTexto">Página 0</span>
+        <button id="btnSiguiente" class="btn btn-primary" disabled>Siguiente →</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./assets/js/app.js"></script>
+</body>
+</html>

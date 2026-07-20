@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>PROVSOFT | Menú de Sucursales</title>
+
+  <style>
+    :root{
+      --rojo:#991b1b;
+      --rojo-oscuro:#7f1d1d;
+      --rojo-suave:#fef2f2;
+      --blanco:#ffffff;
+      --fondo:#f3f4f6;
+      --texto:#1f2937;
+      --gris:#6b7280;
+      --borde:#e5e7eb;
+      --verde:#15803d;
+      --azul:#1d4ed8;
+      --naranja:#c2410c;
+      --sombra:0 18px 45px rgba(0,0,0,.12);
+    }
+
+    *{
+      box-sizing:border-box;
+    }
+
+    html,
+    body{
+      margin:0;
+      min-height:100%;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--fondo);
+      color:var(--texto);
+    }
+
+    button,
+    a{
+      font:inherit;
+    }
+
+    body{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top left, rgba(153,27,27,.10), transparent 35%),
+        linear-gradient(180deg,#f9fafb,#eef2f7);
+    }
+
+    .oculto{
+      display:none !important;
+    }
+
+    .encabezado{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      min-height:76px;
+      padding:14px 24px;
+      color:var(--blanco);
+      background:
+        linear-gradient(135deg,var(--rojo-oscuro),var(--rojo));
+      box-shadow:0 8px 25px rgba(127,29,29,.30);
+    }
+
+    .marca{
+      display:flex;
+      align-items:center;
+      gap:13px;
+    }
+
+    .logo{
+      display:grid;
+      place-items:center;
+      width:48px;
+      height:48px;
+      flex-shrink:0;
+      border-radius:15px;
+      color:var(--rojo);
+      background:var(--blanco);
+      font-size:15px;
+      font-weight:900;
+      box-shadow:0 5px 14px rgba(0,0,0,.15);
+    }
+
+    .marca h1{
+      margin:0;
+      font-size:22px;
+    }
+
+    .marca p{
+      margin:4px 0 0;
+      color:#fecaca;
+      font-size:13px;
+    }
+
+    .btn-salir-vista{
+      display:none;
+      min-height:40px;
+      padding:9px 14px;
+      border:1px solid rgba(255,255,255,.25);
+      border-radius:11px;
+      color:var(--blanco);
+      background:rgba(255,255,255,.12);
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .contenedor{
+      width:min(1200px,calc(100% - 30px));
+      margin:34px auto;
+    }
+
+    .introduccion{
+      margin-bottom:24px;
+      text-align:center;
+    }
+
+    .introduccion h2{
+      margin:0 0 8px;
+      color:var(--rojo);
+      font-size:30px;
+    }
+
+    .introduccion p{
+      margin:0;
+      color:var(--gris);
+      font-size:15px;
+    }
+
+    .rejilla{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:20px;
+    }
+
+    .tarjeta{
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:300px;
+      border:1px solid var(--borde);
+      border-radius:22px;
+      background:var(--blanco);
+      box-shadow:var(--sombra);
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease;
+    }
+
+    .tarjeta:hover{
+      transform:translateY(-5px);
+      box-shadow:0 24px 55px rgba(0,0,0,.16);
+    }
+
+    .franja{
+      height:9px;
+      background:var(--rojo);
+    }
+
+    .tarjeta.ruta1 .franja{
+      background:var(--azul);
+    }
+
+    .tarjeta.ruta2 .franja{
+      background:var(--naranja);
+    }
+
+    .contenido-tarjeta{
+      display:flex;
+      flex:1;
+      flex-direction:column;
+      padding:23px;
+    }
+
+    .icono{
+      display:grid;
+      place-items:center;
+      width:66px;
+      height:66px;
+      margin-bottom:18px;
+      border-radius:19px;
+      color:var(--blanco);
+      background:var(--rojo);
+      font-size:30px;
+      font-weight:900;
+      box-shadow:0 9px 22px rgba(153,27,27,.25);
+    }
+
+    .ruta1 .icono{
+      background:var(--azul);
+      box-shadow:0 9px 22px rgba(29,78,216,.25);
+    }
+
+    .ruta2 .icono{
+      background:var(--naranja);
+      box-shadow:0 9px 22px rgba(194,65,12,.25);
+    }
+
+    .tarjeta h3{
+      margin:0 0 9px;
+      font-size:22px;
+    }
+
+    .tarjeta p{
+      flex:1;
+      margin:0 0 22px;
+      color:var(--gris);
+      font-size:14px;
+      line-height:1.55;
+    }
+
+    .acciones{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .boton{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:43px;
+      padding:10px 12px;
+      border:0;
+      border-radius:11px;
+      font-weight:900;
+      text-decoration:none;
+      cursor:pointer;
+      transition:
+        opacity .15s ease,
+        transform .15s ease;
+    }
+
+    .boton:hover{
+      opacity:.92;
+      transform:translateY(-1px);
+    }
+
+    .boton-principal{
+      color:var(--blanco);
+      background:var(--rojo);
+    }
+
+    .ruta1 .boton-principal{
+      background:var(--azul);
+    }
+
+    .ruta2 .boton-principal{
+      background:var(--naranja);
+    }
+
+    .boton-secundario{
+      color:#374151;
+      background:#f3f4f6;
+    }
+
+    .pie{
+      margin-top:28px;
+      color:var(--gris);
+      text-align:center;
+      font-size:12px;
+    }
+
+    .vista-app{
+      display:none;
+      width:100%;
+      height:calc(100vh - 76px);
+      background:#fff;
+    }
+
+    .vista-app.activa{
+      display:block;
+    }
+
+    .vista-app iframe{
+      display:block;
+      width:100%;
+      height:100%;
+      border:0;
+      background:#fff;
+    }
+
+    .cargando{
+      position:absolute;
+      inset:76px 0 0;
+      z-index:20;
+      display:none;
+      place-items:center;
+      background:rgba(255,255,255,.96);
+    }
+
+    .cargando.activo{
+      display:grid;
+    }
+
+    .cargando-contenido{
+      text-align:center;
+    }
+
+    .spinner{
+      width:46px;
+      height:46px;
+      margin:0 auto 14px;
+      border:4px solid #fee2e2;
+      border-top-color:var(--rojo);
+      border-radius:50%;
+      animation:girar .8s linear infinite;
+    }
+
+    @keyframes girar{
+      to{
+        transform:rotate(360deg);
+      }
+    }
+
+    @media(max-width:900px){
+      .rejilla{
+        grid-template-columns:1fr;
+      }
+
+      .tarjeta{
+        min-height:250px;
+      }
+    }
+
+    @media(max-width:600px){
+      .encabezado{
+        padding:12px 14px;
+      }
+
+      .marca h1{
+        font-size:17px;
+      }
+
+      .marca p{
+        display:none;
+      }
+
+      .logo{
+        width:43px;
+        height:43px;
+      }
+
+      .contenedor{
+        width:min(100% - 18px,1200px);
+        margin:20px auto;
+      }
+
+      .introduccion h2{
+        font-size:24px;
+      }
+
+      .contenido-tarjeta{
+        padding:18px;
+      }
+
+      .acciones{
+        grid-template-columns:1fr;
+      }
+
+      .btn-salir-vista{
+        padding:8px 10px;
+        font-size:12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="encabezado">
+    <div class="marca">
+      <div class="logo">PS</div>
+
+      <div>
+        <h1>PROVSOFT | Menú de Sucursales</h1>
+        <p>Acceso centralizado a las aplicaciones</p>
+      </div>
+    </div>
+
+    <button
+      id="btnVolver"
+      class="btn-salir-vista"
+      type="button"
+    >
+      ← Volver al menú
+    </button>
+  </header>
+
+  <main id="menuPrincipal" class="contenedor">
+
+    <section class="introduccion">
+      <h2>Seleccione una aplicación</h2>
+      <p>
+        Puede abrirla dentro de este menú o en una pestaña nueva.
+      </p>
+    </section>
+
+    <section class="rejilla">
+
+      <article class="tarjeta">
+        <div class="franja"></div>
+
+        <div class="contenido-tarjeta">
+          <div class="icono">C</div>
+
+          <h3>Cigarro</h3>
+
+          <p>
+            Administración y operación del almacén de cigarro.
+          </p>
+
+          <div class="acciones">
+            <button
+              class="boton boton-principal"
+              type="button"
+              data-url="https://licaptio.github.io/SUCURSALESPDD/CIGARRO/menuadmon.html"
+              data-titulo="Cigarro"
+            >
+              Abrir aquí
+            </button>
+
+            <a
+              class="boton boton-secundario"
+              href="https://licaptio.github.io/SUCURSALESPDD/CIGARRO/menuadmon.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Nueva pestaña
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <article class="tarjeta ruta1">
+        <div class="franja"></div>
+
+        <div class="contenido-tarjeta">
+          <div class="icono">R1</div>
+
+          <h3>Ruta 1</h3>
+
+          <p>
+            Acceso al menú principal de operaciones correspondientes
+            a Ruta 1.
+          </p>
+
+          <div class="acciones">
+            <button
+              class="boton boton-principal"
+              type="button"
+              data-url="https://licaptio.github.io/SUCURSALESPDD/RUTA1/menuprincipalr1pdd.html"
+              data-titulo="Ruta 1"
+            >
+              Abrir aquí
+            </button>
+
+            <a
+              class="boton boton-secundario"
+              href="https://licaptio.github.io/SUCURSALESPDD/RUTA1/menuprincipalr1pdd.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Nueva pestaña
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <article class="tarjeta ruta2">
+        <div class="franja"></div>
+
+        <div class="contenido-tarjeta">
+          <div class="icono">R2</div>
+
+          <h3>Ruta 2</h3>
+
+          <p>
+            Acceso al índice principal de operación correspondiente
+            a Ruta 2.
+          </p>
+
+          <div class="acciones">
+            <button
+              class="boton boton-principal"
+              type="button"
+              data-url="https://licaptio.github.io/SUCURSALESPDD/RUTA2/indicemenur2asdsvarfhbwrtyn.html"
+              data-titulo="Ruta 2"
+            >
+              Abrir aquí
+            </button>
+
+            <a
+              class="boton boton-secundario"
+              href="https://licaptio.github.io/SUCURSALESPDD/RUTA2/indicemenur2asdsvarfhbwrtyn.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Nueva pestaña
+            </a>
+          </div>
+        </div>
+      </article>
+
+    </section>
+
+    <div class="pie">
+      PROVSOFT · Menú general de aplicaciones
+    </div>
+
+  </main>
+
+  <section id="vistaApp" class="vista-app">
+    <iframe
+      id="marcoApp"
+      title="Aplicación seleccionada"
+      allow="clipboard-read; clipboard-write"
+    ></iframe>
+  </section>
+
+  <div id="cargando" class="cargando">
+    <div class="cargando-contenido">
+      <div class="spinner"></div>
+      <strong id="textoCargando">Abriendo aplicación...</strong>
+    </div>
+  </div>
+
+  <script>
+    const menuPrincipal = document.getElementById("menuPrincipal");
+    const vistaApp = document.getElementById("vistaApp");
+    const marcoApp = document.getElementById("marcoApp");
+    const btnVolver = document.getElementById("btnVolver");
+    const cargando = document.getElementById("cargando");
+    const textoCargando = document.getElementById("textoCargando");
+
+    document.addEventListener("click", function(evento){
+      const boton = evento.target.closest(
+        "button[data-url][data-titulo]"
+      );
+
+      if(!boton){
+        return;
+      }
+
+      const url = boton.dataset.url;
+      const titulo = boton.dataset.titulo;
+
+      abrirAplicacion(url, titulo);
+    });
+
+    function abrirAplicacion(url, titulo){
+      textoCargando.textContent = `Abriendo ${titulo}...`;
+      cargando.classList.add("activo");
+
+      menuPrincipal.classList.add("oculto");
+      vistaApp.classList.add("activa");
+      btnVolver.style.display = "inline-flex";
+
+      marcoApp.title = titulo;
+      marcoApp.src = url;
+    }
+
+    marcoApp.addEventListener("load", function(){
+      cargando.classList.remove("activo");
+    });
+
+    btnVolver.addEventListener("click", volverAlMenu);
+
+    function volverAlMenu(){
+      marcoApp.src = "about:blank";
+
+      vistaApp.classList.remove("activa");
+      menuPrincipal.classList.remove("oculto");
+      btnVolver.style.display = "none";
+      cargando.classList.remove("activo");
+
+      document.title = "PROVSOFT | Menú de Sucursales";
+    }
+
+    window.addEventListener("keydown", function(evento){
+      if(
+        evento.key === "Escape" &&
+        vistaApp.classList.contains("activa")
+      ){
+        volverAlMenu();
+      }
+    });
+  </script>
+
+</body>
+</html>

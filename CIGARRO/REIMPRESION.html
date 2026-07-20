@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Visualizador de Salidas de Cigarro | PROVSOFT</title>
+
+  <style>
+    :root {
+      --principal: #991b1b;
+      --principal-oscuro: #7f1d1d;
+      --principal-claro: #fef2f2;
+      --blanco: #ffffff;
+      --fondo: #f4f6f8;
+      --texto: #1f2937;
+      --texto-secundario: #6b7280;
+      --borde: #e5e7eb;
+      --verde: #15803d;
+      --rojo: #dc2626;
+      --azul: #2563eb;
+      --amarillo: #d97706;
+      --sombra: 0 12px 32px rgba(0, 0, 0, 0.09);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .oculto {
+      display: none !important;
+    }
+
+    /* =========================================================
+       ENCABEZADO
+    ========================================================= */
+
+    .encabezado {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 72px;
+      padding: 12px 24px;
+      color: var(--blanco);
+      background:
+        linear-gradient(
+          135deg,
+          var(--principal-oscuro),
+          var(--principal)
+        );
+      box-shadow: 0 6px 20px rgba(127, 29, 29, 0.25);
+    }
+
+    .marca {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .logo {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      flex-shrink: 0;
+      border-radius: 14px;
+      color: var(--principal);
+      background: var(--blanco);
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .marca-texto {
+      min-width: 0;
+    }
+
+    .marca-texto h1 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.15;
+    }
+
+    .marca-texto p {
+      margin: 4px 0 0;
+      color: #fecaca;
+      font-size: 13px;
+    }
+
+    .estado-conexion {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .punto-estado {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #fbbf24;
+      box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.18);
+    }
+
+    .estado-conexion.conectado .punto-estado {
+      background: #4ade80;
+      box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.18);
+    }
+
+    .estado-conexion.error .punto-estado {
+      background: #f87171;
+      box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.18);
+    }
+
+    /* =========================================================
+       CONTENIDO GENERAL
+    ========================================================= */
+
+    .contenedor {
+      width: min(1450px, calc(100% - 32px));
+      margin: 24px auto 50px;
+    }
+
+    .resumen {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .tarjeta-resumen {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--borde);
+      border-radius: 18px;
+      background: var(--blanco);
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.05);
+    }
+
+    .tarjeta-resumen span {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--texto-secundario);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tarjeta-resumen strong {
+      display: block;
+      overflow: hidden;
+      color: var(--principal);
+      font-size: 27px;
+      line-height: 1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* =========================================================
+       FILTROS
+    ========================================================= */
+
+    .panel-filtros {
+      margin-bottom: 18px;
+      padding: 18px;
+      border: 1px solid var(--borde);
+      border-radius: 18px;
+      background: var(--blanco);
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.05);
+    }
+
+    .titulo-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .titulo-panel h2 {
+      margin: 0;
+      color: var(--principal);
+      font-size: 18px;
+    }
+
+    .filtros {
+      display: grid;
+      grid-template-columns: minmax(250px, 2fr) repeat(2, minmax(150px, 1fr)) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .campo {
+      min-width: 0;
+    }
+
+    .campo label {
+      display: block;
+      margin-bottom: 6px;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .campo input,
+    .campo select {
+      width: 100%;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 11px;
+      outline: none;
+      color: var(--texto);
+      background: var(--blanco);
+      transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    .campo input:focus,
+    .campo select:focus {
+      border-color: var(--principal);
+      box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.12);
+    }
+
+    .acciones-filtros {
+      display: flex;
+      gap: 8px;
+    }
+
+    .boton {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 10px 15px;
+      border: 0;
+      border-radius: 11px;
+      font-weight: 800;
+      transition:
+        transform 0.15s ease,
+        opacity 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .boton:hover {
+      transform: translateY(-1px);
+    }
+
+    .boton:active {
+      transform: translateY(0);
+    }
+
+    .boton:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    .boton-principal {
+      color: var(--blanco);
+      background: var(--principal);
+      box-shadow: 0 5px 12px rgba(153, 27, 27, 0.2);
+    }
+
+    .boton-principal:hover {
+      background: var(--principal-oscuro);
+    }
+
+    .boton-secundario {
+      color: #374151;
+      background: #f3f4f6;
+    }
+
+    .boton-azul {
+      color: var(--blanco);
+      background: var(--azul);
+    }
+
+    .boton-verde {
+      color: var(--blanco);
+      background: var(--verde);
+    }
+
+    .boton-rojo {
+      color: var(--blanco);
+      background: var(--rojo);
+    }
+
+    /* =========================================================
+       TABLA PRINCIPAL
+    ========================================================= */
+
+    .panel-tabla {
+      overflow: hidden;
+      border: 1px solid var(--borde);
+      border-radius: 18px;
+      background: var(--blanco);
+      box-shadow: var(--sombra);
+    }
+
+    .cabecera-tabla {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 17px 20px;
+      border-bottom: 1px solid var(--borde);
+      background: #fff;
+    }
+
+    .cabecera-tabla h2 {
+      margin: 0;
+      color: var(--principal);
+      font-size: 18px;
+    }
+
+    .contador-resultados {
+      color: var(--texto-secundario);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .contenedor-tabla {
+      overflow: auto;
+      max-height: calc(100vh - 335px);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #edf0f2;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      color: #4b5563;
+      background: #f9fafb;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      font-size: 13px;
+    }
+
+    tbody tr {
+      transition: background 0.16s ease;
+    }
+
+    tbody tr:hover {
+      background: var(--principal-claro);
+    }
+
+    .folio {
+      color: var(--principal);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .texto-secundario {
+      color: var(--texto-secundario);
+      font-size: 12px;
+    }
+
+    .celda-persona {
+      min-width: 170px;
+    }
+
+    .celda-destino {
+      min-width: 150px;
+      font-weight: 700;
+    }
+
+    .etiqueta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: var(--principal);
+      background: #fee2e2;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .acciones-tabla {
+      display: flex;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .boton-tabla {
+      min-height: 34px;
+      padding: 7px 10px;
+      border-radius: 9px;
+      font-size: 12px;
+    }
+
+    /* =========================================================
+       ESTADOS
+    ========================================================= */
+
+    .estado-vacio,
+    .estado-carga {
+      display: grid;
+      place-items: center;
+      min-height: 300px;
+      padding: 35px;
+      color: var(--texto-secundario);
+      text-align: center;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 14px;
+      border: 4px solid #fee2e2;
+      border-top-color: var(--principal);
+      border-radius: 50%;
+      animation: girar 0.8s linear infinite;
+    }
+
+    @keyframes girar {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* =========================================================
+       MODAL DE DETALLE
+    ========================================================= */
+
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(17, 24, 39, 0.65);
+      backdrop-filter: blur(3px);
+    }
+
+    .modal {
+      display: flex;
+      flex-direction: column;
+      width: min(980px, 100%);
+      max-height: calc(100vh - 36px);
+      overflow: hidden;
+      border-radius: 20px;
+      background: var(--blanco);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+    }
+
+    .modal-encabezado {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 17px 20px;
+      color: var(--blanco);
+      background:
+        linear-gradient(
+          135deg,
+          var(--principal-oscuro),
+          var(--principal)
+        );
+    }
+
+    .modal-encabezado h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .cerrar-modal {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      flex-shrink: 0;
+      border: 0;
+      border-radius: 11px;
+      color: var(--blanco);
+      background: rgba(255, 255, 255, 0.16);
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .modal-cuerpo {
+      overflow: auto;
+      padding: 20px;
+    }
+
+    .modal-pie {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 15px 20px;
+      border-top: 1px solid var(--borde);
+      background: #f9fafb;
+    }
+
+    .datos-salida {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .dato {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid var(--borde);
+      border-radius: 13px;
+      background: #f9fafb;
+    }
+
+    .dato span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--texto-secundario);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .dato strong {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+
+    .tabla-detalle {
+      overflow: auto;
+      border: 1px solid var(--borde);
+      border-radius: 13px;
+    }
+
+    .tabla-detalle table {
+      min-width: 700px;
+    }
+
+    .totales-detalle {
+      display: flex;
+      justify-content: flex-end;
+      gap: 16px;
+      margin-top: 15px;
+    }
+
+    .total-detalle {
+      min-width: 160px;
+      padding: 12px 15px;
+      border: 1px solid #fecaca;
+      border-radius: 13px;
+      color: var(--principal);
+      background: var(--principal-claro);
+      text-align: center;
+    }
+
+    .total-detalle span {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .total-detalle strong {
+      font-size: 23px;
+    }
+
+    /* =========================================================
+       NOTIFICACIONES
+    ========================================================= */
+
+    .notificacion {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 500;
+      width: min(390px, calc(100% - 40px));
+      padding: 14px 16px;
+      border-radius: 13px;
+      color: var(--blanco);
+      background: #111827;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+      font-size: 14px;
+      font-weight: 700;
+      animation: aparecer 0.2s ease;
+    }
+
+    .notificacion.exito {
+      background: var(--verde);
+    }
+
+    .notificacion.error {
+      background: var(--rojo);
+    }
+
+    @keyframes aparecer {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* =========================================================
+       TICKET 80 MM
+    ========================================================= */
+
+    #zonaImpresion {
+      display: none;
+    }
+
+    .ticket {
+      width: 72mm;
+      margin: 0 auto;
+      padding: 2mm 1mm 4mm;
+      color: #000;
+      background: #fff;
+      font-family:
+        "Arial Narrow",
+        Arial,
+        Helvetica,
+        sans-serif;
+      font-size: 10.5px;
+      line-height: 1.25;
+    }
+
+    .ticket-empresa {
+      margin: 0;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+
+    .ticket-titulo {
+      margin: 3px 0 7px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .ticket-separador {
+      margin: 5px 0;
+      border-top: 1px dashed #000;
+    }
+
+    .ticket-dato {
+      margin: 2px 0;
+      overflow-wrap: anywhere;
+    }
+
+    .ticket-dato strong {
+      font-weight: 900;
+    }
+
+    .ticket-tabla {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+
+    .ticket-tabla th,
+    .ticket-tabla td {
+      position: static;
+      padding: 2px 1px;
+      border: 0;
+      color: #000;
+      background: transparent;
+      font-size: 9.5px;
+      line-height: 1.15;
+      vertical-align: top;
+    }
+
+    .ticket-tabla th {
+      border-bottom: 1px solid #000;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .ticket-col-cantidad {
+      width: 12mm;
+      text-align: center !important;
+    }
+
+    .ticket-col-codigo {
+      width: 20mm;
+    }
+
+    .ticket-producto {
+      padding-top: 3px !important;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .ticket-descripcion {
+      display: block;
+      font-weight: 800;
+    }
+
+    .ticket-marca {
+      display: block;
+      margin-top: 1px;
+      font-size: 8.5px;
+    }
+
+    .ticket-totales {
+      margin-top: 5px;
+      text-align: right;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .ticket-pie {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 9px;
+    }
+
+    /* =========================================================
+       RESPONSIVO
+    ========================================================= */
+
+    @media (max-width: 1000px) {
+      .resumen {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .filtros {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .campo-busqueda {
+        grid-column: span 2;
+      }
+
+      .acciones-filtros {
+        grid-column: span 2;
+      }
+
+      .datos-salida {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 650px) {
+      .encabezado {
+        align-items: flex-start;
+        padding: 12px 15px;
+      }
+
+      .marca-texto h1 {
+        font-size: 17px;
+      }
+
+      .marca-texto p,
+      .estado-conexion span:last-child {
+        display: none;
+      }
+
+      .estado-conexion {
+        padding: 8px;
+      }
+
+      .contenedor {
+        width: min(100% - 18px, 1450px);
+        margin-top: 12px;
+      }
+
+      .resumen {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .tarjeta-resumen {
+        padding: 14px 12px;
+        border-radius: 14px;
+      }
+
+      .tarjeta-resumen strong {
+        font-size: 22px;
+      }
+
+      .panel-filtros {
+        padding: 14px;
+      }
+
+      .filtros {
+        grid-template-columns: 1fr;
+      }
+
+      .campo-busqueda,
+      .acciones-filtros {
+        grid-column: span 1;
+      }
+
+      .acciones-filtros {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .datos-salida {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-fondo {
+        padding: 0;
+      }
+
+      .modal {
+        width: 100%;
+        max-height: 100vh;
+        height: 100vh;
+        border-radius: 0;
+      }
+
+      .modal-pie {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .totales-detalle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .total-detalle {
+        min-width: 0;
+      }
+    }
+
+    /* =========================================================
+       IMPRESIÓN
+    ========================================================= */
+
+    @media print {
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 80mm !important;
+        min-width: 80mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+
+      body * {
+        visibility: hidden !important;
+      }
+
+      #zonaImpresion,
+      #zonaImpresion * {
+        visibility: visible !important;
+      }
+
+      #zonaImpresion {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        display: block !important;
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .ticket {
+        display: block !important;
+        width: 72mm !important;
+        margin: 0 auto !important;
+        padding: 2mm 0 5mm !important;
+        color: #000 !important;
+        background: #fff !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="encabezado">
+    <div class="marca">
+      <div class="logo">PS</div>
+
+      <div class="marca-texto">
+        <h1>PROVSOFT | Salidas de Cigarro</h1>
+        <p>Consulta y reimpresión para miniprinter de 80 mm</p>
+      </div>
+    </div>
+
+    <div id="estadoConexion" class="estado-conexion">
+      <span class="punto-estado"></span>
+      <span id="textoEstado">Conectando...</span>
+    </div>
+  </header>
+
+  <main class="contenedor">
+
+    <section class="resumen">
+      <article class="tarjeta-resumen">
+        <span>Salidas cargadas</span>
+        <strong id="totalSalidas">0</strong>
+      </article>
+
+      <article class="tarjeta-resumen">
+        <span>Resultados visibles</span>
+        <strong id="totalResultados">0</strong>
+      </article>
+
+      <article class="tarjeta-resumen">
+        <span>Piezas visibles</span>
+        <strong id="totalPiezas">0</strong>
+      </article>
+
+      <article class="tarjeta-resumen">
+        <span>Último folio</span>
+        <strong id="ultimoFolio">—</strong>
+      </article>
+    </section>
+
+    <section class="panel-filtros">
+      <div class="titulo-panel">
+        <h2>Buscar salidas</h2>
+      </div>
+
+      <div class="filtros">
+        <div class="campo campo-busqueda">
+          <label for="buscador">Búsqueda general</label>
+
+          <input
+            id="buscador"
+            type="search"
+            autocomplete="off"
+            placeholder="Folio, destino, persona, código o descripción..."
+          >
+        </div>
+
+        <div class="campo">
+          <label for="fechaInicio">Desde</label>
+          <input id="fechaInicio" type="date">
+        </div>
+
+        <div class="campo">
+          <label for="fechaFin">Hasta</label>
+          <input id="fechaFin" type="date">
+        </div>
+
+        <div class="acciones-filtros">
+          <button
+            id="btnAplicarFiltros"
+            class="boton boton-principal"
+            type="button"
+          >
+            Buscar
+          </button>
+
+          <button
+            id="btnLimpiarFiltros"
+            class="boton boton-secundario"
+            type="button"
+          >
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-tabla">
+      <div class="cabecera-tabla">
+        <h2>Registro de salidas</h2>
+
+        <span
+          id="contadorResultados"
+          class="contador-resultados"
+        >
+          0 resultados
+        </span>
+      </div>
+
+      <div id="estadoCarga" class="estado-carga">
+        <div>
+          <div class="spinner"></div>
+          <strong>Cargando salidas...</strong>
+          <p>Consultando Firebase</p>
+        </div>
+      </div>
+
+      <div id="estadoVacio" class="estado-vacio oculto">
+        <div>
+          <h3>No se encontraron salidas</h3>
+          <p>Modifica los filtros o verifica que existan documentos.</p>
+        </div>
+      </div>
+
+      <div id="contenedorTabla" class="contenedor-tabla oculto">
+        <table>
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Fecha</th>
+              <th>Destino</th>
+              <th>Entrega</th>
+              <th>Recibe</th>
+              <th>Productos</th>
+              <th>Piezas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody id="tablaSalidas"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE DETALLE -->
+  <div
+    id="modalFondo"
+    class="modal-fondo oculto"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tituloModal"
+  >
+    <div class="modal">
+      <div class="modal-encabezado">
+        <h2 id="tituloModal">Detalle de salida</h2>
+
+        <button
+          id="btnCerrarModalSuperior"
+          class="cerrar-modal"
+          type="button"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </div>
+
+      <div id="modalCuerpo" class="modal-cuerpo"></div>
+
+      <div class="modal-pie">
+        <button
+          id="btnCerrarModal"
+          class="boton boton-secundario"
+          type="button"
+        >
+          Cerrar
+        </button>
+
+        <button
+          id="btnImprimirModal"
+          class="boton boton-verde"
+          type="button"
+        >
+          Imprimir en 80 mm
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÚNICO CONTENIDO QUE SE IMPRIME -->
+  <section id="zonaImpresion"></section>
+
+  <div id="notificacion" class="notificacion oculto"></div>
+
+  <script type="module">
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+    import {
+      getFirestore,
+      collection,
+      onSnapshot,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    /* =========================================================
+       CONFIGURACIÓN FIREBASE
+    ========================================================= */
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+      authDomain: "inventariopv-643f1.firebaseapp.com",
+      projectId: "inventariopv-643f1",
+      storageBucket: "inventariopv-643f1.firebasestorage.app",
+      messagingSenderId: "96242533231",
+      appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    /*
+      Ruta Firestore:
+
+      almacenes
+        └── almacen_cigarro
+              └── salidas1.0
+                    └── documentos
+    */
+
+    const referenciaSalidas = collection(
+      db,
+      "almacenes",
+      "almacen_cigarro",
+      "salidas1.0"
+    );
+
+    /* =========================================================
+       ESTADO DE LA APLICACIÓN
+    ========================================================= */
+
+    let salidas = [];
+    let salidasFiltradas = [];
+    let salidaSeleccionada = null;
+    let temporizadorNotificacion = null;
+
+    /* =========================================================
+       REFERENCIAS HTML
+    ========================================================= */
+
+    const elementos = {
+      estadoConexion: document.getElementById("estadoConexion"),
+      textoEstado: document.getElementById("textoEstado"),
+
+      totalSalidas: document.getElementById("totalSalidas"),
+      totalResultados: document.getElementById("totalResultados"),
+      totalPiezas: document.getElementById("totalPiezas"),
+      ultimoFolio: document.getElementById("ultimoFolio"),
+
+      buscador: document.getElementById("buscador"),
+      fechaInicio: document.getElementById("fechaInicio"),
+      fechaFin: document.getElementById("fechaFin"),
+      btnAplicarFiltros: document.getElementById("btnAplicarFiltros"),
+      btnLimpiarFiltros: document.getElementById("btnLimpiarFiltros"),
+
+      contadorResultados: document.getElementById("contadorResultados"),
+      estadoCarga: document.getElementById("estadoCarga"),
+      estadoVacio: document.getElementById("estadoVacio"),
+      contenedorTabla: document.getElementById("contenedorTabla"),
+      tablaSalidas: document.getElementById("tablaSalidas"),
+
+      modalFondo: document.getElementById("modalFondo"),
+      tituloModal: document.getElementById("tituloModal"),
+      modalCuerpo: document.getElementById("modalCuerpo"),
+      btnCerrarModalSuperior:
+        document.getElementById("btnCerrarModalSuperior"),
+      btnCerrarModal: document.getElementById("btnCerrarModal"),
+      btnImprimirModal: document.getElementById("btnImprimirModal"),
+
+      zonaImpresion: document.getElementById("zonaImpresion"),
+      notificacion: document.getElementById("notificacion")
+    };
+
+    /* =========================================================
+       FUNCIONES GENERALES
+    ========================================================= */
+
+    function escaparHTML(valor) {
+      return String(valor ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizarTexto(valor) {
+      return String(valor ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function convertirNumero(valor) {
+      const numero = Number(valor);
+      return Number.isFinite(numero) ? numero : 0;
+    }
+
+    function formatearNumero(valor) {
+      return convertirNumero(valor).toLocaleString("es-MX", {
+        maximumFractionDigits: 2
+      });
+    }
+
+    function obtenerProductos(salida) {
+      if (Array.isArray(salida?.productos)) {
+        return salida.productos;
+      }
+
+      if (Array.isArray(salida?.detalle)) {
+        return salida.detalle;
+      }
+
+      if (Array.isArray(salida?.articulos)) {
+        return salida.articulos;
+      }
+
+      return [];
+    }
+
+    function obtenerCantidadProducto(producto) {
+      return convertirNumero(
+        producto?.cantidad ??
+        producto?.piezas ??
+        producto?.cantidadSalida ??
+        0
+      );
+    }
+
+    function obtenerTotalPiezas(salida) {
+      return obtenerProductos(salida).reduce(
+        (total, producto) =>
+          total + obtenerCantidadProducto(producto),
+        0
+      );
+    }
+
+    function obtenerFechaObjeto(salida) {
+      const timestamp = salida?.timestamp;
+
+      if (timestamp && typeof timestamp.toDate === "function") {
+        const fechaTimestamp = timestamp.toDate();
+
+        if (!Number.isNaN(fechaTimestamp.getTime())) {
+          return fechaTimestamp;
+        }
+      }
+
+      if (
+        timestamp &&
+        typeof timestamp.seconds === "number"
+      ) {
+        const fechaTimestamp = new Date(timestamp.seconds * 1000);
+
+        if (!Number.isNaN(fechaTimestamp.getTime())) {
+          return fechaTimestamp;
+        }
+      }
+
+      const candidatos = [
+        salida?.fecha,
+        salida?.fechaSalida,
+        salida?.fecha_creacion,
+        salida?.createdAt
+      ];
+
+      for (const candidato of candidatos) {
+        const fecha = interpretarFecha(candidato);
+
+        if (fecha) {
+          return fecha;
+        }
+      }
+
+      return null;
+    }
+
+    function interpretarFecha(valor) {
+      if (!valor) {
+        return null;
+      }
+
+      if (valor instanceof Date) {
+        return Number.isNaN(valor.getTime()) ? null : valor;
+      }
+
+      if (typeof valor?.toDate === "function") {
+        const fecha = valor.toDate();
+        return Number.isNaN(fecha.getTime()) ? null : fecha;
+      }
+
+      const texto = String(valor).trim();
+
+      /*
+        Formatos esperados:
+        3/12/2025, 3:53:49 p.m.
+        03/12/2025 15:53
+        2025-12-03
+      */
+
+      const formatoLatino = texto.match(
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,|\s)*\s*(\d{1,2})?:?(\d{2})?:?(\d{2})?\s*(a\.?\s*m\.?|p\.?\s*m\.?)?$/i
+      );
+
+      if (formatoLatino) {
+        const dia = Number(formatoLatino[1]);
+        const mes = Number(formatoLatino[2]) - 1;
+        const anio = Number(formatoLatino[3]);
+        let hora = Number(formatoLatino[4] ?? 0);
+        const minuto = Number(formatoLatino[5] ?? 0);
+        const segundo = Number(formatoLatino[6] ?? 0);
+        const periodo = normalizarTexto(
+          formatoLatino[7] ?? ""
+        ).replaceAll(".", "").replaceAll(" ", "");
+
+        if (periodo === "pm" && hora < 12) {
+          hora += 12;
+        }
+
+        if (periodo === "am" && hora === 12) {
+          hora = 0;
+        }
+
+        const fecha = new Date(
+          anio,
+          mes,
+          dia,
+          hora,
+          minuto,
+          segundo
+        );
+
+        return Number.isNaN(fecha.getTime()) ? null : fecha;
+      }
+
+      const fechaDirecta = new Date(texto);
+
+      return Number.isNaN(fechaDirecta.getTime())
+        ? null
+        : fechaDirecta;
+    }
+
+    function formatearFecha(salida) {
+      const fecha = obtenerFechaObjeto(salida);
+
+      if (!fecha) {
+        return salida?.fecha || "Sin fecha";
+      }
+
+      return new Intl.DateTimeFormat("es-MX", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(fecha);
+    }
+
+    function formatearFechaCorta(salida) {
+      const fecha = obtenerFechaObjeto(salida);
+
+      if (!fecha) {
+        return salida?.fecha || "Sin fecha";
+      }
+
+      return new Intl.DateTimeFormat("es-MX", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      }).format(fecha);
+    }
+
+    function obtenerFolio(salida) {
+      return (
+        salida?.folio ||
+        salida?.numeroFolio ||
+        salida?.id ||
+        "SIN FOLIO"
+      );
+    }
+
+    function obtenerDestino(salida) {
+      return (
+        salida?.destino ||
+        salida?.sucursal ||
+        salida?.ruta ||
+        salida?.almacenDestino ||
+        "Sin destino"
+      );
+    }
+
+    function obtenerEntrega(salida) {
+      return (
+        salida?.entrega ||
+        salida?.entregadoPor ||
+        salida?.responsable ||
+        salida?.usuario ||
+        "No especificado"
+      );
+    }
+
+    function obtenerRecibe(salida) {
+      return (
+        salida?.recibe ||
+        salida?.recibio ||
+        salida?.recibidoPor ||
+        "No especificado"
+      );
+    }
+
+    function obtenerDescripcion(producto) {
+      return (
+        producto?.descripcion ||
+        producto?.concepto ||
+        producto?.nombre ||
+        "Producto sin descripción"
+      );
+    }
+
+    function obtenerCodigo(producto) {
+      return (
+        producto?.codigo ||
+        producto?.codigoBarras ||
+        producto?.id ||
+        ""
+      );
+    }
+
+    function ordenarSalidas(lista) {
+      return [...lista].sort((a, b) => {
+        const fechaA = obtenerFechaObjeto(a)?.getTime() ?? 0;
+        const fechaB = obtenerFechaObjeto(b)?.getTime() ?? 0;
+
+        if (fechaB !== fechaA) {
+          return fechaB - fechaA;
+        }
+
+        return obtenerFolio(b).localeCompare(
+          obtenerFolio(a),
+          "es",
+          {
+            numeric: true,
+            sensitivity: "base"
+          }
+        );
+      });
+    }
+
+    function mostrarNotificacion(
+      mensaje,
+      tipo = "normal",
+      duracion = 3200
+    ) {
+      clearTimeout(temporizadorNotificacion);
+
+      elementos.notificacion.textContent = mensaje;
+      elementos.notificacion.className = "notificacion";
+
+      if (tipo === "exito") {
+        elementos.notificacion.classList.add("exito");
+      }
+
+      if (tipo === "error") {
+        elementos.notificacion.classList.add("error");
+      }
+
+      elementos.notificacion.classList.remove("oculto");
+
+      temporizadorNotificacion = setTimeout(() => {
+        elementos.notificacion.classList.add("oculto");
+      }, duracion);
+    }
+
+    function establecerEstadoConexion(tipo, texto) {
+      elementos.estadoConexion.classList.remove(
+        "conectado",
+        "error"
+      );
+
+      if (tipo === "conectado") {
+        elementos.estadoConexion.classList.add("conectado");
+      }
+
+      if (tipo === "error") {
+        elementos.estadoConexion.classList.add("error");
+      }
+
+      elementos.textoEstado.textContent = texto;
+    }
+
+    /* =========================================================
+       FIRESTORE
+    ========================================================= */
+
+    function iniciarEscuchaFirestore() {
+      /*
+        Primero intenta ordenar por timestamp.
+        Si algún documento no tiene ese campo o el índice genera
+        problemas, se activa automáticamente la consulta sin orderBy.
+      */
+
+      const consultaOrdenada = query(
+        referenciaSalidas,
+        orderBy("timestamp", "desc")
+      );
+
+      let cambioInicial = true;
+
+      const cancelarConsulta = onSnapshot(
+        consultaOrdenada,
+        (snapshot) => {
+          procesarSnapshot(snapshot);
+
+          if (!cambioInicial) {
+            mostrarNotificacion(
+              "La lista de salidas se actualizó.",
+              "exito",
+              1800
+            );
+          }
+
+          cambioInicial = false;
+        },
+        (error) => {
+          console.warn(
+            "No se pudo ordenar por timestamp:",
+            error
+          );
+
+          cancelarConsulta();
+
+          iniciarEscuchaSinOrden();
+        }
+      );
+    }
+
+    function iniciarEscuchaSinOrden() {
+      let cambioInicial = true;
+
+      onSnapshot(
+        referenciaSalidas,
+        (snapshot) => {
+          procesarSnapshot(snapshot);
+
+          if (!cambioInicial) {
+            mostrarNotificacion(
+              "La lista de salidas se actualizó.",
+              "exito",
+              1800
+            );
+          }
+
+          cambioInicial = false;
+        },
+        (error) => {
+          console.error("Error al leer Firestore:", error);
+
+          establecerEstadoConexion(
+            "error",
+            "Error de conexión"
+          );
+
+          elementos.estadoCarga.classList.add("oculto");
+          elementos.contenedorTabla.classList.add("oculto");
+          elementos.estadoVacio.classList.remove("oculto");
+
+          elementos.estadoVacio.innerHTML = `
+            <div>
+              <h3>No fue posible cargar las salidas</h3>
+              <p>
+                ${escaparHTML(obtenerMensajeErrorFirestore(error))}
+              </p>
+            </div>
+          `;
+
+          mostrarNotificacion(
+            obtenerMensajeErrorFirestore(error),
+            "error",
+            6000
+          );
+        }
+      );
+    }
+
+    function procesarSnapshot(snapshot) {
+      salidas = snapshot.docs.map((documento) => {
+        const datos = documento.data();
+
+        /*
+          firmaEntrega no se agrega ni se procesa.
+          Tampoco se muestra ni se imprime.
+        */
+
+        const {
+          firmaEntrega,
+          firma,
+          firmaRecibe,
+          ...datosSinFirma
+        } = datos;
+
+        return {
+          id: documento.id,
+          ...datosSinFirma
+        };
+      });
+
+      salidas = ordenarSalidas(salidas);
+
+      establecerEstadoConexion(
+        "conectado",
+        "Conectado a Firebase"
+      );
+
+      elementos.estadoCarga.classList.add("oculto");
+
+      aplicarFiltros();
+    }
+
+    function obtenerMensajeErrorFirestore(error) {
+      const codigo = error?.code || "";
+
+      if (codigo.includes("permission-denied")) {
+        return "Firestore rechazó la lectura. Revisa las reglas de seguridad.";
+      }
+
+      if (codigo.includes("failed-precondition")) {
+        return "La consulta necesita un índice o una configuración adicional.";
+      }
+
+      if (codigo.includes("unavailable")) {
+        return "Firebase no está disponible temporalmente o no hay conexión.";
+      }
+
+      return error?.message || "Error desconocido al consultar Firebase.";
+    }
+
+    /* =========================================================
+       FILTROS
+    ========================================================= */
+
+    function aplicarFiltros() {
+      const textoBusqueda = normalizarTexto(
+        elementos.buscador.value
+      );
+
+      const fechaInicioTexto = elementos.fechaInicio.value;
+      const fechaFinTexto = elementos.fechaFin.value;
+
+      const fechaInicio = fechaInicioTexto
+        ? new Date(`${fechaInicioTexto}T00:00:00`)
+        : null;
+
+      const fechaFin = fechaFinTexto
+        ? new Date(`${fechaFinTexto}T23:59:59.999`)
+        : null;
+
+      salidasFiltradas = salidas.filter((salida) => {
+        const fechaSalida = obtenerFechaObjeto(salida);
+
+        if (
+          fechaInicio &&
+          (!fechaSalida || fechaSalida < fechaInicio)
+        ) {
+          return false;
+        }
+
+        if (
+          fechaFin &&
+          (!fechaSalida || fechaSalida > fechaFin)
+        ) {
+          return false;
+        }
+
+        if (!textoBusqueda) {
+          return true;
+        }
+
+        const productos = obtenerProductos(salida);
+
+        const contenidoProductos = productos
+          .map((producto) => {
+            return [
+              obtenerCodigo(producto),
+              obtenerDescripcion(producto),
+              producto?.marca,
+              producto?.unidad,
+              obtenerCantidadProducto(producto)
+            ].join(" ");
+          })
+          .join(" ");
+
+        const contenidoSalida = normalizarTexto([
+          salida?.id,
+          obtenerFolio(salida),
+          formatearFecha(salida),
+          obtenerDestino(salida),
+          obtenerEntrega(salida),
+          obtenerRecibe(salida),
+          contenidoProductos
+        ].join(" "));
+
+        return contenidoSalida.includes(textoBusqueda);
+      });
+
+      salidasFiltradas = ordenarSalidas(salidasFiltradas);
+
+      renderizarTabla();
+      actualizarResumen();
+    }
+
+    function limpiarFiltros() {
+      elementos.buscador.value = "";
+      elementos.fechaInicio.value = "";
+      elementos.fechaFin.value = "";
+
+      aplicarFiltros();
+    }
+
+    /* =========================================================
+       RENDERIZADO PRINCIPAL
+    ========================================================= */
+
+    function actualizarResumen() {
+      const piezasVisibles = salidasFiltradas.reduce(
+        (total, salida) => total + obtenerTotalPiezas(salida),
+        0
+      );
+
+      elementos.totalSalidas.textContent =
+        salidas.length.toLocaleString("es-MX");
+
+      elementos.totalResultados.textContent =
+        salidasFiltradas.length.toLocaleString("es-MX");
+
+      elementos.totalPiezas.textContent =
+        formatearNumero(piezasVisibles);
+
+      elementos.ultimoFolio.textContent =
+        salidas.length > 0
+          ? obtenerFolio(salidas[0])
+          : "—";
+
+      elementos.contadorResultados.textContent =
+        `${salidasFiltradas.length.toLocaleString("es-MX")} ` +
+        `${salidasFiltradas.length === 1 ? "resultado" : "resultados"}`;
+    }
+
+    function renderizarTabla() {
+      elementos.tablaSalidas.innerHTML = "";
+
+      if (salidasFiltradas.length === 0) {
+        elementos.contenedorTabla.classList.add("oculto");
+        elementos.estadoVacio.classList.remove("oculto");
+        return;
+      }
+
+      elementos.estadoVacio.classList.add("oculto");
+      elementos.contenedorTabla.classList.remove("oculto");
+
+      const fragmento = document.createDocumentFragment();
+
+      salidasFiltradas.forEach((salida) => {
+        const productos = obtenerProductos(salida);
+        const totalPiezas = obtenerTotalPiezas(salida);
+
+        const fila = document.createElement("tr");
+
+        fila.innerHTML = `
+          <td>
+            <span class="folio">
+              ${escaparHTML(obtenerFolio(salida))}
+            </span>
+          </td>
+
+          <td>
+            <strong>${escaparHTML(formatearFechaCorta(salida))}</strong>
+            <div class="texto-secundario">
+              ${escaparHTML(obtenerHoraSalida(salida))}
+            </div>
+          </td>
+
+          <td class="celda-destino">
+            ${escaparHTML(obtenerDestino(salida))}
+          </td>
+
+          <td class="celda-persona">
+            ${escaparHTML(obtenerEntrega(salida))}
+          </td>
+
+          <td class="celda-persona">
+            ${escaparHTML(obtenerRecibe(salida))}
+          </td>
+
+          <td>
+            <span class="etiqueta">
+              ${productos.length}
+            </span>
+          </td>
+
+          <td>
+            <strong>${formatearNumero(totalPiezas)}</strong>
+          </td>
+
+          <td>
+            <div class="acciones-tabla">
+              <button
+                class="boton boton-azul boton-tabla"
+                type="button"
+                data-accion="ver"
+                data-id="${escaparHTML(salida.id)}"
+              >
+                Ver
+              </button>
+
+              <button
+                class="boton boton-verde boton-tabla"
+                type="button"
+                data-accion="imprimir"
+                data-id="${escaparHTML(salida.id)}"
+              >
+                Imprimir
+              </button>
+            </div>
+          </td>
+        `;
+
+        fragmento.appendChild(fila);
+      });
+
+      elementos.tablaSalidas.appendChild(fragmento);
+    }
+
+    function obtenerHoraSalida(salida) {
+      const fecha = obtenerFechaObjeto(salida);
+
+      if (!fecha) {
+        return "";
+      }
+
+      return new Intl.DateTimeFormat("es-MX", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      }).format(fecha);
+    }
+
+    /* =========================================================
+       MODAL
+    ========================================================= */
+
+    function buscarSalidaPorId(id) {
+      return salidas.find(
+        (salida) => String(salida.id) === String(id)
+      );
+    }
+
+    function abrirDetalle(id) {
+      const salida = buscarSalidaPorId(id);
+
+      if (!salida) {
+        mostrarNotificacion(
+          "No se encontró la salida seleccionada.",
+          "error"
+        );
+        return;
+      }
+
+      salidaSeleccionada = salida;
+
+      elementos.tituloModal.textContent =
+        `Salida ${obtenerFolio(salida)}`;
+
+      elementos.modalCuerpo.innerHTML =
+        construirDetalleHTML(salida);
+
+      elementos.modalFondo.classList.remove("oculto");
+      document.body.style.overflow = "hidden";
+    }
+
+    function cerrarModal() {
+      elementos.modalFondo.classList.add("oculto");
+      document.body.style.overflow = "";
+    }
+
+    function construirDetalleHTML(salida) {
+      const productos = obtenerProductos(salida);
+      const totalPiezas = obtenerTotalPiezas(salida);
+
+      const filasProductos = productos.length
+        ? productos.map((producto, indice) => `
+            <tr>
+              <td>${indice + 1}</td>
+
+              <td>
+                ${escaparHTML(obtenerCodigo(producto) || "—")}
+              </td>
+
+              <td>
+                <strong>
+                  ${escaparHTML(obtenerDescripcion(producto))}
+                </strong>
+              </td>
+
+              <td>
+                ${escaparHTML(producto?.marca || "—")}
+              </td>
+
+              <td>
+                ${escaparHTML(producto?.unidad || "—")}
+              </td>
+
+              <td>
+                <strong>
+                  ${formatearNumero(obtenerCantidadProducto(producto))}
+                </strong>
+              </td>
+            </tr>
+          `).join("")
+        : `
+          <tr>
+            <td colspan="6">
+              No existen productos registrados.
+            </td>
+          </tr>
+        `;
+
+      return `
+        <div class="datos-salida">
+          <div class="dato">
+            <span>Folio</span>
+            <strong>
+              ${escaparHTML(obtenerFolio(salida))}
+            </strong>
+          </div>
+
+          <div class="dato">
+            <span>Fecha y hora</span>
+            <strong>
+              ${escaparHTML(formatearFecha(salida))}
+            </strong>
+          </div>
+
+          <div class="dato">
+            <span>Destino</span>
+            <strong>
+              ${escaparHTML(obtenerDestino(salida))}
+            </strong>
+          </div>
+
+          <div class="dato">
+            <span>Entrega</span>
+            <strong>
+              ${escaparHTML(obtenerEntrega(salida))}
+            </strong>
+          </div>
+
+          <div class="dato">
+            <span>Recibe</span>
+            <strong>
+              ${escaparHTML(obtenerRecibe(salida))}
+            </strong>
+          </div>
+
+          <div class="dato">
+            <span>ID de Firebase</span>
+            <strong>
+              ${escaparHTML(salida.id)}
+            </strong>
+          </div>
+        </div>
+
+        <div class="tabla-detalle">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Marca</th>
+                <th>Unidad</th>
+                <th>Cantidad</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${filasProductos}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="totales-detalle">
+          <div class="total-detalle">
+            <span>Productos distintos</span>
+            <strong>${productos.length}</strong>
+          </div>
+
+          <div class="total-detalle">
+            <span>Total de piezas</span>
+            <strong>${formatearNumero(totalPiezas)}</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    /* =========================================================
+       IMPRESIÓN 80 MM
+    ========================================================= */
+
+    function imprimirSalida(id) {
+      const salida = buscarSalidaPorId(id);
+
+      if (!salida) {
+        mostrarNotificacion(
+          "No se encontró la salida para imprimir.",
+          "error"
+        );
+        return;
+      }
+
+      salidaSeleccionada = salida;
+      prepararTicket(salida);
+
+      /*
+        El pequeño retraso permite que el navegador termine
+        de insertar el contenido antes de abrir la impresión.
+      */
+
+      setTimeout(() => {
+        window.print();
+      }, 100);
+    }
+
+    function prepararTicket(salida) {
+      const productos = obtenerProductos(salida);
+      const totalPiezas = obtenerTotalPiezas(salida);
+
+      const filasProductos = productos.length
+        ? productos.map((producto) => {
+            const codigo = obtenerCodigo(producto);
+            const descripcion = obtenerDescripcion(producto);
+            const marca = producto?.marca || "";
+            const unidad = producto?.unidad || "";
+            const cantidad = obtenerCantidadProducto(producto);
+
+            return `
+              <tr>
+                <td class="ticket-col-cantidad">
+                  ${formatearNumero(cantidad)}
+                </td>
+
+                <td class="ticket-col-codigo">
+                  ${escaparHTML(codigo || "—")}
+                </td>
+
+                <td class="ticket-producto">
+                  <span class="ticket-descripcion">
+                    ${escaparHTML(descripcion)}
+                  </span>
+
+                  ${
+                    marca || unidad
+                      ? `
+                        <span class="ticket-marca">
+                          ${escaparHTML(
+                            [marca, unidad]
+                              .filter(Boolean)
+                              .join(" | ")
+                          )}
+                        </span>
+                      `
+                      : ""
+                  }
+                </td>
+              </tr>
+            `;
+          }).join("")
+        : `
+          <tr>
+            <td colspan="3">
+              Sin productos registrados
+            </td>
+          </tr>
+        `;
+
+      elementos.zonaImpresion.innerHTML = `
+        <article class="ticket">
+          <h1 class="ticket-empresa">PROVSOFT</h1>
+          <div class="ticket-titulo">
+            SALIDA DE CIGARRO
+          </div>
+
+          <div class="ticket-separador"></div>
+
+          <div class="ticket-dato">
+            <strong>Folio:</strong>
+            ${escaparHTML(obtenerFolio(salida))}
+          </div>
+
+          <div class="ticket-dato">
+            <strong>Fecha:</strong>
+            ${escaparHTML(formatearFecha(salida))}
+          </div>
+
+          <div class="ticket-dato">
+            <strong>Destino:</strong>
+            ${escaparHTML(obtenerDestino(salida))}
+          </div>
+
+          <div class="ticket-dato">
+            <strong>Entrega:</strong>
+            ${escaparHTML(obtenerEntrega(salida))}
+          </div>
+
+          <div class="ticket-dato">
+            <strong>Recibe:</strong>
+            ${escaparHTML(obtenerRecibe(salida))}
+          </div>
+
+          <div class="ticket-separador"></div>
+
+          <table class="ticket-tabla">
+            <thead>
+              <tr>
+                <th class="ticket-col-cantidad">
+                  Cant.
+                </th>
+
+                <th class="ticket-col-codigo">
+                  Código
+                </th>
+
+                <th>
+                  Producto
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${filasProductos}
+            </tbody>
+          </table>
+
+          <div class="ticket-separador"></div>
+
+          <div class="ticket-totales">
+            PRODUCTOS: ${productos.length}
+          </div>
+
+          <div class="ticket-totales">
+            TOTAL PIEZAS: ${formatearNumero(totalPiezas)}
+          </div>
+
+          <div class="ticket-separador"></div>
+
+          <div class="ticket-pie">
+            REIMPRESIÓN DE SALIDA
+            <br>
+            ${escaparHTML(obtenerFolio(salida))}
+          </div>
+        </article>
+      `;
+    }
+
+    /* =========================================================
+       EVENTOS
+    ========================================================= */
+
+    elementos.btnAplicarFiltros.addEventListener(
+      "click",
+      aplicarFiltros
+    );
+
+    elementos.btnLimpiarFiltros.addEventListener(
+      "click",
+      limpiarFiltros
+    );
+
+    /*
+      Búsqueda automática mientras se escribe.
+    */
+
+    let temporizadorBusqueda = null;
+
+    elementos.buscador.addEventListener("input", () => {
+      clearTimeout(temporizadorBusqueda);
+
+      temporizadorBusqueda = setTimeout(() => {
+        aplicarFiltros();
+      }, 250);
+    });
+
+    elementos.buscador.addEventListener("keydown", (evento) => {
+      if (evento.key === "Enter") {
+        clearTimeout(temporizadorBusqueda);
+        aplicarFiltros();
+      }
+    });
+
+    elementos.fechaInicio.addEventListener(
+      "change",
+      aplicarFiltros
+    );
+
+    elementos.fechaFin.addEventListener(
+      "change",
+      aplicarFiltros
+    );
+
+    elementos.tablaSalidas.addEventListener(
+      "click",
+      (evento) => {
+        const boton = evento.target.closest(
+          "button[data-accion][data-id]"
+        );
+
+        if (!boton) {
+          return;
+        }
+
+        const accion = boton.dataset.accion;
+        const id = boton.dataset.id;
+
+        if (accion === "ver") {
+          abrirDetalle(id);
+          return;
+        }
+
+        if (accion === "imprimir") {
+          imprimirSalida(id);
+        }
+      }
+    );
+
+    elementos.btnCerrarModal.addEventListener(
+      "click",
+      cerrarModal
+    );
+
+    elementos.btnCerrarModalSuperior.addEventListener(
+      "click",
+      cerrarModal
+    );
+
+    elementos.btnImprimirModal.addEventListener(
+      "click",
+      () => {
+        if (!salidaSeleccionada) {
+          mostrarNotificacion(
+            "No hay una salida seleccionada.",
+            "error"
+          );
+          return;
+        }
+
+        prepararTicket(salidaSeleccionada);
+
+        setTimeout(() => {
+          window.print();
+        }, 100);
+      }
+    );
+
+    elementos.modalFondo.addEventListener(
+      "click",
+      (evento) => {
+        if (evento.target === elementos.modalFondo) {
+          cerrarModal();
+        }
+      }
+    );
+
+    document.addEventListener("keydown", (evento) => {
+      if (
+        evento.key === "Escape" &&
+        !elementos.modalFondo.classList.contains("oculto")
+      ) {
+        cerrarModal();
+      }
+    });
+
+    window.addEventListener("afterprint", () => {
+      /*
+        Se conserva el ticket por si la persona necesita volver
+        a abrir el diálogo de impresión.
+      */
+    });
+
+    /* =========================================================
+       INICIO
+    ========================================================= */
+
+    iniciarEscuchaFirestore();
+  </script>
+</body>
+</html>

@@ -51,6 +51,7 @@ const DESTINOS = [
   "SUCURSAL PDD OSITO",
   "SUCURSAL PDD B41",
   "TIO PANCHO",
+  "CASINO CROWN",
   "RUTA 1",
   "RUTA 2"
 ];

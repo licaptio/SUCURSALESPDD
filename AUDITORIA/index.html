@@ -1024,10 +1024,10 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const CONTEO_ID = "ZAPATA010626";
-  const CONTEO_NOMBRE = "Inventario Zapata 01-06-2026";
-  const DB_NAME = "PROVSOFT_CONTEO_ALLENDE_MAYO_2026";
-  const DB_VERSION = 3;
+  const CONTEO_ID = "R1230726";
+  const CONTEO_NOMBRE = "Inventario RUTA1 23-07-2026";
+  const DB_NAME = "PROVSOFT_CONTEO_RUTA1_JULIO_2026";
+  const DB_VERSION = 4;
   const SYNC_EVERY_ITEMS = 5;
   const SYNC_INTERVAL_MS = 30000;
   const AUTO_LOGOUT_MS = 5 * 60 * 1000;
@@ -1906,10 +1906,10 @@
 
     const userRef = doc(
   db,
-  "almacenes",
-  "almacen_zapata",
-  "Inventarios",
-  "ZAPATA010626",
+"TIENDAS",
+"RUTA1",
+"INVENTARIO26",
+"230726",
   "USUARIOS",
   currentUser.id
 );
@@ -1932,16 +1932,14 @@
     }, { merge:true });
 
     for(const p of pendientes){
-const partRef = doc(
+const userRef = doc(
   db,
-  "almacenes",
-  "almacen_zapata",
-  "Inventarios",
-  "ZAPATA010626",
+  "TIENDAS",
+  "RUTA1",
+  "INVENTARIO26",
+  "230726",
   "USUARIOS",
-  currentUser.id,
-  "PARTIDAS",
-  p.id || p.codigo
+  currentUser.id
 );
       
 

@@ -2838,11 +2838,18 @@ function agregarProductoExtra() {
   $('cantidadAgregar').value = '1';
   $('results').style.display = 'none';
 
-  recalcularTodo();
+recalcularTodo();
 
-  enfocarPrimerCampoCarrito();
-}
+setTimeout(() => {
+  const buscador = $('busquedaProducto');
 
+  buscador.focus({
+    preventScroll: true
+  });
+
+  buscador.select();
+}, 0);
+  
 async function limpiarPantalla(liberarBloqueo = true) {
   if (liberarBloqueo) {
     await liberarBloqueoSolicitud();

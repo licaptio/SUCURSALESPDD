@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PROVSOFT | Solicitud de Merma</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+
+<div id="loader" class="loader">
+  <div class="loader-card">
+    <h1>PROVSOFT</h1>
+    <h2>Solicitud de Merma</h2>
+    <p id="loaderTexto">Cargando catálogo e información...</p>
+  </div>
+</div>
+
+<header class="topbar">
+  <div>
+    <h1>Solicitud de Merma</h1>
+    <p>Comprobante de levantamiento de merma por tienda</p>
+  </div>
+  <div class="estado" id="estadoConexion">Verificando...</div>
+</header>
+
+<main class="app">
+
+<section class="wizard">
+  <div class="step active" data-step="1">1. Datos</div>
+  <div class="step" data-step="2">2. Productos</div>
+  <div class="step" data-step="3">3. Revisión</div>
+  <div class="step" data-step="4">4. Firma</div>
+  <div class="step" data-step="5">5. Finalizar</div>
+</section>
+
+<section class="panel paso activo" id="paso1">
+  <h2>Datos del solicitante</h2>
+
+  <label>Tienda</label>
+  <select id="tienda">
+    <option value="ALLENDE 1">ALLENDE 1</option>
+    <option value="ALLENDE 2">ALLENDE 2</option>
+    <option value="MONTEMORELOS">MONTEMORELOS</option>
+  </select>
+
+  <label>Nombre del encargado que solicita</label>
+  <input id="encargado" placeholder="Nombre del encargado">
+
+  <label>Folio generado</label>
+  <input id="folio" readonly>
+
+  <div class="acciones">
+    <button onclick="guardarBorrador()">Guardar para continuar después</button>
+    <button class="principal" onclick="irPaso(2)">Siguiente</button>
+  </div>
+</section>
+
+<section class="panel paso" id="paso2">
+  <h2>Buscar productos</h2>
+
+  <div class="buscador">
+    <input id="buscarProducto" placeholder="Buscar por código o descripción..." autocomplete="off">
+    <button onclick="descargarCatalogo(true)">Actualizar catálogo</button>
+  </div>
+
+  <div id="resultados" class="resultados"></div>
+
+  <h3>Carrito de merma</h3>
+  <div id="carrito" class="carrito"></div>
+
+  <div class="acciones">
+    <button onclick="irPaso(1)">Atrás</button>
+    <button onclick="guardarBorrador()">Guardar para continuar después</button>
+    <button class="principal" onclick="irPaso(3)">Siguiente</button>
+  </div>
+</section>
+
+<section class="panel paso" id="paso3">
+  <h2>Revisión de solicitud</h2>
+  <div id="resumenRevision"></div>
+
+  <label>Notas adicionales</label>
+  <textarea id="notas" placeholder="Notas finales de la merma..."></textarea>
+
+  <div class="acciones">
+    <button onclick="irPaso(2)">Atrás</button>
+    <button onclick="guardarBorrador()">Guardar para continuar después</button>
+    <button class="principal" onclick="irPaso(4)">Siguiente</button>
+  </div>
+</section>
+
+<section class="panel paso" id="paso4">
+  <h2>Firma del solicitante</h2>
+  <p>Firma del encargado que levanta la merma.</p>
+
+  <canvas id="firmaCanvas" width="700" height="260"></canvas>
+
+  <div class="acciones">
+    <button onclick="limpiarFirma()">Limpiar firma</button>
+    <button onclick="irPaso(3)">Atrás</button>
+    <button class="principal" onclick="irPaso(5)">Siguiente</button>
+  </div>
+</section>
+
+<section class="panel paso" id="paso5">
+  <h2>Finalizar solicitud</h2>
+  <div id="resumenFinal"></div>
+
+  <div class="alerta">
+    Al finalizar se creará un solo documento en:
+    <strong>/TIENDAS/{tienda}/MERMAS/{folio}</strong><br>
+    No se crearán notas, movimientos ni salidas de inventario.
+  </div>
+
+  <div class="acciones">
+    <button onclick="irPaso(4)">Atrás</button>
+    <button onclick="guardarBorrador()">Guardar para continuar después</button>
+    <button class="principal peligro" onclick="generarSolicitud()">Generar solicitud de merma</button>
+  </div>
+</section>
+
+</main>
+
+<div id="modalProducto" class="modal oculto">
+  <div class="modal-card">
+    <h2 id="modalTitulo">Producto</h2>
+    <p id="modalCodigo"></p>
+
+    <label>Cantidad</label>
+    <input type="number" id="modalCantidad" min="0.01" step="0.01">
+
+    <label>Motivo</label>
+    <select id="modalMotivo">
+      <option value="CADUCIDAD">Caducidad</option>
+      <option value="ROTURA">Rotura</option>
+      <option value="MAL_ESTADO">Mal estado</option>
+      <option value="DIFERENCIA_INVENTARIO">Diferencia de inventario</option>
+      <option value="DAÑO_TRASLADO">Daño en traslado</option>
+      <option value="OTRO">Otro</option>
+    </select>
+
+    <label>Comentario</label>
+    <textarea id="modalComentario" placeholder="Comentario del producto..."></textarea>
+
+    <div class="acciones">
+      <button onclick="cerrarModal()">Cancelar</button>
+      <button class="principal" onclick="agregarProducto()">Agregar a merma</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="module" src="./app.js"></script>
+
+</body>
+</html>

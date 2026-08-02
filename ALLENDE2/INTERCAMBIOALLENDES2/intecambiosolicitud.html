@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Solicitud Intercambio | ALLENDE 2</title><link rel="stylesheet" href="./styles.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script></head><body><div class="loading" id="loading">
+  <img src="logo.png" onerror="this.style.display='none'">
+
+  <h1>PROVEEDORA</h1>
+
+  <p id="estadoCarga">
+    Iniciando aplicación...
+  </p>
+
+  <div class="barra-wrap">
+    <div class="barra" id="barra"></div>
+  </div>
+</div>
+
+<div class="app">
+
+  <div class="header">
+    <img src="logo.png" onerror="this.style.display='none'">
+
+    <div>
+      <h2>Solicitud de Intercambio</h2>
+      <p>ALLENDE 2 → ALLENDE 1</p>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3>Buscar producto</h3>
+
+    <input
+      id="buscar"
+      placeholder="Buscar código o producto..."
+      autocomplete="off"
+    >
+
+    <div class="sugerencias" id="sugerencias"></div>
+  </div>
+
+  <div class="box">
+    <h3>Carrito</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th>Cant.</th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody id="tbodyCarrito"></tbody>
+    </table>
+  </div>
+
+  <div class="box">
+    <h3>Solicitud</h3>
+
+    <input
+      id="solicitadoPor"
+      placeholder="Nombre quien solicita"
+    >
+
+    <canvas id="firma"></canvas>
+
+    <div class="actions">
+      <button
+        class="btn-sec"
+        onclick="guardarTemporal()"
+      >
+        Guardar para continuar después
+      </button>
+
+      <button
+        class="btn-rojo"
+        onclick="generarSolicitud()"
+      >
+        Solicitar intercambio
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3 id="tituloProducto"></h3>
+
+    <input
+      type="number"
+      id="cantidad"
+      min="1"
+      value="1"
+    >
+
+    <button
+      class="btn-rojo"
+      onclick="agregarProducto()"
+    >
+      Agregar
+    </button>
+
+    <button
+      class="btn-sec"
+      onclick="cerrarModal()"
+    >
+      Cancelar
+    </button>
+  </div>
+</div><script type="module" src="./app.js"></script></body></html>

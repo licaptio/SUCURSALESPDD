@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contestación Intercambio | ALLENDE 1</title>
+<link rel="stylesheet" href="./styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="loading" id="loading">
+  <img src="logo.jfif">
+  <h1>PROVEEDORA</h1>
+  <p id="estadoCarga">Cargando solicitudes...</p>
+  <div class="barra-wrap"><div class="barra" id="barra"></div></div>
+</div>
+
+<div class="app">
+
+  <div class="header">
+    <img src="logo.jfif">
+    <div>
+      <h2>Contestación de Intercambios</h2>
+      <p>ALLENDE 1 contesta solicitudes de ALLENDE 2</p>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3>Órdenes pendientes por autorizar</h3>
+
+    <div class="actions">
+      <button class="btn-rojo" onclick="cargarSolicitudes()">
+        Recargar órdenes
+      </button>
+    </div>
+
+    <div id="listaSolicitudes" style="margin-top:15px;"></div>
+  </div>
+
+</div>
+
+<div class="modal" id="modalOrden">
+  <div class="modal-box">
+
+    <h2 id="ordenFolio"></h2>
+    <p id="ordenInfo"></p>
+
+    <br>
+
+    <h3>Productos solicitados</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th>Cantidad</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyOrden"></tbody>
+    </table>
+
+    <br>
+
+    <h3>Firma de solicitud</h3>
+    <div id="firmaSolicitudPreview"></div>
+
+    <div class="actions">
+      <button class="btn-sec" onclick="cerrarOrden()">Cerrar</button>
+      <button class="btn-negro" onclick="imprimirOrden()">Imprimir solicitud</button>
+      <button class="btn-rojo" onclick="abrirContestacion()">Contestar</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal" id="modalDetalle">
+  <div class="modal-box">
+
+    <h2 id="modalFolio"></h2>
+    <p id="modalInfo"></p>
+
+    <br>
+
+    <h3>Autorizar cantidades</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th>Solicitado</th>
+          <th>Autorizado</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyDetalle"></tbody>
+    </table>
+
+    <br>
+
+    <input id="autorizadoPor" placeholder="Nombre quien autoriza en Allende 1">
+
+    <br><br>
+
+    <h3>Firma autorización Allende 1</h3>
+    <canvas id="firma"></canvas>
+
+    <div class="actions">
+      <button class="btn-sec" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-rojo" onclick="rechazarSolicitud()">Rechazar</button>
+      <button class="btn-verde" onclick="autorizarSolicitud()">Autorizar intercambio</button>
+    </div>
+
+  </div>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

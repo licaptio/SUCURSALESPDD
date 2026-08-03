@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>RUTA VENTA 1 · INVENTARIO OPERATIVO - PROVSOFT</title>
+
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/css/styles.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+</head>
+
+<body>
+  <div id="loader" class="app-loader">
+    <div class="loader-box">
+      <img
+        src="assets/img/logo.jfif"
+        class="loader-logo"
+        alt="Logo empresa"
+        onerror="this.style.display='none'"
+      />
+
+      <h2 class="loader-title">PROVEEDORA DE DULCES Y DESECHABLES</h2>
+
+      <div class="loader-subtitle">
+        RUTA VENTA 1 · INVENTARIO · ENTRADAS · VENTAS · AJUSTES · CONTEO
+      </div>
+
+      <div class="progress-shell">
+        <div id="loaderBar" class="progress-bar"></div>
+      </div>
+
+      <p id="loaderMsg" class="loader-msg">Preparando consulta...</p>
+    </div>
+  </div>
+
+  <main id="vistaInventario" class="wrap app-view">
+    <section class="card">
+      <header class="topbar">
+        <div>
+          <h1>RUTA VENTA 1 · INVENTARIO OPERATIVO</h1>
+
+          <p>
+            Inventario inicial tomado de:
+            /TIENDAS/RUTA1/INVENTARIOS/
+          </p>
+
+          <p>
+            Base original: <span id="textoFechaBase">detectando...</span> · Vista semanal domingo a sábado ·
+            Inventario inicial visible = existencia final de la semana anterior.
+          </p>
+
+          <p>
+            Entradas tomadas de:
+            /almacenes/Almacen_Ruta_1/entradas
+          </p>
+        </div>
+
+        <div class="actions">
+          <label>
+            Semana
+            <input id="selectorSemana" type="week" />
+          </label>
+
+          <label>
+            Fecha inicio
+            <input
+              id="fechaInicio"
+              type="date"
+              value=""
+              readonly
+            />
+          </label>
+
+          <label>
+            Fecha fin
+            <input
+              id="fechaFin"
+              type="date"
+              readonly
+            />
+          </label>
+
+          <input
+            id="busqueda"
+            type="search"
+            placeholder="Buscar código, nombre, folio, cliente, usuario..."
+          />
+
+          <button id="btnAjuste" class="btn-ajuste">+ Registrar ajuste</button>
+          <button id="btnConteo" class="btn-conteo">Conteo físico</button>
+          <button id="btnRecargar">Recargar</button>
+          <button id="btnExportar">Exportar Excel</button>
+          <button id="btnPDF">Imprimir / PDF</button>
+        </div>
+      </header>
+
+      <section class="tabs">
+        <button id="tabResumen" class="active">Pivot semanal</button>
+        <button id="tabDetalle">Detalle semana</button>
+      </section>
+
+      <section class="table-wrap">
+        <table id="tabla">
+          <thead></thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </section>
+
+      <p id="status" class="status">
+        Listo. Primera carga completa; cambios de semana calculados en memoria.
+      </p>
+    </section>
+  </main>
+
+  <main id="vistaAjustes" class="wrap app-view hide">
+    <section class="card modulo-ajustes">
+      <header class="topbar ajuste-topbar">
+        <div>
+          <h1>AJUSTES DE INVENTARIO · RUTA 1</h1>
+          <p>Captura el físico contado. El sistema calcula la diferencia contra el teórico y registra el movimiento en /TIENDAS/RUTA1/AJUSTE.</p>
+        </div>
+        <div class="actions">
+          <button id="btnRegresarInventario" type="button" class="secundario">← Regresar al inventario</button>
+        </div>
+      </header>
+
+      <section class="ajustes-layout">
+        <div class="ajuste-panel">
+          <h2>NUEVO AJUSTE</h2>
+          <form id="formAjuste" class="ajuste-form">
+            <input id="ajusteFecha" type="hidden" />
+            <input id="ajusteHora" type="hidden" />
+            <label class="campo-codigo">
+              Código
+              <input id="ajusteCodigo" type="text" list="listaCodigosAjuste" autocomplete="off" placeholder="Escanea o captura código" required />
+              <datalist id="listaCodigosAjuste"></datalist>
+            </label>
+            <label class="campo-nombre">
+              Producto
+              <input id="ajusteNombre" type="text" readonly />
+            </label>
+            <label class="campo-fisico">
+              Físico que queda
+              <input id="ajusteFisico" type="number" step="0.01" min="0" placeholder="Captura únicamente el físico" required />
+            </label>
+            <div class="ajuste-ayuda">La fecha y la hora se registran automáticamente. El sistema calcula el teórico y la diferencia al guardar.</div>
+            <div class="modal-actions">
+              <button id="btnLimpiarAjuste" type="button" class="secundario">Limpiar</button>
+              <button id="btnGuardarAjuste" type="submit">Registrar ajuste</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="ajuste-panel historial-panel">
+          <div class="historial-header">
+            <div>
+              <h2>HISTORIAL DE AJUSTES</h2>
+              <p>Últimos registros cargados desde Firebase.</p>
+            </div>
+            <button id="btnRecargarHistorial" type="button">Recargar</button>
+          </div>
+          <div class="historial-wrap">
+            <table id="tablaHistorialAjustes" class="tabla-historial">
+              <thead><tr><th>Fecha</th><th>Hora</th><th>Código</th><th>Producto</th><th>Teórico</th><th>Físico</th><th>Ajuste</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p id="estadoHistorialAjustes" class="status">Sin registros cargados.</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <main id="vistaConteo" class="wrap app-view hide">
+    <section class="card modulo-conteo">
+      <header class="topbar ajuste-topbar">
+        <div>
+          <h1>CONTEO FÍSICO · RUTA VENTA 1</h1>
+          <p>Captura el físico por producto. Se guarda en /TIENDAS/RUTA1/CONTEO_DIARIO sin modificar automáticamente el inventario.</p>
+        </div>
+        <div class="actions">
+          <button id="btnGuardarConteo" type="button">Guardar conteo</button>
+          <button id="btnRegresarDesdeConteo" type="button" class="secundario">← Regresar</button>
+        </div>
+      </header>
+      <section class="table-wrap conteo-wrap">
+        <table id="tablaConteo">
+          <thead><tr><th class="left">Código</th><th class="left">Producto</th><th>Teórico</th><th>Físico</th><th>Diferencia</th></tr></thead>
+          <tbody id="tbodyConteo"></tbody>
+        </table>
+      </section>
+      <p id="estadoConteo" class="status">Preparando conteo...</p>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

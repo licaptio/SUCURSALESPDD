@@ -37,9 +37,9 @@ export const supabaseAnonKey =
   "sb_publishable_SQ7Q5LFJqlxVzwNTxcIyzQ_8F1bqyiX";
 
 // 📲 Telegram - configurar con los mismos datos del bot usado por PROVSOFT
-export const TELEGRAM_BOT_TOKEN = "PEGA_AQUI_TELEGRAM_BOT_TOKEN";
-export const TELEGRAM_CHAT_ID = "PEGA_AQUI_TELEGRAM_CHAT_ID";
-export const TELEGRAM_TOPIC_ID = ""; // opcional: ID del tema/grupo
+export const TELEGRAM_BOT_TOKEN = "8324500461:AAGv7B5Xd6w1sl2Z0_7VJA-Gm4oc7NwC4Ac";
+export const TELEGRAM_CHAT_ID = "6617988297";
+export const TELEGRAM_TOPIC_ID = "";
 
 // ✅ Inicializar Firebase
 const app = initializeApp(firebaseConfig);

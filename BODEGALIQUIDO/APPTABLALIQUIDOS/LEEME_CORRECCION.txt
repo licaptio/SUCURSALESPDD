@@ -1,0 +1,13 @@
+APPTABLAZAP integrada corregida
+
+Correcciones aplicadas:
+- Se conserva TABLA.html original como base.
+- Se agregó el botón Entradas pendientes.
+- Se corrigió el HTML: los modales ya no envuelven la tabla.
+- Se corrigió el panel de entradas para que no oculte la tabla al iniciar.
+- Se agregó callback: al generar entrada recarga la tabla semanal.
+- Se usa config.js con exportaciones Firestore para los módulos de entradas.
+- No se incluye __pycache__.
+
+Ejecutar: python server.py
+Abrir: http://localhost:8000/TABLA.html

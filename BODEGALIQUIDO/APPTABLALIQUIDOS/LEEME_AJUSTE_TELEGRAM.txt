@@ -1,0 +1,17 @@
+AJUSTE DE INVENTARIO + TELEGRAM
+
+1) Menú de tres puntos (...) > Ajuste inventario.
+2) Captura fecha, hora, código/descripcion y cantidad física.
+3) El sistema calcula existencia teórica hasta esa fecha/hora.
+4) Graba diferencia = físico - teórico en:
+   almacenes/Almacen_Dulces/ajustes_inventario/{FOLIO}/PARTIDAS/{CODIGO}
+5) Después recarga Firestore para reflejar el ajuste en la tabla.
+6) Envía notificación Telegram con teórico, físico y diferencia.
+
+IMPORTANTE TELEGRAM:
+En config.js configurar:
+- TELEGRAM_BOT_TOKEN
+- TELEGRAM_CHAT_ID
+- TELEGRAM_TOPIC_ID (opcional)
+
+El ZIP original no incluía los valores del bot/chat, por eso quedaron marcadores PEGA_AQUI.

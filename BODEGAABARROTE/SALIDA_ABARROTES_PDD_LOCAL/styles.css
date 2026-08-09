@@ -1,0 +1,533 @@
+:root{
+  --naranja:#f97316;
+  --naranja-oscuro:#c2410c;
+  --naranja-suave:#fff7ed;
+  --blanco:#ffffff;
+  --texto:#2b1a10;
+  --gris:#6b7280;
+  --borde:#fed7aa;
+  --sombra:0 12px 30px rgba(194,65,12,.22);
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:linear-gradient(180deg,#fff7ed,#ffffff);
+  color:var(--texto);
+}
+
+.oculto{
+  display:none !important;
+}
+
+.pantalla-carga{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  text-align:center;
+  background:linear-gradient(160deg,#fff7ed,#ffffff,#ffedd5);
+}
+
+.logo-carga{
+  width:230px;
+  max-width:85%;
+  border-radius:18px;
+  background:white;
+  padding:10px;
+  box-shadow:var(--sombra);
+}
+
+.pantalla-carga h2{
+  margin:22px 0 6px;
+  color:var(--naranja-oscuro);
+}
+
+.pantalla-carga p{
+  color:var(--gris);
+  font-weight:bold;
+}
+
+.barra-carga{
+  width:260px;
+  height:12px;
+  background:#ffedd5;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:18px;
+}
+
+.barra-carga div{
+  width:45%;
+  height:100%;
+  background:var(--naranja);
+  border-radius:999px;
+  animation:cargando 1s infinite alternate;
+}
+
+@keyframes cargando{
+  from{transform:translateX(0);}
+  to{transform:translateX(125%);}
+}
+
+.app{
+  max-width:720px;
+  margin:0 auto;
+  padding:14px;
+  padding-bottom:40px;
+}
+
+.header-app{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:white;
+  border:1px solid var(--borde);
+  border-radius:20px;
+  padding:12px;
+  box-shadow:var(--sombra);
+  position:sticky;
+  top:8px;
+  z-index:20;
+}
+
+.logo-header{
+  width:92px;
+  border-radius:14px;
+}
+
+.header-app h1{
+  font-size:20px;
+  margin:0;
+  color:var(--naranja-oscuro);
+}
+
+.header-app p{
+  margin:4px 0 0;
+  color:var(--gris);
+  font-size:13px;
+}
+
+.panel-info{
+  margin-top:14px;
+  display:grid;
+  gap:10px;
+}
+
+.panel-info div{
+  background:white;
+  border:1px solid var(--borde);
+  border-radius:16px;
+  padding:12px;
+}
+
+.panel-info span{
+  display:block;
+  font-size:12px;
+  color:var(--gris);
+}
+
+.panel-info strong{
+  display:block;
+  margin-top:3px;
+  font-size:15px;
+}
+
+.zona-captura,
+.carrito-box{
+  margin-top:14px;
+  background:white;
+  border:1px solid var(--borde);
+  border-radius:20px;
+  padding:16px;
+  box-shadow:0 8px 22px rgba(249,115,22,.12);
+}
+
+.zona-captura h2,
+.carrito-box h2{
+  margin:0 0 12px;
+  color:var(--naranja-oscuro);
+}
+
+.input-scanner,
+.input-modal{
+  width:100%;
+  border:2px solid var(--borde);
+  border-radius:14px;
+  padding:15px;
+  font-size:18px;
+  outline:none;
+  background:#fffaf5;
+}
+
+.input-scanner:focus,
+.input-modal:focus{
+  border-color:var(--naranja);
+}
+
+.btn{
+  width:100%;
+  border:none;
+  border-radius:14px;
+  padding:15px;
+  margin-top:10px;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.btn.principal{
+  background:var(--naranja);
+  color:white;
+}
+
+.btn.principal:hover{
+  background:var(--naranja-oscuro);
+}
+
+.btn.secundario{
+  background:#fb923c;
+  color:white;
+}
+
+.btn.blanco{
+  background:white;
+  color:var(--naranja-oscuro);
+  border:2px solid var(--borde);
+}
+
+.qr-reader{
+  margin-top:12px;
+  overflow:hidden;
+  border-radius:16px;
+  border:2px solid var(--borde);
+}
+
+.carrito-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+}
+
+.carrito-header span{
+  background:#ffedd5;
+  color:var(--naranja-oscuro);
+  padding:7px 10px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:bold;
+}
+
+.lista-carrito{
+  margin-top:10px;
+}
+
+.item-carrito{
+  border:1px solid var(--borde);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:10px;
+  background:#fffaf5;
+}
+
+.item-carrito small{
+  color:var(--gris);
+}
+
+.item-carrito strong{
+  display:block;
+  margin:5px 0;
+}
+
+.item-carrito .fila{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:center;
+}
+
+.item-carrito button{
+  width:auto;
+  padding:8px 10px;
+  border:none;
+  background:#fee2e2;
+  color:#991b1b;
+  border-radius:10px;
+  font-weight:bold;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(43,26,16,.62);
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+}
+
+.modal-card{
+  width:100%;
+  max-width:430px;
+  background:white;
+  border-radius:22px;
+  padding:20px;
+  box-shadow:0 30px 80px rgba(0,0,0,.35);
+}
+
+.modal-grande{
+  max-width:620px;
+  max-height:90vh;
+  overflow:auto;
+}
+
+.logo-modal{
+  display:block;
+  width:180px;
+  margin:0 auto 14px;
+  border-radius:14px;
+}
+
+.modal-card h2{
+  margin:0 0 12px;
+  color:var(--naranja-oscuro);
+  text-align:center;
+}
+
+.texto-ayuda{
+  margin-top:-4px;
+  color:var(--gris);
+  font-size:13px;
+  text-align:center;
+}
+
+.resultados{
+  margin-top:12px;
+  max-height:55vh;
+  overflow:auto;
+}
+
+.resultado-item{
+  padding:12px;
+  border:1px solid var(--borde);
+  border-radius:14px;
+  margin-bottom:8px;
+  background:#fffaf5;
+  cursor:pointer;
+}
+
+.resultado-item small{
+  color:var(--gris);
+}
+
+.producto-detectado{
+  background:#fff7ed;
+  border:1px solid var(--borde);
+  padding:14px;
+  border-radius:16px;
+  margin-bottom:12px;
+}
+
+.producto-detectado small{
+  color:var(--gris);
+  display:block;
+}
+
+.producto-detectado strong{
+  display:block;
+  margin-top:5px;
+}
+
+.input-modal.cantidad{
+  text-align:center;
+  font-size:26px;
+  font-weight:bold;
+}
+
+.modal-firma{
+  max-width:600px;
+}
+
+#canvasFirma{
+  width:100%;
+  height:260px;
+  background:white;
+  border:2px solid var(--borde);
+  border-radius:16px;
+  touch-action:none;
+}
+
+.acciones-firma{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+/* =====================================================
+   COMPROBANTE / TICKET 58MM
+===================================================== */
+
+.comprobante,
+#comprobante{
+  width:55mm;
+  max-width:55mm;
+  margin:0;
+  padding:1.5mm;
+
+  background:#ffffff !important;
+  color:#000000 !important;
+
+  font-family:Arial, Helvetica, sans-serif;
+  font-size:11px;
+  font-weight:700;
+  line-height:1.25;
+
+  box-sizing:border-box;
+  text-rendering:geometricPrecision;
+}
+
+.comprobante *,
+#comprobante *{
+  box-sizing:border-box;
+  color:#000000 !important;
+  text-shadow:none !important;
+  opacity:1 !important;
+}
+
+.comp-header{
+  text-align:center;
+  border-bottom:2px solid #000000;
+  padding-bottom:4px;
+  margin-bottom:5px;
+}
+
+.comp-header img{
+  width:42mm;
+  max-width:100%;
+  border-radius:0;
+
+  filter:grayscale(100%) contrast(180%);
+  image-rendering:crisp-edges;
+}
+
+.comp-header h2{
+  margin:5px 0 2px;
+  color:#000000 !important;
+  font-size:14px;
+  font-weight:900;
+}
+
+.comprobante p,
+#comprobante p{
+  margin:2px 0;
+  font-size:10px;
+  font-weight:700;
+  color:#000000 !important;
+}
+
+.comprobante table,
+#comprobante table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  margin-top:5px;
+  font-size:10px;
+}
+
+.comprobante th,
+.comprobante td,
+#comprobante th,
+#comprobante td{
+  border:1px solid #000000;
+  padding:3px 1px;
+  font-size:10px;
+  color:#000000 !important;
+  background:#ffffff !important;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  vertical-align:top;
+}
+
+.comprobante th,
+#comprobante th{
+  font-weight:900;
+  border-bottom:2px solid #000000;
+}
+
+.comprobante th:nth-child(1),
+.comprobante td:nth-child(1),
+#comprobante th:nth-child(1),
+#comprobante td:nth-child(1){
+  width:30%;
+}
+
+.comprobante th:nth-child(2),
+.comprobante td:nth-child(2),
+#comprobante th:nth-child(2),
+#comprobante td:nth-child(2){
+  width:55%;
+}
+
+.comprobante th:nth-child(3),
+.comprobante td:nth-child(3),
+#comprobante th:nth-child(3),
+#comprobante td:nth-child(3){
+  width:15%;
+  text-align:center;
+  font-weight:900;
+}
+
+.comp-firmas{
+  display:block;
+  margin-top:8px;
+}
+
+.comp-firmas div{
+  text-align:center;
+  margin-top:8px;
+  font-size:10px;
+  font-weight:700;
+  color:#000000 !important;
+}
+
+.comp-firmas img{
+  width:45mm;
+  max-width:100%;
+  max-height:22mm;
+  object-fit:contain;
+
+  border:1px solid #000000;
+
+  filter:grayscale(100%) contrast(200%);
+  image-rendering:crisp-edges;
+}
+
+@media(max-width:480px){
+
+  .header-app{
+    align-items:flex-start;
+  }
+
+  .logo-header{
+    width:80px;
+  }
+
+  .header-app h1{
+    font-size:18px;
+  }
+
+  .acciones-firma{
+    grid-template-columns:1fr;
+  }
+
+}
+
+

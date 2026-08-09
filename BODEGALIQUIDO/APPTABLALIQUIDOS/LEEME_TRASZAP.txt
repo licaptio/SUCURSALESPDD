@@ -1,0 +1,19 @@
+INTEGRACION TRASZAP - TABLA LIQUIDOS
+=====================================
+
+Fuente de salidas Zapata:
+/almacenes/almacen_zapata/salidas1.0/{folio}
+
+Configuracion:
+/almacenes/Almacen_Liquidos/configuracion/traszap
+
+Regla:
+1. Fecha >= Punto Cero de Liquidos (01/08/2026).
+2. destino debe coincidir con BODEGA MATRIZ MADERO 690 (o el destino guardado en configuracion).
+3. El codigo/SKU debe existir y estar activo dentro de configuracion.skus.
+4. La partida se incorpora al inventario de Liquidos como ENTRADA.
+5. alias_pivot = TRASZAP.
+6. No se escribe una copia del movimiento en Firestore: la tabla lee la salida original y la interpreta como entrada.
+7. Para evitar duplicados internos, el docId de cache se prefija como TRASZAP:{folioOriginal}.
+
+Al usar Refrescar, la app vuelve a leer la configuracion para detectar SKU agregados o desactivados.

@@ -37,9 +37,12 @@ export const supabaseUrl =
 export const supabaseAnonKey =
   "sb_publishable_SQ7Q5LFJqlxVzwNTxcIyzQ_8F1bqyiX";
 
-// 📲 Telegram - configurar con los mismos datos del bot usado por PROVSOFT
-export const TELEGRAM_BOT_TOKEN = "8324500461:AAGv7B5Xd6w1sl2Z0_7VJA-Gm4oc7NwC4Ac";
+// 📲 Telegram - CASO ACTUAL / @StarCamina_bot
+export const TELEGRAM_BOT_TOKEN =
+  "8434600852:AAGJ8HPMhJv8jjqINr2IZLFeycSF1uWSfiw";
+
 export const TELEGRAM_CHAT_ID = "6617988297";
+
 export const TELEGRAM_TOPIC_ID = "";
 
 // ✅ Inicializar Firebase

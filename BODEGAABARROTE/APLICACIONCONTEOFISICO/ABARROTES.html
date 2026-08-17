@@ -1374,11 +1374,17 @@
 
     refs.loginMsg.textContent = "Validando usuario...";
 
-    const q = query(
-      collection(db, "usuarios_ruta"),
-      where("usuario", "==", usuarioInput),
-      limit(1)
-    );
+const q = query(
+  collection(
+    db,
+    "CLIENTES",
+    "PDD031204KL5",
+    "USUARIOS"
+  ),
+  where("usuario", "==", usuarioInput),
+  limit(1)
+);
+    
 
     const snap = await getDocs(q);
 

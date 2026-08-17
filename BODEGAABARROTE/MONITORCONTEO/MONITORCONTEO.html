@@ -59,16 +59,17 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, collectionGroup, query, orderBy, limit, onSnapshot, getDocs, startAfter } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, query, orderBy, limit, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={apiKey:"AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",authDomain:"inventariopv-643f1.firebaseapp.com",projectId:"inventariopv-643f1",storageBucket:"inventariopv-643f1.appspot.com",messagingSenderId:"96242533231",appId:"1:96242533231:web:aae75a18fbaf9840529e9a"};
 const app=initializeApp(firebaseConfig); const db=getFirestore(app);
 const PAGE_SIZE=30;
-const PARTIDAS=collectionGroup(db,"PARTIDAS");
 const USUARIOS=collection(db,"almacenes","abarrotespdd","inventariofisico","INV-ABARROTESPDD-170826","USUARIOS");
 
 const $=id=>document.getElementById(id); const tbody=$("tbody"), buscar=$("buscar"), prevBtn=$("prevBtn"), nextBtn=$("nextBtn"), nuevosBtn=$("nuevosBtn");
 let currentPage=1, pages=new Map(), pageDocs=new Map(), firstPageIds=new Set(), viewingDocs=[], liveReady=false, nuevosPendientes=0;
+const partidasPorUsuario=new Map();
+const unsubPartidas=[];
 const usuariosMap=new Map();
 
 function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
@@ -105,6 +106,83 @@ async function cargarUsuarios(){
     console.error("No se pudieron cargar USUARIOS:",e);
   }
 }
+
+function reconstruirPagina1(){
+  let todos=[];
+  for(const docs of partidasPorUsuario.values()) todos.push(...docs);
+
+  todos.sort((a,b)=>{
+    const ea=Number(a.data()?.epochMs || 0);
+    const eb=Number(b.data()?.epochMs || 0);
+    return eb-ea;
+  });
+
+  const docs=todos.slice(0,PAGE_SIZE);
+  pages.set(1,docs);
+  pageDocs.set(1,docs);
+
+  const ids=new Set(docs.map(d=>`${d.ref.parent.parent.id}/${d.id}`));
+
+  if(liveReady && currentPage!==1){
+    let n=0;
+    for(const id of ids) if(!firstPageIds.has(id)) n++;
+    if(n){
+      nuevosPendientes+=n;
+      nuevosBtn.textContent=`${nuevosPendientes} registro${nuevosPendientes===1?" nuevo":"s nuevos"} · volver arriba`;
+      nuevosBtn.style.display="inline-block";
+    }
+  }
+
+  firstPageIds=ids;
+  liveReady=true;
+
+  if(currentPage===1){
+    viewingDocs=docs;
+    updateStats();
+  }
+}
+
+async function iniciarPartidasEnVivo(){
+  try{
+    setConnection(true,"CONECTANDO");
+
+    const usuariosSnap=await getDocs(USUARIOS);
+
+    if(usuariosSnap.empty){
+      tbody.innerHTML=`<tr><td colspan="5" class="empty">No hay usuarios registrados en este inventario.</td></tr>`;
+      setConnection(true,"EN VIVO");
+      return;
+    }
+
+    usuariosSnap.forEach(usuarioDoc=>{
+      const uid=usuarioDoc.id;
+      const refPartidas=collection(
+        db,
+        "almacenes","abarrotespdd",
+        "inventariofisico","INV-ABARROTESPDD-170826",
+        "USUARIOS",uid,
+        "PARTIDAS"
+      );
+
+      const qPartidas=query(refPartidas,orderBy("epochMs","desc"),limit(PAGE_SIZE));
+
+      const unsub=onSnapshot(qPartidas,snap=>{
+        partidasPorUsuario.set(uid,snap.docs);
+        reconstruirPagina1();
+        setConnection(true,"EN VIVO");
+        $("errorBox").style.display="none";
+      },err=>{
+        console.error(`Error leyendo PARTIDAS de ${uid}:`,err);
+        showError(err);
+      });
+
+      unsubPartidas.push(unsub);
+    });
+
+  }catch(e){
+    showError(e);
+  }
+}
 function concepto(d){return d.concepto || d.descripcion || "SIN DESCRIPCIÓN"}
 function fmtCant(v){const n=Number(v); return Number.isFinite(n)?n.toLocaleString("es-MX",{maximumFractionDigits:3}):String(v??"")}
 function rowHtml(docx, flash=false){
@@ -131,7 +209,7 @@ function updateStats(){
   $("statPagina").textContent=currentPage;
   $("pageInfo").textContent=`Página ${currentPage} · ${docs.length} de hasta ${PAGE_SIZE} registros`;
   prevBtn.disabled=currentPage===1;
-  nextBtn.disabled=docs.length<PAGE_SIZE;
+  nextBtn.disabled=true;
   if(docs.length){
     const raw=docs[0].data();
     const d={...raw,_usuarioDocId:docs[0].ref.parent?.parent?.id || ""};
@@ -148,22 +226,16 @@ function updateStats(){
   applyFilter();
 }
 function setConnection(ok,text){$("estadoConexion").textContent=text; $("dot").style.background=ok?"#12b76a":"#f79009"}
-function showError(e){$("errorBox").style.display="block";$("errorBox").textContent=`No se pudo leer el monitor.\n${e?.message||e}`;setConnection(false,"ERROR")}
+function showError(e){$("errorBox").style.display="block";$("errorBox").textContent=`No se pudo leer el monitor.\n${e?.code ? e.code+"\n" : ""}${e?.message||e}`;setConnection(false,"ERROR")}
 function renderPage(n){currentPage=n; viewingDocs=pages.get(n)||[]; updateStats(); $("scrollBox").scrollTop=0; if(n===1){nuevosPendientes=0;nuevosBtn.style.display="none"}}
 
 await cargarUsuarios();
+await iniciarPartidasEnVivo();
 
-const liveQ=query(PARTIDAS,orderBy("epochMs","desc"),limit(PAGE_SIZE));
-const unsub=onSnapshot(liveQ,snap=>{
-  setConnection(true,"EN VIVO"); $("errorBox").style.display="none";
-  const docs=snap.docs; pages.set(1,docs); pageDocs.set(1,docs);
-  const ids=new Set(docs.map(d=>d.id));
-  if(liveReady && currentPage!==1){let n=0; for(const id of ids)if(!firstPageIds.has(id))n++; if(n){nuevosPendientes+=n;nuevosBtn.textContent=`${nuevosPendientes} registro${nuevosPendientes===1?" nuevo":"s nuevos"} · volver arriba`;nuevosBtn.style.display="inline-block"}}
-  firstPageIds=ids; liveReady=true;
-  if(currentPage===1){viewingDocs=docs; updateStats()}
-},showError);
-
-async function loadNext(){try{const docsActual=pages.get(currentPage)||[]; if(!docsActual.length)return; const last=docsActual[docsActual.length-1]; const target=currentPage+1; if(pages.has(target)){renderPage(target);return} setConnection(true,"CONSULTANDO"); const q=query(PARTIDAS,orderBy("epochMs","desc"),startAfter(last),limit(PAGE_SIZE)); const snap=await getDocs(q); pages.set(target,snap.docs); pageDocs.set(target,snap.docs); renderPage(target); setConnection(true,"EN VIVO")}catch(e){showError(e)}}
+async function loadNext(){
+  // El monitor en vivo consolida las 30 partidas más recientes de todos los usuarios.
+  // La paginación histórica queda deshabilitada para evitar consultas globales collectionGroup.
+}
 function loadPrev(){if(currentPage>1)renderPage(currentPage-1)}
 
 buscar.addEventListener("input",applyFilter); nextBtn.addEventListener("click",loadNext); prevBtn.addEventListener("click",loadPrev); nuevosBtn.addEventListener("click",()=>renderPage(1));

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Monitor Conteo Físico - ABARROTESPDD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5f8;--card:#fff;--line:#dfe3e8;--txt:#111827;--muted:#667085;--blue:#175cd3;--green:#067647;--red:#b42318;--shadow:0 10px 30px rgba(16,24,40,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,Arial,sans-serif;color:var(--txt)}
+.app{min-height:100vh;display:flex;flex-direction:column}.topbar{background:#111827;color:#fff;padding:14px 22px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 10px rgba(0,0,0,.16);position:sticky;top:0;z-index:10}
+.logo{width:44px;height:44px;border-radius:10px;object-fit:cover;background:#fff}.titlebox{min-width:0}.title{font-size:18px;font-weight:800;letter-spacing:.2px}.subtitle{font-size:12px;color:#cbd5e1;margin-top:3px}.live{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:8px 11px;border-radius:999px}.dot{width:9px;height:9px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 4px rgba(18,183,106,.15)}
+.wrap{padding:18px;max-width:1500px;width:100%;margin:0 auto}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}.stat-k{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700}.stat-v{font-size:22px;font-weight:800;margin-top:5px}.stat-s{font-size:11px;color:var(--muted);margin-top:3px}
+.toolbar{background:var(--card);border:1px solid var(--line);border-radius:12px 12px 0 0;padding:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.search{flex:1;min-width:240px;border:1px solid #d0d5dd;border-radius:9px;padding:10px 12px;font-size:13px;outline:none}.search:focus{border-color:#84adff;box-shadow:0 0 0 3px rgba(47,128,237,.12)}.badge{font-size:12px;color:#344054;background:#f2f4f7;border:1px solid #eaecf0;padding:8px 10px;border-radius:8px;font-weight:600}.newbadge{display:none;background:#ecfdf3;color:#067647;border-color:#abefc6;cursor:pointer}
+.table-card{background:var(--card);border:1px solid var(--line);border-top:0;box-shadow:var(--shadow);overflow:hidden}.scroll{overflow:auto;max-height:calc(100vh - 285px);min-height:350px}table{border-collapse:collapse;width:100%;min-width:900px}thead th{position:sticky;top:0;background:#f8fafc;border-bottom:1px solid var(--line);padding:11px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.55px;text-align:left;color:#475467;z-index:2}tbody td{padding:11px 12px;border-bottom:1px solid #eef1f4;font-size:13px;vertical-align:middle}tbody tr:hover{background:#f9fafb}.fecha{font-weight:700;white-space:nowrap}.hora{font-variant-numeric:tabular-nums;white-space:nowrap;color:#344054}.usuario{font-weight:700}.cantidad{font-size:15px;font-weight:800;text-align:right;white-space:nowrap}.concepto{font-weight:600}.codigo{font-size:11px;color:#667085;margin-top:3px}.empty{text-align:center;padding:60px 20px;color:#667085}.deleted{opacity:.45;text-decoration:line-through}.flash{animation:flash 1.4s ease}@keyframes flash{0%{background:#dcfae6}100%{background:transparent}}
+.pager{display:flex;align-items:center;justify-content:space-between;padding:12px;background:#fff;border-top:1px solid var(--line);gap:10px}.pageinfo{font-size:12px;color:#667085}.buttons{display:flex;gap:8px}.btn{border:1px solid #d0d5dd;background:#fff;color:#344054;border-radius:8px;padding:9px 13px;font-weight:700;font-size:12px;cursor:pointer}.btn:hover:not(:disabled){background:#f9fafb}.btn:disabled{opacity:.4;cursor:not-allowed}.error{display:none;margin-bottom:12px;background:#fef3f2;color:#b42318;border:1px solid #fecdca;border-radius:10px;padding:11px 13px;font-size:12px;white-space:pre-wrap}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.wrap{padding:10px}.topbar{padding:10px 12px}.subtitle{display:none}.scroll{max-height:calc(100vh - 315px)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <img src="logo.jfif" class="logo" alt="PROVSOFT">
+    <div class="titlebox"><div class="title">MONITOR DE CONTEO FÍSICO</div><div class="subtitle">ABARROTESPDD · Inventario 17/08/2026 · Registros en tiempo real</div></div>
+    <div class="live"><span class="dot" id="dot"></span><span id="estadoConexion">CONECTANDO</span></div>
+  </header>
+
+  <main class="wrap">
+    <div id="errorBox" class="error"></div>
+    <section class="stats">
+      <div class="stat"><div class="stat-k">Registros en visor</div><div class="stat-v" id="statRegistros">0</div><div class="stat-s">Máximo 30 por página</div></div>
+      <div class="stat"><div class="stat-k">Último usuario</div><div class="stat-v" id="statUsuario" style="font-size:17px">—</div><div class="stat-s" id="statUsuarioSub">Sin registros</div></div>
+      <div class="stat"><div class="stat-k">Última captura</div><div class="stat-v" id="statHora">—</div><div class="stat-s" id="statFecha">—</div></div>
+      <div class="stat"><div class="stat-k">Página</div><div class="stat-v" id="statPagina">1</div><div class="stat-s">Más reciente primero</div></div>
+    </section>
+
+    <div class="toolbar">
+      <input id="buscar" class="search" placeholder="Buscar concepto, usuario, código o cantidad..." autocomplete="off">
+      <span class="badge" id="registrosPagina">0 registros</span>
+      <button class="badge newbadge" id="nuevosBtn">Hay registros nuevos · volver arriba</button>
+    </div>
+
+    <section class="table-card">
+      <div class="scroll" id="scrollBox">
+        <table>
+          <thead><tr><th style="width:115px">Fecha</th><th style="width:105px">Hora</th><th style="width:180px">Usuario</th><th style="width:120px;text-align:right">Cantidad</th><th>Concepto</th></tr></thead>
+          <tbody id="tbody"><tr><td colspan="5" class="empty">Conectando al conteo...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <div class="pageinfo" id="pageInfo">Página 1 · hasta 30 registros</div>
+        <div class="buttons"><button class="btn" id="prevBtn" disabled>← Anterior</button><button class="btn" id="nextBtn" disabled>Siguiente →</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, query, orderBy, limit, onSnapshot, getDocs, startAfter } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={apiKey:"AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",authDomain:"inventariopv-643f1.firebaseapp.com",projectId:"inventariopv-643f1",storageBucket:"inventariopv-643f1.appspot.com",messagingSenderId:"96242533231",appId:"1:96242533231:web:aae75a18fbaf9840529e9a"};
+const app=initializeApp(firebaseConfig); const db=getFirestore(app);
+const PAGE_SIZE=30;
+const REGISTROS=collection(db,"almacenes","abarrotespdd","inventariofisico","INV-ABARROTESPDD-170826","REGISTROS");
+
+const $=id=>document.getElementById(id); const tbody=$("tbody"), buscar=$("buscar"), prevBtn=$("prevBtn"), nextBtn=$("nextBtn"), nuevosBtn=$("nuevosBtn");
+let currentPage=1, pages=new Map(), pageDocs=new Map(), firstPageIds=new Set(), viewingDocs=[], liveReady=false, nuevosPendientes=0;
+
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
+function normalFecha(v){if(!v)return "—"; const s=String(v); if(/^\d{4}-\d{2}-\d{2}$/.test(s)){const [y,m,d]=s.split("-");return `${d}/${m}/${y}`} return s}
+function nombreUsuario(d){return d.usuarioNombre || d.usuario || d.usuarioId || "SIN USUARIO"}
+function concepto(d){return d.concepto || d.descripcion || "SIN DESCRIPCIÓN"}
+function fmtCant(v){const n=Number(v); return Number.isFinite(n)?n.toLocaleString("es-MX",{maximumFractionDigits:3}):String(v??"")}
+function rowHtml(docx, flash=false){const d=docx.data(); const cls=(d.eliminado?"deleted ":"")+(flash?"flash":"");return `<tr class="${cls}" data-id="${esc(docx.id)}"><td class="fecha">${esc(normalFecha(d.fecha))}</td><td class="hora">${esc(d.hora||"—")}</td><td class="usuario">${esc(nombreUsuario(d))}</td><td class="cantidad">${esc(fmtCant(d.cantidad))}</td><td><div class="concepto">${esc(concepto(d))}</div><div class="codigo">${esc(d.codigo||"")}${d.unidadMedidaSat?` · ${esc(d.unidadMedidaSat)}`:""}</div></td></tr>`}
+
+function applyFilter(){const qtxt=buscar.value.trim().toLowerCase(); const docs=viewingDocs.filter(x=>{if(!qtxt)return true; const d=x.data(); return [d.fecha,d.hora,nombreUsuario(d),d.cantidad,concepto(d),d.codigo].join(" ").toLowerCase().includes(qtxt)}); tbody.innerHTML=docs.length?docs.map(d=>rowHtml(d)).join(""):`<tr><td colspan="5" class="empty">No hay registros que coincidan.</td></tr>`; $("registrosPagina").textContent=`${docs.length} registro${docs.length===1?"":"s"}`; $("statRegistros").textContent=docs.length;}
+function updateStats(){const docs=viewingDocs; $("statPagina").textContent=currentPage; $("pageInfo").textContent=`Página ${currentPage} · ${docs.length} de hasta ${PAGE_SIZE} registros`; prevBtn.disabled=currentPage===1; nextBtn.disabled=docs.length<PAGE_SIZE; if(docs.length){const d=docs[0].data(); $("statUsuario").textContent=nombreUsuario(d); $("statUsuarioSub").textContent=concepto(d); $("statHora").textContent=d.hora||"—"; $("statFecha").textContent=normalFecha(d.fecha)} else {$("statUsuario").textContent="—";$("statUsuarioSub").textContent="Sin registros";$("statHora").textContent="—";$("statFecha").textContent="—"} applyFilter();}
+function setConnection(ok,text){$("estadoConexion").textContent=text; $("dot").style.background=ok?"#12b76a":"#f79009"}
+function showError(e){$("errorBox").style.display="block";$("errorBox").textContent=`No se pudo leer el monitor.\n${e?.message||e}`;setConnection(false,"ERROR")}
+function renderPage(n){currentPage=n; viewingDocs=pages.get(n)||[]; updateStats(); $("scrollBox").scrollTop=0; if(n===1){nuevosPendientes=0;nuevosBtn.style.display="none"}}
+
+const liveQ=query(REGISTROS,orderBy("epochMs","desc"),limit(PAGE_SIZE));
+const unsub=onSnapshot(liveQ,snap=>{
+  setConnection(true,"EN VIVO"); $("errorBox").style.display="none";
+  const docs=snap.docs; pages.set(1,docs); pageDocs.set(1,docs);
+  const ids=new Set(docs.map(d=>d.id));
+  if(liveReady && currentPage!==1){let n=0; for(const id of ids)if(!firstPageIds.has(id))n++; if(n){nuevosPendientes+=n;nuevosBtn.textContent=`${nuevosPendientes} registro${nuevosPendientes===1?" nuevo":"s nuevos"} · volver arriba`;nuevosBtn.style.display="inline-block"}}
+  firstPageIds=ids; liveReady=true;
+  if(currentPage===1){viewingDocs=docs; updateStats()}
+},showError);
+
+async function loadNext(){try{const docsActual=pages.get(currentPage)||[]; if(!docsActual.length)return; const last=docsActual[docsActual.length-1]; const target=currentPage+1; if(pages.has(target)){renderPage(target);return} setConnection(true,"CONSULTANDO"); const q=query(REGISTROS,orderBy("epochMs","desc"),startAfter(last),limit(PAGE_SIZE)); const snap=await getDocs(q); pages.set(target,snap.docs); pageDocs.set(target,snap.docs); renderPage(target); setConnection(true,"EN VIVO")}catch(e){showError(e)}}
+function loadPrev(){if(currentPage>1)renderPage(currentPage-1)}
+
+buscar.addEventListener("input",applyFilter); nextBtn.addEventListener("click",loadNext); prevBtn.addEventListener("click",loadPrev); nuevosBtn.addEventListener("click",()=>renderPage(1));
+window.addEventListener("online",()=>setConnection(true,"EN VIVO")); window.addEventListener("offline",()=>setConnection(false,"SIN INTERNET"));
+</script>
+</body>
+</html>

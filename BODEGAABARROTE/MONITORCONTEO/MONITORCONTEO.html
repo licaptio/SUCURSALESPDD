@@ -30,7 +30,7 @@
   <main class="wrap">
     <div id="errorBox" class="error"></div>
     <section class="stats">
-      <div class="stat"><div class="stat-k">Registros en visor</div><div class="stat-v" id="statRegistros">0</div><div class="stat-s">Máximo 30 por página</div></div>
+      <div class="stat"><div class="stat-k">Registros encontrados</div><div class="stat-v" id="statRegistros">0</div><div class="stat-s" id="statRegistrosSub">Historial completo</div></div>
       <div class="stat"><div class="stat-k">Último usuario</div><div class="stat-v" id="statUsuario" style="font-size:17px">—</div><div class="stat-s" id="statUsuarioSub">Sin registros</div></div>
       <div class="stat"><div class="stat-k">Última captura</div><div class="stat-v" id="statHora">—</div><div class="stat-s" id="statFecha">—</div></div>
       <div class="stat"><div class="stat-k">Página</div><div class="stat-v" id="statPagina">1</div><div class="stat-s">Más reciente primero</div></div>
@@ -59,7 +59,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, query, orderBy, limit, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, query, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={apiKey:"AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",authDomain:"inventariopv-643f1.firebaseapp.com",projectId:"inventariopv-643f1",storageBucket:"inventariopv-643f1.appspot.com",messagingSenderId:"96242533231",appId:"1:96242533231:web:aae75a18fbaf9840529e9a"};
 const app=initializeApp(firebaseConfig); const db=getFirestore(app);
@@ -67,7 +67,7 @@ const PAGE_SIZE=30;
 const USUARIOS=collection(db,"almacenes","abarrotespdd","inventariofisico","INV-ABARROTESPDD-170826","USUARIOS");
 
 const $=id=>document.getElementById(id); const tbody=$("tbody"), buscar=$("buscar"), prevBtn=$("prevBtn"), nextBtn=$("nextBtn"), nuevosBtn=$("nuevosBtn");
-let currentPage=1, pages=new Map(), pageDocs=new Map(), firstPageIds=new Set(), viewingDocs=[], liveReady=false, nuevosPendientes=0;
+let currentPage=1, allDocs=[], filteredDocs=[], viewingDocs=[], firstPageIds=new Set(), liveReady=false, nuevosPendientes=0;
 const partidasPorUsuario=new Map();
 const unsubPartidas=[];
 const usuariosMap=new Map();
@@ -107,21 +107,25 @@ async function cargarUsuarios(){
   }
 }
 
-function reconstruirPagina1(){
+function reconstruirHistorial(){
   let todos=[];
   for(const docs of partidasPorUsuario.values()) todos.push(...docs);
 
   todos.sort((a,b)=>{
     const ea=Number(a.data()?.epochMs || 0);
     const eb=Number(b.data()?.epochMs || 0);
-    return eb-ea;
+    if(eb!==ea) return eb-ea;
+
+    // respaldo por fecha/hora si epochMs falta o viene repetido
+    const da=a.data()||{}, dbb=b.data()||{};
+    const sa=`${da.fecha||""} ${da.hora||""}`;
+    const sb=`${dbb.fecha||""} ${dbb.hora||""}`;
+    return sb.localeCompare(sa);
   });
 
-  const docs=todos.slice(0,PAGE_SIZE);
-  pages.set(1,docs);
-  pageDocs.set(1,docs);
+  allDocs=todos;
 
-  const ids=new Set(docs.map(d=>`${d.ref.parent.parent.id}/${d.id}`));
+  const ids=new Set(todos.slice(0,PAGE_SIZE).map(d=>`${d.ref.parent.parent.id}/${d.id}`));
 
   if(liveReady && currentPage!==1){
     let n=0;
@@ -136,10 +140,7 @@ function reconstruirPagina1(){
   firstPageIds=ids;
   liveReady=true;
 
-  if(currentPage===1){
-    viewingDocs=docs;
-    updateStats();
-  }
+  aplicarFiltroYPaginacion(false);
 }
 
 async function iniciarPartidasEnVivo(){
@@ -164,11 +165,11 @@ async function iniciarPartidasEnVivo(){
         "PARTIDAS"
       );
 
-      const qPartidas=query(refPartidas,orderBy("epochMs","desc"),limit(PAGE_SIZE));
+      const qPartidas=query(refPartidas,orderBy("epochMs","desc"));
 
       const unsub=onSnapshot(qPartidas,snap=>{
         partidasPorUsuario.set(uid,snap.docs);
-        reconstruirPagina1();
+        reconstruirHistorial();
         setConnection(true,"EN VIVO");
         $("errorBox").style.display="none";
       },err=>{
@@ -192,51 +193,99 @@ function rowHtml(docx, flash=false){
   const cls=(d.eliminado?"deleted ":"")+(flash?"flash":"");
   return `<tr class="${cls}" data-id="${esc(docx.id)}"><td class="fecha">${esc(normalFecha(d.fecha))}</td><td class="hora">${esc(d.hora||"—")}</td><td class="usuario">${esc(nombreUsuario(d))}</td><td class="cantidad">${esc(fmtCant(d.cantidad))}</td><td><div class="concepto">${esc(concepto(d))}</div><div class="codigo">${esc(d.codigo||"")}${d.unidadMedidaSat?` · ${esc(d.unidadMedidaSat)}`:""}</div></td></tr>`}
 
-function applyFilter(){
-  const qtxt=buscar.value.trim().toLowerCase();
-  const docs=viewingDocs.filter(x=>{
-    const raw=x.data();
-    const d={...raw,_usuarioDocId:x.ref.parent?.parent?.id || ""};
-    if(!qtxt)return true;
-    return [d.fecha,d.hora,nombreUsuario(d),d.cantidad,concepto(d),d.codigo].join(" ").toLowerCase().includes(qtxt)
-  });
-  tbody.innerHTML=docs.length?docs.map(d=>rowHtml(d)).join(""):`<tr><td colspan="5" class="empty">No hay registros que coincidan.</td></tr>`;
-  $("registrosPagina").textContent=`${docs.length} registro${docs.length===1?"":"s"}`;
-  $("statRegistros").textContent=docs.length;
+function docCoincide(docx,qtxt){
+  const raw=docx.data();
+  const d={...raw,_usuarioDocId:docx.ref.parent?.parent?.id || ""};
+  if(!qtxt) return true;
+  return [
+    d.fecha,d.hora,nombreUsuario(d),d.cantidad,concepto(d),
+    d.codigo,d.codigoOriginal,d.codigoEscaneadoUltimo,d.folio,d.conteoNombre
+  ].join(" ").toLowerCase().includes(qtxt);
 }
-function updateStats(){
+
+function aplicarFiltroYPaginacion(resetPage=true){
+  const qtxt=buscar.value.trim().toLowerCase();
+  filteredDocs=allDocs.filter(d=>docCoincide(d,qtxt));
+
+  const totalPages=Math.max(1,Math.ceil(filteredDocs.length/PAGE_SIZE));
+  if(resetPage) currentPage=1;
+  if(currentPage>totalPages) currentPage=totalPages;
+
+  const ini=(currentPage-1)*PAGE_SIZE;
+  viewingDocs=filteredDocs.slice(ini,ini+PAGE_SIZE);
+
+  renderActual();
+}
+
+function renderActual(){
   const docs=viewingDocs;
+  const totalPages=Math.max(1,Math.ceil(filteredDocs.length/PAGE_SIZE));
+
   $("statPagina").textContent=currentPage;
-  $("pageInfo").textContent=`Página ${currentPage} · ${docs.length} de hasta ${PAGE_SIZE} registros`;
-  prevBtn.disabled=currentPage===1;
-  nextBtn.disabled=true;
+  $("pageInfo").textContent=`Página ${currentPage} de ${totalPages} · ${filteredDocs.length} registro${filteredDocs.length===1?"":"s"}`;
+  $("statRegistros").textContent=filteredDocs.length;
+  $("statRegistrosSub").textContent=buscar.value.trim()
+    ? `Filtrados de ${allDocs.length} registros históricos`
+    : `${allDocs.length} registros históricos`;
+
+  prevBtn.disabled=currentPage<=1;
+  nextBtn.disabled=currentPage>=totalPages || filteredDocs.length===0;
+
   if(docs.length){
     const raw=docs[0].data();
     const d={...raw,_usuarioDocId:docs[0].ref.parent?.parent?.id || ""};
     $("statUsuario").textContent=nombreUsuario(d);
     $("statUsuarioSub").textContent=concepto(d);
     $("statHora").textContent=d.hora||"—";
-    $("statFecha").textContent=normalFecha(d.fecha)
+    $("statFecha").textContent=normalFecha(d.fecha);
   } else {
     $("statUsuario").textContent="—";
     $("statUsuarioSub").textContent="Sin registros";
     $("statHora").textContent="—";
-    $("statFecha").textContent="—"
+    $("statFecha").textContent="—";
   }
-  applyFilter();
+
+  tbody.innerHTML=docs.length
+    ? docs.map(d=>rowHtml(d)).join("")
+    : `<tr><td colspan="5" class="empty">${buscar.value.trim()?"No hay registros que coincidan en todo el historial.":"No hay registros históricos."}</td></tr>`;
+
+  $("registrosPagina").textContent=`${docs.length} en esta página`;
 }
+
+function applyFilter(){
+  aplicarFiltroYPaginacion(true);
+}
+
+function updateStats(){
+  aplicarFiltroYPaginacion(false);
+}
+
 function setConnection(ok,text){$("estadoConexion").textContent=text; $("dot").style.background=ok?"#12b76a":"#f79009"}
 function showError(e){$("errorBox").style.display="block";$("errorBox").textContent=`No se pudo leer el monitor.\n${e?.code ? e.code+"\n" : ""}${e?.message||e}`;setConnection(false,"ERROR")}
-function renderPage(n){currentPage=n; viewingDocs=pages.get(n)||[]; updateStats(); $("scrollBox").scrollTop=0; if(n===1){nuevosPendientes=0;nuevosBtn.style.display="none"}}
+
+function renderPage(n){
+  const totalPages=Math.max(1,Math.ceil(filteredDocs.length/PAGE_SIZE));
+  currentPage=Math.min(Math.max(1,n),totalPages);
+  const ini=(currentPage-1)*PAGE_SIZE;
+  viewingDocs=filteredDocs.slice(ini,ini+PAGE_SIZE);
+  renderActual();
+  $("scrollBox").scrollTop=0;
+  if(currentPage===1){
+    nuevosPendientes=0;
+    nuevosBtn.style.display="none";
+  }
+}
 
 await cargarUsuarios();
 await iniciarPartidasEnVivo();
 
-async function loadNext(){
-  // El monitor en vivo consolida las 30 partidas más recientes de todos los usuarios.
-  // La paginación histórica queda deshabilitada para evitar consultas globales collectionGroup.
+function loadNext(){
+  const totalPages=Math.max(1,Math.ceil(filteredDocs.length/PAGE_SIZE));
+  if(currentPage<totalPages) renderPage(currentPage+1);
 }
-function loadPrev(){if(currentPage>1)renderPage(currentPage-1)}
+function loadPrev(){
+  if(currentPage>1) renderPage(currentPage-1);
+}
 
 buscar.addEventListener("input",applyFilter); nextBtn.addEventListener("click",loadNext); prevBtn.addEventListener("click",loadPrev); nuevosBtn.addEventListener("click",()=>renderPage(1));
 window.addEventListener("online",()=>setConnection(true,"EN VIVO")); window.addEventListener("offline",()=>setConnection(false,"SIN INTERNET"));

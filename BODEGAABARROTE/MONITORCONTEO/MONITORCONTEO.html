@@ -23,7 +23,7 @@
 <div class="app">
   <header class="topbar">
     <img src="logo.jfif" class="logo" alt="PROVSOFT">
-    <div class="titlebox"><div class="title">MONITOR DE CONTEO FÍSICO</div><div class="subtitle">ABARROTESPDD · Inventario 17/08/2026 · Registros en tiempo real</div></div>
+    <div class="titlebox"><div class="title">MONITOR DE CONTEO FÍSICO</div><div class="subtitle">ABARROTESPDD · Inventario 17/08/2026 · PARTIDAS por usuario en tiempo real</div></div>
     <div class="live"><span class="dot" id="dot"></span><span id="estadoConexion">CONECTANDO</span></div>
   </header>
 
@@ -59,30 +59,101 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, query, orderBy, limit, onSnapshot, getDocs, startAfter } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, collectionGroup, query, orderBy, limit, onSnapshot, getDocs, startAfter } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={apiKey:"AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",authDomain:"inventariopv-643f1.firebaseapp.com",projectId:"inventariopv-643f1",storageBucket:"inventariopv-643f1.appspot.com",messagingSenderId:"96242533231",appId:"1:96242533231:web:aae75a18fbaf9840529e9a"};
 const app=initializeApp(firebaseConfig); const db=getFirestore(app);
 const PAGE_SIZE=30;
-const REGISTROS=collection(db,"almacenes","abarrotespdd","inventariofisico","INV-ABARROTESPDD-170826","REGISTROS");
+const PARTIDAS=collectionGroup(db,"PARTIDAS");
+const USUARIOS=collection(db,"almacenes","abarrotespdd","inventariofisico","INV-ABARROTESPDD-170826","USUARIOS");
 
 const $=id=>document.getElementById(id); const tbody=$("tbody"), buscar=$("buscar"), prevBtn=$("prevBtn"), nextBtn=$("nextBtn"), nuevosBtn=$("nuevosBtn");
 let currentPage=1, pages=new Map(), pageDocs=new Map(), firstPageIds=new Set(), viewingDocs=[], liveReady=false, nuevosPendientes=0;
+const usuariosMap=new Map();
 
 function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
 function normalFecha(v){if(!v)return "—"; const s=String(v); if(/^\d{4}-\d{2}-\d{2}$/.test(s)){const [y,m,d]=s.split("-");return `${d}/${m}/${y}`} return s}
-function nombreUsuario(d){return d.usuarioNombre || d.usuario || d.usuarioId || "SIN USUARIO"}
+function obtenerNombreUsuarioDoc(u){
+  if(!u) return "";
+  return u.nombre || u.nombreCompleto || u.usuarioNombre || u.usuario || u.displayName || u.email || "";
+}
+
+function nombreUsuario(d){
+  const uid=d._usuarioDocId || d.usuarioId || d.uid || d.usuarioUid || d.idUsuario || "";
+  if(uid && usuariosMap.has(String(uid))) return usuariosMap.get(String(uid));
+  return d.usuarioNombre || d.nombreUsuario || d.usuario || uid || "SIN USUARIO";
+}
+
+async function cargarUsuarios(){
+  try{
+    const snap=await getDocs(USUARIOS);
+    usuariosMap.clear();
+    snap.forEach(docu=>{
+      const u=docu.data() || {};
+      const nombre=obtenerNombreUsuarioDoc(u) || docu.id;
+      usuariosMap.set(docu.id,nombre);
+
+      // Alias adicionales por si los REGISTROS guardan usuario/uid de otra forma
+      if(u.uid) usuariosMap.set(String(u.uid),nombre);
+      if(u.usuarioId) usuariosMap.set(String(u.usuarioId),nombre);
+      if(u.usuario) usuariosMap.set(String(u.usuario),nombre);
+      if(u.email) usuariosMap.set(String(u.email),nombre);
+    });
+
+    if(viewingDocs.length) updateStats();
+  }catch(e){
+    console.error("No se pudieron cargar USUARIOS:",e);
+  }
+}
 function concepto(d){return d.concepto || d.descripcion || "SIN DESCRIPCIÓN"}
 function fmtCant(v){const n=Number(v); return Number.isFinite(n)?n.toLocaleString("es-MX",{maximumFractionDigits:3}):String(v??"")}
-function rowHtml(docx, flash=false){const d=docx.data(); const cls=(d.eliminado?"deleted ":"")+(flash?"flash":"");return `<tr class="${cls}" data-id="${esc(docx.id)}"><td class="fecha">${esc(normalFecha(d.fecha))}</td><td class="hora">${esc(d.hora||"—")}</td><td class="usuario">${esc(nombreUsuario(d))}</td><td class="cantidad">${esc(fmtCant(d.cantidad))}</td><td><div class="concepto">${esc(concepto(d))}</div><div class="codigo">${esc(d.codigo||"")}${d.unidadMedidaSat?` · ${esc(d.unidadMedidaSat)}`:""}</div></td></tr>`}
+function rowHtml(docx, flash=false){
+  const raw=docx.data();
+  const usuarioDocId=docx.ref.parent?.parent?.id || "";
+  const d={...raw,_usuarioDocId:usuarioDocId};
+  const cls=(d.eliminado?"deleted ":"")+(flash?"flash":"");
+  return `<tr class="${cls}" data-id="${esc(docx.id)}"><td class="fecha">${esc(normalFecha(d.fecha))}</td><td class="hora">${esc(d.hora||"—")}</td><td class="usuario">${esc(nombreUsuario(d))}</td><td class="cantidad">${esc(fmtCant(d.cantidad))}</td><td><div class="concepto">${esc(concepto(d))}</div><div class="codigo">${esc(d.codigo||"")}${d.unidadMedidaSat?` · ${esc(d.unidadMedidaSat)}`:""}</div></td></tr>`}
 
-function applyFilter(){const qtxt=buscar.value.trim().toLowerCase(); const docs=viewingDocs.filter(x=>{if(!qtxt)return true; const d=x.data(); return [d.fecha,d.hora,nombreUsuario(d),d.cantidad,concepto(d),d.codigo].join(" ").toLowerCase().includes(qtxt)}); tbody.innerHTML=docs.length?docs.map(d=>rowHtml(d)).join(""):`<tr><td colspan="5" class="empty">No hay registros que coincidan.</td></tr>`; $("registrosPagina").textContent=`${docs.length} registro${docs.length===1?"":"s"}`; $("statRegistros").textContent=docs.length;}
-function updateStats(){const docs=viewingDocs; $("statPagina").textContent=currentPage; $("pageInfo").textContent=`Página ${currentPage} · ${docs.length} de hasta ${PAGE_SIZE} registros`; prevBtn.disabled=currentPage===1; nextBtn.disabled=docs.length<PAGE_SIZE; if(docs.length){const d=docs[0].data(); $("statUsuario").textContent=nombreUsuario(d); $("statUsuarioSub").textContent=concepto(d); $("statHora").textContent=d.hora||"—"; $("statFecha").textContent=normalFecha(d.fecha)} else {$("statUsuario").textContent="—";$("statUsuarioSub").textContent="Sin registros";$("statHora").textContent="—";$("statFecha").textContent="—"} applyFilter();}
+function applyFilter(){
+  const qtxt=buscar.value.trim().toLowerCase();
+  const docs=viewingDocs.filter(x=>{
+    const raw=x.data();
+    const d={...raw,_usuarioDocId:x.ref.parent?.parent?.id || ""};
+    if(!qtxt)return true;
+    return [d.fecha,d.hora,nombreUsuario(d),d.cantidad,concepto(d),d.codigo].join(" ").toLowerCase().includes(qtxt)
+  });
+  tbody.innerHTML=docs.length?docs.map(d=>rowHtml(d)).join(""):`<tr><td colspan="5" class="empty">No hay registros que coincidan.</td></tr>`;
+  $("registrosPagina").textContent=`${docs.length} registro${docs.length===1?"":"s"}`;
+  $("statRegistros").textContent=docs.length;
+}
+function updateStats(){
+  const docs=viewingDocs;
+  $("statPagina").textContent=currentPage;
+  $("pageInfo").textContent=`Página ${currentPage} · ${docs.length} de hasta ${PAGE_SIZE} registros`;
+  prevBtn.disabled=currentPage===1;
+  nextBtn.disabled=docs.length<PAGE_SIZE;
+  if(docs.length){
+    const raw=docs[0].data();
+    const d={...raw,_usuarioDocId:docs[0].ref.parent?.parent?.id || ""};
+    $("statUsuario").textContent=nombreUsuario(d);
+    $("statUsuarioSub").textContent=concepto(d);
+    $("statHora").textContent=d.hora||"—";
+    $("statFecha").textContent=normalFecha(d.fecha)
+  } else {
+    $("statUsuario").textContent="—";
+    $("statUsuarioSub").textContent="Sin registros";
+    $("statHora").textContent="—";
+    $("statFecha").textContent="—"
+  }
+  applyFilter();
+}
 function setConnection(ok,text){$("estadoConexion").textContent=text; $("dot").style.background=ok?"#12b76a":"#f79009"}
 function showError(e){$("errorBox").style.display="block";$("errorBox").textContent=`No se pudo leer el monitor.\n${e?.message||e}`;setConnection(false,"ERROR")}
 function renderPage(n){currentPage=n; viewingDocs=pages.get(n)||[]; updateStats(); $("scrollBox").scrollTop=0; if(n===1){nuevosPendientes=0;nuevosBtn.style.display="none"}}
 
-const liveQ=query(REGISTROS,orderBy("epochMs","desc"),limit(PAGE_SIZE));
+await cargarUsuarios();
+
+const liveQ=query(PARTIDAS,orderBy("epochMs","desc"),limit(PAGE_SIZE));
 const unsub=onSnapshot(liveQ,snap=>{
   setConnection(true,"EN VIVO"); $("errorBox").style.display="none";
   const docs=snap.docs; pages.set(1,docs); pageDocs.set(1,docs);
@@ -92,7 +163,7 @@ const unsub=onSnapshot(liveQ,snap=>{
   if(currentPage===1){viewingDocs=docs; updateStats()}
 },showError);
 
-async function loadNext(){try{const docsActual=pages.get(currentPage)||[]; if(!docsActual.length)return; const last=docsActual[docsActual.length-1]; const target=currentPage+1; if(pages.has(target)){renderPage(target);return} setConnection(true,"CONSULTANDO"); const q=query(REGISTROS,orderBy("epochMs","desc"),startAfter(last),limit(PAGE_SIZE)); const snap=await getDocs(q); pages.set(target,snap.docs); pageDocs.set(target,snap.docs); renderPage(target); setConnection(true,"EN VIVO")}catch(e){showError(e)}}
+async function loadNext(){try{const docsActual=pages.get(currentPage)||[]; if(!docsActual.length)return; const last=docsActual[docsActual.length-1]; const target=currentPage+1; if(pages.has(target)){renderPage(target);return} setConnection(true,"CONSULTANDO"); const q=query(PARTIDAS,orderBy("epochMs","desc"),startAfter(last),limit(PAGE_SIZE)); const snap=await getDocs(q); pages.set(target,snap.docs); pageDocs.set(target,snap.docs); renderPage(target); setConnection(true,"EN VIVO")}catch(e){showError(e)}}
 function loadPrev(){if(currentPage>1)renderPage(currentPage-1)}
 
 buscar.addEventListener("input",applyFilter); nextBtn.addEventListener("click",loadNext); prevBtn.addEventListener("click",loadPrev); nuevosBtn.addEventListener("click",()=>renderPage(1));

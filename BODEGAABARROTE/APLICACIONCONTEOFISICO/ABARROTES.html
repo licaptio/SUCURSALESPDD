@@ -1504,7 +1504,12 @@
 
     await esperarPintado();
 
-    const snap = await getDocs(collection(db,"productos"));
+    const snap = await getDocs(
+  query(
+    collection(db, "productos"),
+    where("activo", "==", true)
+  )
+);
     const totalDocs = snap.size || snap.docs.length || 0;
 
     if(!totalDocs){

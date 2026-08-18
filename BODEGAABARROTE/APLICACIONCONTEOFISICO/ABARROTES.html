@@ -1,0 +1,2608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Conteo Aplicacion 2026 - PROVSOFT</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    :root{
+      --azul:#b45309;
+      --azul2:#f2b705;
+      --fondo:#fff8e1;
+      --card:#ffffff;
+      --ok:#16a34a;
+      --danger:#b42318;
+      --txt:#2b1f05;
+      --muted:#7c5c18;
+      --amarillo:#ffd54f;
+      --amarillo2:#fff3bf;
+      --oro:#d99a00;
+      --rojo:#d71920;
+    }
+
+    *{box-sizing:border-box;min-width:0}
+    html,body{
+      margin:0;
+      height:100%;
+      min-height:100%;
+      font-family:'Poppins',sans-serif;
+      background:linear-gradient(135deg,#fffdf4 0%,#fff2a8 45%,#f7c948 100%);
+      color:var(--txt);
+      overflow:hidden;
+    }
+    body{padding:10px}
+
+    .app{
+      max-width:820px;
+      margin:0 auto;
+      height:calc(100dvh - 20px);
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .splash-screen{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(135deg,#fffdf4 0%,#fff1a6 50%,#f2b705 100%);
+      padding:20px;
+    }
+
+    .splash-screen.hidden{display:none}
+
+    .splash-card{
+      width:min(360px,92vw);
+      background:rgba(255,255,255,.96);
+      border:2px solid rgba(217,154,0,.28);
+      border-radius:28px;
+      padding:24px;
+      text-align:center;
+      box-shadow:0 18px 45px rgba(118,80,0,.22);
+    }
+
+    .brand-logo{
+      display:block;
+      object-fit:contain;
+      background:white;
+      border-radius:18px;
+      border:2px solid rgba(215,25,32,.18);
+      box-shadow:0 8px 22px rgba(118,80,0,.16);
+    }
+
+    .splash-logo{
+      width:min(280px,78vw);
+      height:auto;
+      margin:0 auto 14px;
+      padding:8px 10px;
+    }
+
+    .splash-title{
+      font-size:26px;
+      font-weight:900;
+      color:var(--rojo);
+      letter-spacing:.04em;
+    }
+
+    .splash-subtitle{
+      margin-top:4px;
+      font-size:13px;
+      font-weight:700;
+      color:var(--muted);
+    }
+
+    .splash-loader{
+      height:10px;
+      margin-top:18px;
+      border-radius:999px;
+      overflow:hidden;
+      background:#fff3bf;
+      border:1px solid #f4d35e;
+    }
+
+    .splash-loader span{
+      display:block;
+      width:45%;
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#f2b705,#d71920);
+      animation:loadbar 1s infinite alternate ease-in-out;
+    }
+
+    @keyframes loadbar{
+      from{transform:translateX(-15%)}
+      to{transform:translateX(140%)}
+    }
+
+    .app-header{
+      display:grid;
+      justify-items:center;
+      gap:8px;
+      margin:4px 0 10px;
+    }
+
+    body.app-logged-in .app-header{display:none}
+
+    .header-logo{
+      width:min(260px,72vw);
+      max-height:82px;
+      padding:6px 10px;
+    }
+
+    .login-card{border-top:6px solid var(--amarillo)}
+
+    .login-logo{
+      width:min(260px,82vw);
+      max-height:90px;
+      margin:0 auto 4px;
+      padding:6px 10px;
+    }
+
+    .card{
+      background:rgba(255,255,255,.97);
+      border:1px solid rgba(217,154,0,.22);
+      border-radius:20px;
+      padding:16px;
+      box-shadow:0 12px 30px rgba(118,80,0,.14);
+    }
+
+    .title{
+      color:#7a2e00;
+      text-align:center;
+      font-weight:800;
+      font-size:clamp(24px,6vw,36px);
+      line-height:1.05;
+      margin:8px 0 14px;
+      text-shadow:0 2px 0 rgba(255,255,255,.7);
+    }
+
+    .subtitle{
+      font-size:13px;
+      color:var(--muted);
+      font-weight:600;
+    }
+
+    .view{display:none}
+    .view.active{display:block}
+
+    #viewApp.active{
+      display:flex;
+      flex-direction:column;
+      flex:1;
+      min-height:0;
+      overflow:hidden;
+    }
+
+    .tabView{min-height:0}
+    .tabView:not(.hidden){display:block;min-height:0}
+
+    input,button{
+      font-family:inherit;
+      font-size:16px;
+      border-radius:14px;
+      border:0;
+      padding:13px;
+    }
+
+    input{
+      width:100%;
+      background:#fffdf4;
+      border:1px solid #f4d35e;
+      color:var(--txt);
+      text-transform:uppercase;
+    }
+
+    input[type="password"]{text-transform:none}
+
+    button{
+      cursor:pointer;
+      font-weight:800;
+    }
+
+    .btn{
+      background:linear-gradient(135deg,#ffd54f,#f2b705);
+      color:#3a2600;
+      width:100%;
+    }
+
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:grayscale(.15);
+    }
+
+    .btn2{
+      background:#fff3bf;
+      color:#5c3b00;
+      width:100%;
+    }
+
+    .btn-ok{background:var(--ok);color:white}
+    .btn-danger{background:#fee2e2;color:var(--danger)}
+    .btn-small{padding:8px 10px;font-size:14px;border-radius:10px}
+
+    .grid{display:grid;gap:10px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .mt{margin-top:12px}
+    .mb{margin-bottom:12px}
+
+    .statusbar{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      align-items:center;
+      font-size:12px;
+      color:#4a3000;
+      margin-bottom:8px;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      padding:5px 9px;
+      border-radius:999px;
+      background:rgba(255,255,255,.55);
+      color:#5c3b00;
+      font-weight:700;
+      font-size:12px;
+    }
+
+    .tabs{
+      position:sticky;
+      bottom:0;
+      z-index:30;
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:8px;
+      margin-top:auto;
+      padding-top:10px;
+      background:linear-gradient(0deg,rgba(255,248,225,1),rgba(255,248,225,.72),rgba(255,248,225,0));
+    }
+
+    .tab{
+      background:white;
+      color:#8a4b00;
+      border:1px solid #f4d35e;
+      box-shadow:0 6px 16px rgba(0,0,0,.08);
+      padding:10px 5px;
+      font-size:12px;
+      border-radius:16px;
+    }
+
+    .tab.active{
+      background:linear-gradient(135deg,#ffd54f,#f2b705);
+      color:#3a2600;
+    }
+
+    .product-card{
+      border:2px solid #f4d35e;
+      border-radius:18px;
+      padding:14px;
+      background:white;
+    }
+
+    .modo-cantidad #capturaScannerBox{display:none!important}
+    .modo-cantidad #productoBox{display:block!important}
+
+    .product-name{
+      font-size:20px;
+      font-weight:800;
+      color:#8a4b00;
+      line-height:1.12;
+    }
+
+    .product-code{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .qty-box{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .qty-box input{
+      font-size:26px;
+      font-weight:800;
+      text-align:center;
+      padding:16px;
+      text-transform:none;
+    }
+
+    .last-box{
+      background:#fff8dc;
+      border:1px solid #f4d35e;
+      color:#7a2e00;
+      padding:10px;
+      border-radius:14px;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .last-scanned-list{
+      display:grid;
+      gap:8px;
+    }
+
+    .last-scanned-card{
+      background:white;
+      border:2px solid #f4d35e;
+      border-radius:18px;
+      padding:12px;
+    }
+
+    .last-scanned-label{
+      font-size:11px;
+      color:var(--muted);
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.02em;
+    }
+
+    .last-scanned-name{
+      margin-top:4px;
+      font-size:15px;
+      font-weight:900;
+      color:#8a4b00;
+      line-height:1.18;
+    }
+
+    .last-scanned-meta{
+      margin-top:5px;
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+    }
+
+    .scanner-box{
+      display:none;
+      background:white;
+      padding:10px;
+      border-radius:16px;
+      margin-top:12px;
+    }
+
+    .scanner-modal{
+      position:fixed;
+      inset:0;
+      z-index:9000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(43,31,5,.86);
+      padding:max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+    }
+
+    .scanner-modal.show{display:flex}
+
+    .scanner-modal-card{
+      width:min(520px,96vw);
+      max-height:96dvh;
+      display:grid;
+      grid-template-rows:auto 1fr;
+      gap:10px;
+      background:#fffdf4;
+      border:2px solid #f4d35e;
+      border-radius:24px;
+      padding:14px;
+      box-shadow:0 18px 55px rgba(0,0,0,.35);
+      position:relative;
+    }
+
+    .scanner-modal-head{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+      position:relative;
+      z-index:30;
+    }
+
+    .scanner-modal-title{
+      font-size:18px;
+      font-weight:900;
+      color:#7a2e00;
+      line-height:1.15;
+    }
+
+    .scanner-modal-msg{display:none}
+
+    .scanner-viewport{
+      position:relative;
+      width:100%;
+      min-height:min(72dvh,420px);
+      overflow:hidden;
+      background:#111;
+      border-radius:18px;
+      border:2px solid #f4d35e;
+    }
+
+    #lector{
+      display:block;
+      width:100%;
+      height:100%;
+      min-height:min(72dvh,420px);
+      overflow:hidden;
+      background:#111;
+      border-radius:16px;
+      border:0;
+      padding:0;
+      margin:0;
+    }
+
+    #lector video{
+      width:100%!important;
+      height:100%!important;
+      object-fit:cover!important;
+      border-radius:16px;
+    }
+
+    .scanner-overlay{
+      position:absolute;
+      inset:0;
+      z-index:20;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+    }
+
+    .scanner-frame{
+      width:min(72vw,280px);
+      height:min(72vw,280px);
+      max-width:78%;
+      max-height:78%;
+      border:4px solid rgba(0,255,136,.95);
+      border-radius:24px;
+      box-shadow:
+        0 0 0 9999px rgba(0,0,0,.42),
+        0 0 22px rgba(0,255,136,.65),
+        inset 0 0 18px rgba(0,255,136,.18);
+      position:relative;
+    }
+
+    .scanner-frame::before,
+    .scanner-frame::after{
+      content:"";
+      position:absolute;
+      width:42px;
+      height:42px;
+      border-color:#00ff88;
+      border-style:solid;
+    }
+
+    .scanner-frame::before{
+      top:-5px;
+      left:-5px;
+      border-width:6px 0 0 6px;
+      border-top-left-radius:18px;
+    }
+
+    .scanner-frame::after{
+      right:-5px;
+      bottom:-5px;
+      border-width:0 6px 6px 0;
+      border-bottom-right-radius:18px;
+    }
+
+    .scanner-line{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:min(72vw,280px);
+      max-width:78%;
+      height:3px;
+      border-radius:999px;
+      background:#00ff88;
+      box-shadow:0 0 14px #00ff88;
+      animation:scanline 2s linear infinite;
+      transform:translate(-50%,-50%);
+    }
+
+    @keyframes scanline{
+      0%{transform:translate(-50%, calc(-50% - 120px))}
+      50%{transform:translate(-50%, calc(-50% + 120px))}
+      100%{transform:translate(-50%, calc(-50% - 120px))}
+    }
+
+    .search-results{
+      display:grid;
+      gap:8px;
+      max-height:55vh;
+      overflow:auto;
+      margin-top:10px;
+    }
+
+    .result-item{
+      background:white;
+      border:1px solid #f4d35e;
+      border-radius:14px;
+      padding:10px;
+    }
+
+    .result-title{
+      font-weight:800;
+      color:#8a4b00;
+    }
+
+    .result-code{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .cart-panel{
+      height:calc(100dvh - 190px);
+      min-height:0;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .cart-list{
+      display:grid;
+      gap:7px;
+      flex:1;
+      min-height:0;
+      max-height:none;
+      overflow:auto;
+      padding-right:2px;
+      overscroll-behavior:contain;
+    }
+
+    .cart-item{
+      background:white;
+      border:1px solid #f4d35e;
+      border-radius:14px;
+      padding:8px 9px;
+    }
+
+    .cart-row-compact{
+      display:grid;
+      grid-template-columns:minmax(72px,92px) minmax(0,1fr) auto auto;
+      gap:8px;
+      align-items:center;
+    }
+
+    .cart-code-compact{
+      color:var(--muted);
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .cart-name-compact{
+      color:#8a4b00;
+      font-size:13px;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      line-height:1.15;
+    }
+
+    .cart-qty-control{
+      display:grid;
+      grid-template-columns:32px minmax(34px,auto) 32px;
+      align-items:center;
+      justify-items:center;
+      border:1px solid #f4d35e;
+      background:#fff8dc;
+      border-radius:999px;
+      overflow:hidden;
+      min-width:104px;
+      height:36px;
+    }
+
+    .cart-qty-control button{
+      width:32px;
+      height:36px;
+      padding:0;
+      border-radius:0;
+      background:#fff3bf;
+      color:#5c3b00;
+      font-size:18px;
+      font-weight:900;
+      line-height:1;
+    }
+
+    .cart-qty-number{
+      min-width:34px;
+      padding:0 6px;
+      color:#111827;
+      font-size:17px;
+      font-weight:900;
+      text-align:center;
+      white-space:nowrap;
+    }
+
+    .cart-delete-btn{
+      width:38px;
+      height:36px;
+      padding:0;
+      border-radius:12px;
+      background:#fee2e2;
+      color:var(--danger);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:17px;
+    }
+
+    @media(max-width:420px){
+      .cart-row-compact{
+        grid-template-columns:72px minmax(0,1fr) auto auto;
+        gap:6px;
+      }
+
+      .cart-code-compact{font-size:10px}
+      .cart-name-compact{font-size:12px}
+
+      .cart-qty-control{
+        min-width:96px;
+        height:34px;
+        grid-template-columns:30px minmax(32px,auto) 30px;
+      }
+
+      .cart-qty-control button{
+        width:30px;
+        height:34px;
+      }
+
+      .cart-qty-number{
+        font-size:16px;
+        min-width:32px;
+        padding:0 4px;
+      }
+
+      .cart-delete-btn{
+        width:34px;
+        height:34px;
+      }
+    }
+
+    .info-line{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .catalog-progress{
+      margin-top:12px;
+      display:none;
+      background:#fffdf4;
+      border:1px solid #f4d35e;
+      border-radius:16px;
+      padding:10px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+    }
+
+    .catalog-progress.show{display:block}
+
+    .catalog-progress-head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      color:#7a2e00;
+      font-size:12px;
+      font-weight:900;
+      margin-bottom:7px;
+    }
+
+    .catalog-progress-track{
+      height:18px;
+      border-radius:999px;
+      overflow:hidden;
+      background:#fff3bf;
+      border:1px solid #f4d35e;
+    }
+
+    .catalog-progress-bar{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#f2b705,#d71920);
+      transition:width .18s ease;
+    }
+
+    .catalog-progress.indeterminate .catalog-progress-bar{
+      width:45%;
+      animation:catalogIndeterminate 1s infinite alternate ease-in-out;
+    }
+
+    @keyframes catalogIndeterminate{
+      from{transform:translateX(-35%)}
+      to{transform:translateX(150%)}
+    }
+
+    .catalog-progress-detail{
+      margin-top:7px;
+      font-size:11px;
+      color:var(--muted);
+      font-weight:800;
+      text-align:center;
+    }
+
+    .hidden{display:none!important}
+
+    @media(max-width:719px){
+      .title{
+        font-size:22px;
+        margin:4px 0 8px;
+      }
+
+      .card{
+        padding:12px;
+        border-radius:18px;
+      }
+
+      .capture-layout{
+        display:grid;
+        grid-template-rows:auto auto;
+        gap:10px;
+        min-height:0;
+        overflow:auto;
+        overscroll-behavior:contain;
+        padding-bottom:6px;
+      }
+
+      #tabCaptura{
+        flex:1;
+        min-height:0;
+        overflow:hidden;
+      }
+
+      .tabs{padding-top:8px}
+      .tab{padding:8px 4px;font-size:11px}
+      .cart-panel{height:calc(100dvh - 178px)}
+
+      .scanner-modal{
+        padding:0;
+        background:#000;
+      }
+
+      .scanner-modal-card{
+        width:100vw;
+        height:100dvh;
+        max-height:none;
+        border-radius:0;
+        border:0;
+        padding:10px;
+        background:#000;
+      }
+
+      .scanner-modal-title{color:white}
+      .scanner-modal-head{grid-template-columns:1fr auto}
+
+      .scanner-viewport{
+        min-height:0;
+        height:calc(100dvh - 72px);
+        border-radius:18px;
+      }
+
+      #lector{
+        min-height:0;
+        height:100%;
+      }
+
+      .scanner-frame{
+        width:min(76vw,300px);
+        height:min(76vw,300px);
+      }
+
+      .scanner-line{width:min(76vw,300px)}
+    }
+
+    @media(min-width:720px){
+      body{padding:18px}
+
+      .app{
+        height:calc(100dvh - 36px);
+        min-height:0;
+      }
+
+      .capture-layout{
+        display:grid;
+        grid-template-columns:1.1fr .9fr;
+        gap:14px;
+        align-items:start;
+      }
+
+      .tabs{
+        position:static;
+        background:transparent;
+      }
+    }
+
+    /* =========================================================
+       ESCRITORIO / PC
+       Mantiene intacto el comportamiento móvil (< 900px).
+       ========================================================= */
+    @media(min-width:900px){
+      html,body{
+        overflow:hidden;
+      }
+
+      body{
+        padding:22px 28px;
+      }
+
+      .app{
+        width:100%;
+        max-width:1480px;
+        height:calc(100dvh - 44px);
+        margin:0 auto;
+      }
+
+      .app-header{
+        grid-template-columns:auto 1fr;
+        justify-items:start;
+        align-items:center;
+        gap:22px;
+        margin:0 0 16px;
+      }
+
+      .header-logo{
+        width:230px;
+        max-height:76px;
+      }
+
+      .title{
+        text-align:left;
+        font-size:30px;
+        margin:0;
+      }
+
+      .statusbar{
+        grid-template-columns:auto auto;
+        justify-content:end;
+        gap:10px;
+        margin-bottom:12px;
+      }
+
+      .pill{
+        font-size:13px;
+        padding:7px 12px;
+        background:rgba(255,255,255,.82);
+      }
+
+      #viewLogin.active{
+        width:min(620px,100%);
+        margin:18px auto 0;
+      }
+
+      .login-card{
+        padding:24px 28px;
+      }
+
+      #viewApp.active{
+        flex:1;
+        min-height:0;
+        gap:0;
+      }
+
+      #viewApp > .card.mb{
+        order:0;
+        margin-bottom:10px;
+        padding:10px 16px;
+        border-radius:14px;
+      }
+
+      .info-line{
+        grid-template-columns:auto auto;
+        justify-content:space-between;
+        font-size:13px;
+      }
+
+      .tabs{
+        order:1;
+        display:grid;
+        grid-template-columns:repeat(4,minmax(145px,1fr));
+        gap:10px;
+        margin:0 0 12px;
+        padding:0;
+      }
+
+      .tab{
+        min-height:50px;
+        padding:8px 16px;
+        border-radius:14px;
+        font-size:14px;
+        line-height:1.25;
+        box-shadow:0 4px 12px rgba(0,0,0,.07);
+      }
+
+      .tab br{
+        display:none;
+      }
+
+      .tabView{
+        order:2;
+        flex:1;
+        min-height:0;
+      }
+
+      #tabCaptura:not(.hidden),
+      #tabBuscar:not(.hidden),
+      #tabCarrito:not(.hidden),
+      #tabSesion:not(.hidden){
+        display:block;
+        min-height:0;
+        height:100%;
+      }
+
+      .capture-layout{
+        height:100%;
+        grid-template-columns:minmax(0,1.65fr) minmax(330px,.75fr);
+        gap:16px;
+        align-items:stretch;
+      }
+
+      .capture-layout > .card{
+        height:100%;
+        align-content:start;
+        padding:20px;
+      }
+
+      .capture-layout > .card:first-child{
+        display:grid;
+        grid-template-rows:auto auto;
+      }
+
+      #capturaScannerBox{
+        grid-template-columns:minmax(0,1fr) 210px;
+        align-items:end;
+        column-gap:12px;
+      }
+
+      #capturaScannerBox .subtitle{
+        grid-column:1 / -1;
+      }
+
+      #codigoInput{
+        height:54px;
+        font-size:19px;
+      }
+
+      #btnCamara{
+        height:54px;
+      }
+
+      .product-card{
+        padding:22px;
+      }
+
+      .product-name{
+        font-size:26px;
+      }
+
+      .product-code{
+        font-size:14px;
+      }
+
+      .qty-box{
+        grid-template-columns:minmax(220px,1fr) minmax(180px,.55fr) minmax(170px,.45fr);
+        align-items:stretch;
+      }
+
+      .qty-box input{
+        font-size:30px;
+        min-height:60px;
+      }
+
+      .qty-box button{
+        min-height:60px;
+      }
+
+      .last-scanned-list{
+        grid-template-columns:1fr;
+      }
+
+      .last-scanned-card{
+        padding:14px 16px;
+      }
+
+      .last-scanned-name{
+        font-size:16px;
+      }
+
+      #tabBuscar > .card{
+        height:100%;
+        padding:20px;
+        display:flex;
+        flex-direction:column;
+      }
+
+      #buscarInput{
+        height:52px;
+        font-size:17px;
+      }
+
+      .search-results{
+        flex:1;
+        min-height:0;
+        max-height:none;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        align-content:start;
+        overflow:auto;
+        padding-right:6px;
+      }
+
+      .result-item{
+        padding:13px 15px;
+      }
+
+      .cart-panel{
+        height:100%;
+        padding:18px 20px;
+      }
+
+      .cart-panel > .row{
+        display:grid;
+        grid-template-columns:220px 220px;
+        justify-content:end;
+      }
+
+      .cart-panel > .row .btn2{
+        width:100%;
+      }
+
+      .cart-list{
+        gap:8px;
+        padding-right:8px;
+      }
+
+      .cart-item{
+        padding:10px 14px;
+      }
+
+      .cart-row-compact{
+        grid-template-columns:150px minmax(280px,1fr) 132px 42px;
+        gap:14px;
+      }
+
+      .cart-code-compact{
+        font-size:12px;
+      }
+
+      .cart-name-compact{
+        font-size:14px;
+      }
+
+      #tabSesion > .card{
+        width:min(820px,100%);
+        margin:0 auto;
+        padding:24px;
+      }
+
+      .scanner-modal-card{
+        width:min(760px,88vw);
+      }
+
+      .scanner-viewport,
+      #lector{
+        min-height:min(68dvh,560px);
+      }
+    }
+
+    @media(min-width:1250px){
+      .capture-layout{
+        grid-template-columns:minmax(0,2fr) minmax(380px,.8fr);
+      }
+
+      .search-results{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div id="splashScreen" class="splash-screen">
+  <div class="splash-card">
+    <img class="brand-logo splash-logo" src="./logo.jfif" alt="PROVEEDORA">
+    <div class="splash-title">PROVSOFT</div>
+    <div class="splash-subtitle">Preparando conteo de inventario...</div>
+    <div class="splash-loader"><span></span></div>
+  </div>
+</div>
+
+<div class="app">
+
+  <header class="app-header">
+    <img class="brand-logo header-logo" src="./logo.jfif" alt="PROVEEDORA">
+    <h1 class="title">CONTEO ABARROTES PDD<br>17 AGOSTO 2026</h1>
+  </header>
+
+  <div class="statusbar">
+    <div class="pill" id="onlinePill">🔄 Revisando conexión</div>
+    <div class="pill" id="syncPill">Pendiente: 0</div>
+  </div>
+
+  <section id="viewLogin" class="view active">
+    <div class="card grid login-card">
+      <div>
+        <div class="subtitle">Usuario</div>
+        <input id="loginUsuario" type="text" placeholder="GERARDO" autocomplete="username">
+      </div>
+
+      <div>
+        <div class="subtitle">Contraseña</div>
+        <input id="loginPassword" type="password" inputmode="numeric" placeholder="Contraseña" autocomplete="current-password">
+      </div>
+
+      <button class="btn" id="btnLogin" disabled>Preparando catálogo...</button>
+
+      <div class="subtitle" id="loginMsg">
+        El acceso se valida desde Firebase en la colección usuarios_ruta.
+      </div>
+
+      <div id="catalogoProgress" class="catalog-progress">
+        <div class="catalog-progress-head">
+          <span id="catalogoProgressTitle">Catálogo</span>
+          <span id="catalogoProgressPercent">0%</span>
+        </div>
+        <div class="catalog-progress-track">
+          <div id="catalogoProgressBar" class="catalog-progress-bar"></div>
+        </div>
+        <div id="catalogoProgressDetail" class="catalog-progress-detail">Esperando inicio...</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="viewApp" class="view">
+    <div class="card mb">
+      <div class="info-line">
+        <div>Usuario: <span id="userName">---</span></div>
+        <div>Folio: <span id="folioTxt">---</span></div>
+      </div>
+    </div>
+
+    <section id="tabCaptura" class="tabView active">
+      <div class="capture-layout">
+        <div class="card grid">
+          <div id="capturaScannerBox" class="grid">
+            <div class="subtitle">Escanear con pistola o escribir código</div>
+            <input id="codigoInput" type="text" placeholder="Código de barras..." autocomplete="off" inputmode="numeric">
+            <button class="btn2" id="btnCamara">📷 Abrir cámara</button>
+          </div>
+
+          <div id="productoBox" class="product-card hidden">
+            <div class="product-name" id="prodNombre">Producto</div>
+            <div class="product-code" id="prodCodigo">Código</div>
+
+            <div class="qty-box">
+              <input id="cantidadInput" type="number" step="0.001" min="0.001" placeholder="Cantidad">
+              <button class="btn btn-ok" id="btnGuardar">Guardar conteo</button>
+              <button class="btn2" id="btnCancelarCantidad" type="button">Cambiar producto</button>
+            </div>
+          </div>
+
+          <div id="lastSaved" class="last-box hidden"></div>
+        </div>
+
+        <div class="card grid">
+          <div class="subtitle">Últimos artículos escaneados</div>
+          <div id="ultimosEscaneados" class="last-scanned-list">
+            <div class="last-scanned-card">
+              <div class="last-scanned-label">Sin escaneos todavía</div>
+              <div class="last-scanned-name">Aquí aparecerán los últimos dos artículos guardados.</div>
+              <div class="last-scanned-meta">
+                <span>---</span>
+                <span>---</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn2" id="btnSyncNow">Sincronizar ahora</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tabBuscar" class="tabView hidden">
+      <div class="card">
+        <div class="subtitle">Buscar producto local</div>
+        <input id="buscarInput" type="text" placeholder="Nombre, marca, código, palabras...">
+        <div id="resultados" class="search-results"></div>
+      </div>
+    </section>
+
+    <section id="tabCarrito" class="tabView hidden">
+      <div class="card grid cart-panel">
+        <div class="row">
+          <button class="btn2" id="btnReloadCart">Actualizar carrito</button>
+          <button class="btn2" id="btnFinalizar">Finalizar mi conteo</button>
+        </div>
+        <div class="subtitle" id="cartSummary">Sin partidas.</div>
+        <div id="cartList" class="cart-list"></div>
+      </div>
+    </section>
+
+    <section id="tabSesion" class="tabView hidden">
+      <div class="card grid">
+        <div class="product-card">
+          <div class="cart-code-compact">Sesión activa</div>
+          <div class="product-name" id="sessionInfo">---</div>
+        </div>
+        <button class="btn" id="btnSyncSession">Guardar / sincronizar sesión</button>
+        <button class="btn-danger" id="btnLogout">Cerrar sesión</button>
+      </div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="Captura">📦<br>Captura</button>
+      <button class="tab" data-tab="Buscar">🔎<br>Buscar</button>
+      <button class="tab" data-tab="Carrito">🧺<br>Conteo</button>
+      <button class="tab" data-tab="Sesion">⚙️<br>Sesión</button>
+    </nav>
+  </section>
+
+</div>
+
+<div id="scannerModal" class="scanner-modal" aria-hidden="true">
+  <div class="scanner-modal-card">
+    <div class="scanner-modal-head">
+      <div>
+        <div class="scanner-modal-title">Escanear código</div>
+      </div>
+      <button class="btn-danger btn-small" id="btnCerrarCamara" type="button">Cerrar</button>
+    </div>
+
+    <div class="scanner-viewport">
+      <div id="lector" class="scanner-box"></div>
+      <div class="scanner-overlay" aria-hidden="true">
+        <div class="scanner-frame"></div>
+        <div class="scanner-line"></div>
+      </div>
+    </div>
+    <div id="scannerMsg" class="scanner-modal-msg" aria-live="polite">Cámara lista.</div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    query,
+    where,
+    limit,
+    doc,
+    setDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+    authDomain: "inventariopv-643f1.firebaseapp.com",
+    projectId: "inventariopv-643f1",
+    storageBucket: "inventariopv-643f1.appspot.com",
+    messagingSenderId: "96242533231",
+    appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const ALMACEN_INVENTARIO = "abarrotespdd";
+  const INVENTARIO_FECHA_ID = "170826";
+  const INVENTARIO_DOC_ID = `INV-ABARROTESPDD-${INVENTARIO_FECHA_ID}`;
+  const CONTEO_ID = `ABARROTESPDD-${INVENTARIO_FECHA_ID}`;
+  const CONTEO_NOMBRE = "Inventario ABARROTESPDD 17-08-2026";
+  const DB_NAME = "PROVSOFT_CONTEO_ABARROTESPDD_170826";
+  const DB_VERSION = 4;
+  const SYNC_EVERY_ITEMS = 5;
+  const SYNC_INTERVAL_MS = 30000;
+  const AUTO_LOGOUT_MS = 5 * 60 * 1000;
+
+  const $ = id => document.getElementById(id);
+  const pad2 = n => String(n).padStart(2,"0");
+
+  const nowDate = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  };
+
+  const nowTime = () => {
+    const d = new Date();
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  };
+
+  const nowLocal = () => `${nowDate()} ${nowTime()}`;
+  const round3 = n => Math.round((Number(n) + Number.EPSILON) * 1000) / 1000;
+
+  function normalizarCantidad(valor){
+    const txt = String(valor ?? "")
+      .trim()
+      .replace(",", ".");
+
+    if(!txt) return 0;
+
+    const n = Number(txt);
+    return Number.isFinite(n) && n > 0 ? round3(n) : 0;
+  }
+
+  let idb = null;
+  let currentUser = null;
+  let currentProduct = null;
+  let lector = null;
+  let pendingCounter = 0;
+  let inactivityTimer = null;
+  let syncTimer = null;
+  let catalogoListo = false;
+  let catalogoPreparando = false;
+  let catalogoPromise = null;
+  let buscarTimer = null;
+
+  const refs = {
+    viewLogin: $("viewLogin"),
+    viewApp: $("viewApp"),
+    loginUsuario: $("loginUsuario"),
+    loginPassword: $("loginPassword"),
+    loginMsg: $("loginMsg"),
+    catalogoProgress: $("catalogoProgress"),
+    catalogoProgressTitle: $("catalogoProgressTitle"),
+    catalogoProgressPercent: $("catalogoProgressPercent"),
+    catalogoProgressBar: $("catalogoProgressBar"),
+    catalogoProgressDetail: $("catalogoProgressDetail"),
+    btnLogin: $("btnLogin"),
+    userName: $("userName"),
+    folioTxt: $("folioTxt"),
+    onlinePill: $("onlinePill"),
+    syncPill: $("syncPill"),
+    codigoInput: $("codigoInput"),
+    capturaScannerBox: $("capturaScannerBox"),
+    productoBox: $("productoBox"),
+    prodNombre: $("prodNombre"),
+    prodCodigo: $("prodCodigo"),
+    cantidadInput: $("cantidadInput"),
+    btnGuardar: $("btnGuardar"),
+    btnCancelarCantidad: $("btnCancelarCantidad"),
+    btnCamara: $("btnCamara"),
+    btnCerrarCamara: $("btnCerrarCamara"),
+    scannerModal: $("scannerModal"),
+    scannerMsg: $("scannerMsg"),
+    lector: $("lector"),
+    lastSaved: $("lastSaved"),
+    buscarInput: $("buscarInput"),
+    resultados: $("resultados"),
+    cartList: $("cartList"),
+    cartSummary: $("cartSummary"),
+    ultimosEscaneados: $("ultimosEscaneados"),
+    btnReloadCart: $("btnReloadCart"),
+    btnFinalizar: $("btnFinalizar"),
+    btnLogout: $("btnLogout"),
+    btnSyncNow: $("btnSyncNow"),
+    btnSyncSession: $("btnSyncSession"),
+    sessionInfo: $("sessionInfo"),
+    splashScreen: $("splashScreen")
+  };
+
+  function beep(ms=90, freq=880){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.frequency.value = freq;
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(.16, ctx.currentTime);
+      o.start();
+      setTimeout(()=>{o.stop();ctx.close();}, ms);
+    }catch{}
+  }
+
+  function generarFolio(){
+    const d = new Date();
+    return `ABPDD-${INVENTARIO_FECHA_ID}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  }
+
+  function referenciaUsuarioInventario(usuarioId){
+    return doc(
+      db,
+      "almacenes",
+      ALMACEN_INVENTARIO,
+      "inventariofisico",
+      INVENTARIO_DOC_ID,
+      "USUARIOS",
+      usuarioId
+    );
+  }
+
+  function referenciaPartidaInventario(usuarioId, partidaId){
+    return doc(
+      db,
+      "almacenes",
+      ALMACEN_INVENTARIO,
+      "inventariofisico",
+      INVENTARIO_DOC_ID,
+      "USUARIOS",
+      usuarioId,
+      "PARTIDAS",
+      partidaId
+    );
+  }
+
+  function generarIdEntrada(){
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}-${String(d.getMilliseconds()).padStart(3,"0")}`;
+    const rnd = Math.random().toString(36).slice(2,8).toUpperCase();
+    return `ENT-${stamp}-${rnd}`;
+  }
+
+  function openIDB(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+      req.onupgradeneeded = e => {
+        const dbx = e.target.result;
+
+        if(!dbx.objectStoreNames.contains("productos")){
+          const st = dbx.createObjectStore("productos", { keyPath:"id" });
+          st.createIndex("codigoBarra","codigoBarra",{unique:false});
+          st.createIndex("texto","texto",{unique:false});
+        }
+
+        if(dbx.objectStoreNames.contains("partidas")){
+          dbx.deleteObjectStore("partidas");
+        }
+
+        const stPartidas = dbx.createObjectStore("partidas", { keyPath:"id" });
+        stPartidas.createIndex("codigoOriginal","codigoOriginal",{unique:false});
+        stPartidas.createIndex("epochMs","epochMs",{unique:false});
+
+        if(!dbx.objectStoreNames.contains("meta")){
+          dbx.createObjectStore("meta", { keyPath:"key" });
+        }
+      };
+
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function tx(store, mode="readonly"){
+    return idb.transaction(store, mode).objectStore(store);
+  }
+
+  function idbPut(store, value){
+    return new Promise((resolve,reject)=>{
+      const req = tx(store,"readwrite").put(value);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function idbGet(store, key){
+    return new Promise((resolve,reject)=>{
+      const req = tx(store).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function idbGetAll(store){
+    return new Promise((resolve,reject)=>{
+      const req = tx(store).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function setMeta(key, value){
+    await idbPut("meta", { key, value });
+  }
+
+  async function getMeta(key){
+    const r = await idbGet("meta", key);
+    return r?.value ?? null;
+  }
+
+  function normalizar(txt){
+    return String(txt || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^a-z0-9]+/g," ")
+      .trim();
+  }
+
+  function textoProducto(p){
+    return normalizar([
+      p.id,
+      p.codigoBarra,
+      p.concepto,
+      p.unidadMedidaSat,
+      Array.isArray(p.codigosEquivalentes) ? p.codigosEquivalentes.join(" ") : ""
+    ].join(" "));
+  }
+
+  function soloDigitos(valor){
+    return String(valor ?? "").replace(/\D/g, "").trim();
+  }
+
+  function sinCerosIzquierda(valor){
+    const limpio = soloDigitos(valor);
+    const reducido = limpio.replace(/^0+/, "");
+    return reducido || limpio;
+  }
+
+  function limpiarCodigoFlexible(valor){
+    if(valor === null || valor === undefined) return "";
+
+    let txt = String(valor).trim();
+
+    if(/^[0-9]+(?:\.[0-9]+)?e\+?[0-9]+$/i.test(txt)){
+      const n = Number(txt);
+      if(Number.isFinite(n)){
+        txt = Math.trunc(n).toLocaleString("fullwide", { useGrouping:false });
+      }
+    }
+
+    return txt.replace(/\.0+$/, "").replace(/\D/g, "").trim();
+  }
+
+  function extraerCodigosEquivalentes(data){
+    const raw = data?.codigosEquivalentes;
+    let arr = [];
+
+    if(Array.isArray(raw)){
+      arr = raw;
+    }else if(raw && typeof raw === "object"){
+      arr = Object.values(raw);
+    }else if(raw !== null && raw !== undefined && raw !== ""){
+      arr = String(raw).split(/[\s,;|]+/);
+    }
+
+    return Array.from(new Set(
+      arr
+        .map(x => limpiarCodigoFlexible(x))
+        .filter(Boolean)
+    ));
+  }
+
+  function codigoIgualFlexible(codigoEntrada, codigoProducto, { permitirSinCeros=false } = {}){
+    const a = limpiarCodigoFlexible(codigoEntrada);
+    const b = limpiarCodigoFlexible(codigoProducto);
+
+    if(!a || !b) return false;
+    if(a === b) return true;
+
+    if(permitirSinCeros){
+      const aa = sinCerosIzquierda(a);
+      const bb = sinCerosIzquierda(b);
+      return aa && bb && aa === bb;
+    }
+
+    return false;
+  }
+
+  function parsearCodigoBascula(codigo){
+    const limpio = soloDigitos(codigo);
+
+    if(limpio.length !== 13 || !limpio.startsWith("20")) return null;
+
+    const sku5 = limpio.substring(2, 7);
+    const pesoRaw = limpio.substring(7, 12);
+    const pesoEntero = parseInt(pesoRaw, 10);
+
+    if(!Number.isFinite(pesoEntero) || pesoEntero <= 0) return null;
+
+    const pesoKg = round3(pesoEntero / 1000);
+
+    return {
+      esBascula: true,
+      codigoCompleto: limpio,
+      sku5,
+      sku: sinCerosIzquierda(sku5),
+      codigoPrefijoSku: `20${sku5}`,
+      pesoRaw,
+      pesoKg,
+      gramos: Math.round(pesoKg * 1000)
+    };
+  }
+
+  function variantesCodigoBusqueda(codigo){
+    const limpio = soloDigitos(codigo);
+    const variantes = new Set();
+
+    if(limpio){
+      variantes.add(limpio);
+      variantes.add(sinCerosIzquierda(limpio));
+    }
+
+    const bascula = parsearCodigoBascula(limpio);
+    if(bascula){
+      variantes.add(bascula.sku);
+      variantes.add(bascula.sku5);
+      variantes.add(bascula.codigoPrefijoSku);
+    }
+
+    return {
+      codigoLimpio: limpio,
+      bascula,
+      variantes: Array.from(variantes).filter(Boolean)
+    };
+  }
+
+  async function loginFirebase(){
+    const usuarioInput = refs.loginUsuario.value.trim().toUpperCase();
+    const passwordInput = refs.loginPassword.value.trim();
+
+    if(!usuarioInput) throw new Error("Captura usuario.");
+    if(!passwordInput) throw new Error("Captura contraseña.");
+
+    refs.loginMsg.textContent = "Validando usuario...";
+
+const q = query(
+  collection(
+    db,
+    "CLIENTES",
+    "PDD031204KL5",
+    "USUARIOS"
+  ),
+  where("usuario", "==", usuarioInput),
+  limit(1)
+);
+    
+
+    const snap = await getDocs(q);
+
+    if(snap.empty){
+      throw new Error("Usuario no encontrado.");
+    }
+
+    const userDoc = snap.docs[0];
+    const data = userDoc.data();
+
+    if(data.activo !== true){
+      throw new Error("Usuario inactivo.");
+    }
+
+    if(String(data.password || "") !== passwordInput){
+      throw new Error("Contraseña incorrecta.");
+    }
+
+    return {
+      id: userDoc.id,
+      usuario: String(data.usuario || usuarioInput).toUpperCase(),
+      nombre: data.nombre || data.usuario || usuarioInput,
+      rol: data.rol || "",
+      rutaId: data.rutaId || ""
+    };
+  }
+
+  function mostrarProgresoCatalogo({ titulo="Catálogo", porcentaje=0, detalle="", indeterminado=false, visible=true } = {}){
+    if(!refs.catalogoProgress) return;
+
+    refs.catalogoProgress.classList.toggle("show", visible);
+    refs.catalogoProgress.classList.toggle("indeterminate", !!indeterminado);
+    refs.catalogoProgressTitle.textContent = titulo;
+
+    if(indeterminado){
+      refs.catalogoProgressPercent.textContent = "...";
+      refs.catalogoProgressBar.style.width = "45%";
+    }else{
+      const pct = Math.max(0, Math.min(100, Number(porcentaje) || 0));
+      refs.catalogoProgressPercent.textContent = `${Math.round(pct)}%`;
+      refs.catalogoProgressBar.style.width = `${pct}%`;
+    }
+
+    refs.catalogoProgressDetail.textContent = detalle || "";
+  }
+
+  function esperarPintado(){
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  function bloquearLogin(mensajeBoton="Preparando catálogo..."){
+    if(refs.btnLogin){
+      refs.btnLogin.disabled = true;
+      refs.btnLogin.textContent = mensajeBoton;
+    }
+  }
+
+  function habilitarLogin(){
+    if(refs.btnLogin){
+      refs.btnLogin.disabled = false;
+      refs.btnLogin.textContent = "Entrar al conteo";
+    }
+  }
+
+  async function prepararCatalogoAlAbrir(){
+    if(catalogoPromise) return catalogoPromise;
+
+    catalogoPromise = (async()=>{
+      catalogoPreparando = true;
+      catalogoListo = false;
+      bloquearLogin("Preparando catálogo...");
+
+      try{
+        const totalLocal = Number(await getMeta("catalogoTotal") || 0);
+        const fechaLocal = await getMeta("catalogoDescargadoEn");
+
+        if(totalLocal > 0){
+          catalogoListo = true;
+          catalogoPreparando = false;
+
+          refs.loginMsg.textContent = `Catálogo local listo: ${totalLocal} productos. Ya puedes iniciar sesión.`;
+          mostrarProgresoCatalogo({
+            titulo:"Catálogo listo",
+            porcentaje:100,
+            detalle:`${totalLocal} productos cargados desde IndexedDB${fechaLocal ? " | " + fechaLocal : ""}`
+          });
+          habilitarLogin();
+          return totalLocal;
+        }
+
+        const totalDescargado = await descargarCatalogo();
+        catalogoListo = true;
+        catalogoPreparando = false;
+        habilitarLogin();
+        return totalDescargado;
+
+      }catch(e){
+        catalogoListo = false;
+        catalogoPreparando = false;
+        bloquearLogin("Catálogo no listo");
+
+        refs.loginMsg.textContent = e.message || "No se pudo preparar el catálogo.";
+        mostrarProgresoCatalogo({
+          titulo:"Error de catálogo",
+          porcentaje:0,
+          detalle:e.message || "Revisa internet y vuelve a cargar la página"
+        });
+        throw e;
+      }
+    })();
+
+    return catalogoPromise;
+  }
+
+  async function descargarCatalogo(){
+    refs.loginMsg.textContent = "Preparando catálogo antes del login...";
+
+    mostrarProgresoCatalogo({
+      titulo:"Descargando catálogo",
+      indeterminado:true,
+      detalle:"Solicitando productos desde /productos..."
+    });
+
+    await esperarPintado();
+
+    const snap = await getDocs(
+  query(
+    collection(db, "productos"),
+    where("activo", "==", true)
+  )
+);
+    const totalDocs = snap.size || snap.docs.length || 0;
+
+    if(!totalDocs){
+      throw new Error("Firebase no regresó productos en /productos.");
+    }
+
+    refs.loginMsg.textContent = `Catálogo recibido. Guardando ${totalDocs} productos en este celular...`;
+
+    mostrarProgresoCatalogo({
+      titulo:"Guardando catálogo local",
+      porcentaje:0,
+      detalle:`0 / ${totalDocs} productos guardados en IndexedDB`
+    });
+
+    await esperarPintado();
+
+    let total = 0;
+    let ultimoPaint = 0;
+
+    for(const d of snap.docs){
+      const data = d.data();
+
+      const codigoBarra = limpiarCodigoFlexible(data.codigoBarra || d.id || "");
+      const codigosEquivalentes = extraerCodigosEquivalentes(data);
+
+      const p = {
+        id: d.id,
+        codigoBarra,
+        codigosEquivalentes,
+        concepto: data.concepto || data.descripcion || "SIN DESCRIPCIÓN",
+        unidadMedidaSat: data.unidadMedidaSat || "",
+        texto: ""
+      };
+
+      p.texto = textoProducto(p);
+      await idbPut("productos", p);
+      total++;
+
+      const porcentaje = totalDocs ? Math.round((total / totalDocs) * 100) : 100;
+
+      if(total === totalDocs || total - ultimoPaint >= 25){
+        ultimoPaint = total;
+        refs.loginMsg.textContent = `Guardando catálogo local: ${porcentaje}%`;
+        mostrarProgresoCatalogo({
+          titulo:"Guardando catálogo local",
+          porcentaje,
+          detalle:`${total} / ${totalDocs} productos guardados en IndexedDB`
+        });
+        await esperarPintado();
+      }
+    }
+
+    await setMeta("catalogoDescargadoEn", nowLocal());
+    await setMeta("catalogoTotal", total);
+
+    mostrarProgresoCatalogo({
+      titulo:"Catálogo listo",
+      porcentaje:100,
+      detalle:`${total} productos disponibles. Ya puedes iniciar sesión.`
+    });
+
+    refs.loginMsg.textContent = `Catálogo listo: ${total} productos. Ya puedes iniciar sesión.`;
+    return total;
+  }
+
+  async function asegurarCatalogo(){
+    if(catalogoListo) return true;
+    await prepararCatalogoAlAbrir();
+    return catalogoListo;
+  }
+
+  async function buscarProductoPorCodigo(codigo){
+    const info = variantesCodigoBusqueda(codigo);
+    if(!info.codigoLimpio) return null;
+
+    const productos = await idbGetAll("productos");
+
+    const limpiarProductoTemporal = (p) => {
+      if(!p) return null;
+      delete p.__codigoEscaneado;
+      delete p.__origenCodigo;
+      delete p.__codigoBascula;
+      delete p.__cantidadDetectada;
+      delete p.__origen;
+      return p;
+    };
+
+    const marcarProducto = (p, origenCodigo, extra = {}) => {
+      if(!p) return null;
+      p.__codigoEscaneado = info.codigoLimpio;
+      p.__origenCodigo = origenCodigo;
+
+      if(extra.bascula){
+        p.__codigoBascula = extra.bascula;
+        p.__cantidadDetectada = extra.bascula.pesoKg;
+        p.__origen = "BASCULA";
+      }
+
+      return p;
+    };
+
+    const buscarPorCodigoBarraExacto = (codigos, permitirSinCeros=false) => {
+      const lista = Array.isArray(codigos) ? codigos.filter(Boolean) : [codigos].filter(Boolean);
+
+      return productos.find(x => {
+        limpiarProductoTemporal(x);
+        return lista.some(c => codigoIgualFlexible(c, x.codigoBarra, { permitirSinCeros }));
+      }) || null;
+    };
+
+    const buscarPorEquivalenteExacto = (codigos, permitirSinCeros=false) => {
+      const lista = Array.isArray(codigos) ? codigos.filter(Boolean) : [codigos].filter(Boolean);
+
+      return productos.find(x => {
+        limpiarProductoTemporal(x);
+        return Array.isArray(x.codigosEquivalentes) &&
+          x.codigosEquivalentes.some(eq => lista.some(c =>
+            codigoIgualFlexible(c, eq, { permitirSinCeros })
+          ));
+      }) || null;
+    };
+
+    if(info.bascula){
+      const bascula = info.bascula;
+
+      let p = buscarPorEquivalenteExacto([bascula.codigoPrefijoSku], false);
+      if(p) return marcarProducto(p, "BASCULA_EQUIVALENTE_PREFIJO_20", { bascula });
+
+      p = buscarPorCodigoBarraExacto([bascula.codigoPrefijoSku], false);
+      if(p) return marcarProducto(p, "BASCULA_ORIGINAL_PREFIJO_20", { bascula });
+
+      p = buscarPorEquivalenteExacto([bascula.sku5], false);
+      if(p) return marcarProducto(p, "BASCULA_EQUIVALENTE_SKU5", { bascula });
+
+      p = buscarPorEquivalenteExacto([bascula.sku], false);
+      if(p) return marcarProducto(p, "BASCULA_EQUIVALENTE_SKU", { bascula });
+
+      p = buscarPorCodigoBarraExacto([bascula.sku5], false);
+      if(p) return marcarProducto(p, "BASCULA_ORIGINAL_SKU5", { bascula });
+
+      p = buscarPorCodigoBarraExacto([bascula.sku], false);
+      if(p) return marcarProducto(p, "BASCULA_ORIGINAL_SKU", { bascula });
+
+      return null;
+    }
+
+    let p = buscarPorCodigoBarraExacto(info.codigoLimpio, false);
+    if(p) return marcarProducto(p, "ORIGINAL");
+
+    p = buscarPorEquivalenteExacto(info.codigoLimpio, false);
+    if(p) return marcarProducto(p, "EQUIVALENTE");
+
+    return null;
+  }
+
+    async function buscarProductosTexto(term){
+    const words = normalizar(term).split(/\s+/).filter(Boolean);
+    if(!words.length) return [];
+
+    const productos = await idbGetAll("productos");
+
+    return productos
+      .map(p => {
+        const score = words.reduce((acc,w)=> acc + (p.texto.includes(w) ? 1 : 0), 0);
+        return { ...p, score };
+      })
+      .filter(p => p.score === words.length)
+      .slice(0,50);
+  }
+
+  function entrarModoCantidad(){
+    document.body.classList.add("modo-cantidad");
+    refs.capturaScannerBox?.classList.add("hidden");
+    refs.productoBox.classList.remove("hidden");
+    refs.resultados.innerHTML = "";
+    refs.buscarInput.value = "";
+  }
+
+  function salirModoCantidad(){
+    document.body.classList.remove("modo-cantidad");
+    refs.productoBox.classList.add("hidden");
+    refs.capturaScannerBox?.classList.remove("hidden");
+    refs.codigoInput.value = "";
+    refs.cantidadInput.value = "";
+    currentProduct = null;
+
+    if(!$("tabCaptura").classList.contains("hidden")){
+      setTimeout(()=>refs.codigoInput.focus(),80);
+    }
+  }
+
+  function mostrarProducto(p){
+    currentProduct = p;
+
+    entrarModoCantidad();
+
+    refs.prodNombre.textContent = p.concepto || "SIN DESCRIPCIÓN";
+
+    const equivs = Array.isArray(p.codigosEquivalentes) && p.codigosEquivalentes.length
+      ? ` | Equiv: ${p.codigosEquivalentes.join(", ")}`
+      : "";
+
+    const escaneado = p.__codigoEscaneado ? ` | Escaneado: ${p.__codigoEscaneado}` : "";
+    const unidad = p.unidadMedidaSat ? ` | Unidad: ${p.unidadMedidaSat}` : "";
+    const bascula = p.__codigoBascula ? ` | Báscula SKU: ${p.__codigoBascula.sku} | Peso: ${p.__codigoBascula.pesoKg} kg` : "";
+
+    refs.prodCodigo.textContent = `Código original: ${p.codigoBarra || p.id}${equivs}${unidad}${escaneado}${bascula}`;
+
+    if(p.__cantidadDetectada){
+      refs.cantidadInput.value = p.__cantidadDetectada;
+    }else{
+      refs.cantidadInput.value = "";
+    }
+
+    setTimeout(()=>refs.cantidadInput.focus(),80);
+  }
+
+  async function agregarPartida(producto, cantidad, origen="MANUAL"){
+    const codigoOriginal = String(producto.codigoBarra || producto.id).trim();
+    const codigoEscaneado = String(producto.__codigoEscaneado || codigoOriginal).trim();
+    const cantidadNormalizada = normalizarCantidad(cantidad);
+
+    if(!cantidadNormalizada || cantidadNormalizada <= 0){
+      alert("Cantidad inválida.");
+      return;
+    }
+
+    const partida = {
+      id: generarIdEntrada(),
+      codigo: codigoOriginal,
+      codigoOriginal,
+      codigoEscaneadoUltimo: codigoEscaneado,
+      codigosEscaneados: [codigoEscaneado].filter(Boolean),
+      productoId: producto.id,
+      descripcion: producto.concepto || "SIN DESCRIPCIÓN",
+      unidadMedidaSat: producto.unidadMedidaSat || "",
+      cantidad: cantidadNormalizada,
+
+      usuarioId: currentUser.id,
+      usuario: currentUser.usuario,
+      usuarioNombre: currentUser.nombre,
+      rol: currentUser.rol,
+      rutaId: currentUser.rutaId,
+
+      conteoId: CONTEO_ID,
+      conteoNombre: CONTEO_NOMBRE,
+
+      fecha: nowDate(),
+      hora: nowTime(),
+      epochMs: Date.now(),
+
+      origen,
+      origenCodigo: producto.__origenCodigo || "ORIGINAL",
+      tipoConteo: "ENTRADA_INDIVIDUAL",
+      sincronizado: false,
+      eliminado: false
+    };
+
+    await idbPut("partidas", partida);
+
+    pendingCounter++;
+
+    refs.lastSaved.classList.remove("hidden");
+    refs.lastSaved.textContent = `Entrada guardada: ${partida.descripcion} | Cantidad: ${partida.cantidad}`;
+
+    salirModoCantidad();
+
+    beep();
+
+    await actualizarResumen();
+
+    if(pendingCounter >= SYNC_EVERY_ITEMS){
+      await syncFirebase(false);
+    }
+  }
+
+  function escapeHtml(txt){
+    return String(txt ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  function renderUltimosEscaneados(partidasActivas=[]){
+    if(!refs.ultimosEscaneados) return;
+
+    const ultimos = [...partidasActivas]
+      .sort((a,b)=> (b.epochMs || 0) - (a.epochMs || 0))
+      .slice(0,2);
+
+    if(!ultimos.length){
+      refs.ultimosEscaneados.innerHTML = `
+        <div class="last-scanned-card">
+          <div class="last-scanned-label">Sin escaneos todavía</div>
+          <div class="last-scanned-name">Aquí aparecerán los últimos dos artículos guardados.</div>
+          <div class="last-scanned-meta">
+            <span>---</span>
+            <span>---</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    refs.ultimosEscaneados.innerHTML = ultimos.map((p,idx)=>`
+      <div class="last-scanned-card">
+        <div class="last-scanned-label">${idx === 0 ? "Último escaneado" : "Anterior escaneado"}</div>
+        <div class="last-scanned-name">${escapeHtml(p.descripcion)}</div>
+        <div class="last-scanned-meta">
+          <span>
+            ${escapeHtml(p.codigoOriginal || p.codigo)}
+            ${p.codigoEscaneadoUltimo && p.codigoEscaneadoUltimo !== (p.codigoOriginal || p.codigo) ? " / EQ " + escapeHtml(p.codigoEscaneadoUltimo) : ""}
+          </span>
+          <span>Cant: ${escapeHtml(p.cantidad)} ${escapeHtml(p.unidadMedidaSat || "")}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function actualizarResumen(){
+    const partidas = await idbGetAll("partidas");
+    const activas = partidas.filter(x => !x.eliminado);
+    const piezas = activas.reduce((a,b)=> a + Number(b.cantidad || 0), 0);
+
+    refs.syncPill.textContent = `Pendiente: ${activas.filter(x => !x.sincronizado).length}`;
+    refs.cartSummary.textContent = `${activas.length} entradas | ${round3(piezas)} piezas/unidades`;
+
+    renderUltimosEscaneados(activas);
+  }
+
+  async function renderCarrito(){
+    const partidas = (await idbGetAll("partidas"))
+      .filter(x => !x.eliminado)
+      .sort((a,b)=> (b.epochMs || 0) - (a.epochMs || 0));
+
+    await actualizarResumen();
+
+    if(!partidas.length){
+      refs.cartList.innerHTML = `<div class="subtitle">No hay entradas de conteo todavía.</div>`;
+      return;
+    }
+
+    refs.cartList.innerHTML = "";
+
+    for(const p of partidas){
+      const descripcion = String(p.descripcion || "")
+        .replace(/\s+/g," ")
+        .trim();
+
+      const div = document.createElement("div");
+      div.className = "cart-item";
+
+      div.innerHTML = `
+        <div class="cart-row-compact">
+          <div class="cart-code-compact">
+            ${escapeHtml(p.codigoOriginal || p.codigo)}
+          </div>
+
+          <div class="cart-name-compact" title="${escapeHtml(descripcion)}">
+            ${escapeHtml(descripcion)}
+          </div>
+
+          <div class="cart-qty-control">
+            <button data-act="menos" data-id="${p.id}" type="button">−</button>
+
+            <div class="cart-qty-number">
+              ${escapeHtml(p.cantidad)}
+            </div>
+
+            <button data-act="mas" data-id="${p.id}" type="button">+</button>
+          </div>
+
+          <button
+            class="cart-delete-btn"
+            data-act="borrar"
+            data-id="${p.id}"
+            type="button"
+            title="Borrar entrada"
+          >🗑</button>
+        </div>
+      `;
+
+      refs.cartList.appendChild(div);
+    }
+  }
+
+  async function modificarPartida(idEntrada, accion){
+    const p = await idbGet("partidas", idEntrada);
+    if(!p) return;
+
+    if(accion === "menos"){
+      p.cantidad = round3(Math.max(0, Number(p.cantidad || 0) - 1));
+    }
+
+    if(accion === "mas"){
+      p.cantidad = round3(Number(p.cantidad || 0) + 1);
+    }
+
+    if(accion === "borrar"){
+      if(!confirm("¿Borrar esta entrada del conteo local?")) return;
+
+      p.eliminado = true;
+      p.cantidad = 0;
+    }
+
+    p.sincronizado = false;
+    p.fecha = nowDate();
+    p.hora = nowTime();
+    p.epochMs = Date.now();
+
+    await idbPut("partidas", p);
+    await renderCarrito();
+  }
+
+  async function syncFirebase(showAlert=true){
+    if(!currentUser) return;
+
+    if(!navigator.onLine){
+      actualizarOnline();
+      if(showAlert) alert("Sin internet. Se queda guardado local.");
+      return;
+    }
+
+    const partidas = await idbGetAll("partidas");
+    const pendientes = partidas.filter(x => !x.sincronizado);
+    const folio = await getMeta("folioSesion");
+    const userRef = referenciaUsuarioInventario(currentUser.id);
+
+    await setDoc(userRef, {
+      usuarioId: currentUser.id,
+      usuario: currentUser.usuario,
+      usuarioNombre: currentUser.nombre,
+      rol: currentUser.rol,
+      almacenId: ALMACEN_INVENTARIO,
+      folio,
+
+      conteoId: CONTEO_ID,
+      conteoNombre: CONTEO_NOMBRE,
+      inventarioFechaId: INVENTARIO_FECHA_ID,
+
+      estado: "EN_PROCESO",
+      ultimaSyncLocal: nowLocal(),
+      ultimaSyncServer: serverTimestamp(),
+      totalPartidas: partidas.filter(x=>!x.eliminado).length
+    }, { merge:true });
+
+    for(const p of pendientes){
+      const partRef = referenciaPartidaInventario(currentUser.id, p.id);
+
+      await setDoc(partRef, {
+        ...p,
+        almacenId: ALMACEN_INVENTARIO,
+        folio,
+        sincronizado: true,
+        syncServer: serverTimestamp()
+      }, { merge:true });
+
+      p.sincronizado = true;
+      await idbPut("partidas", p);
+    }
+
+    pendingCounter = 0;
+    await actualizarResumen();
+
+    if(showAlert) alert("Sincronización completa.");
+  }
+
+  async function finalizarConteo(){
+    if(!confirm("¿Finalizar tu conteo? Después quedará marcado como FINALIZADO.")) return;
+
+    await syncFirebase(false);
+
+    const userRef = referenciaUsuarioInventario(currentUser.id);
+
+
+    await setDoc(userRef, {
+      estado: "FINALIZADO",
+      finalizadoLocal: nowLocal(),
+      finalizadoServer: serverTimestamp()
+    }, { merge:true });
+
+    alert("Conteo finalizado y sincronizado.");
+    await logout();
+  }
+
+  function switchTab(name){
+    document.querySelectorAll(".tabView").forEach(x=>x.classList.add("hidden"));
+    $("tab" + name).classList.remove("hidden");
+
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelector(`.tab[data-tab="${name}"]`)?.classList.add("active");
+
+    if(name === "Carrito") renderCarrito();
+    if(name === "Captura" && !currentProduct) setTimeout(()=>refs.codigoInput.focus(),80);
+    if(name === "Captura" && currentProduct) setTimeout(()=>refs.cantidadInput.focus(),80);
+  }
+
+  function actualizarOnline(){
+    refs.onlinePill.textContent = navigator.onLine ? "🟢 Online" : "🔴 Offline";
+  }
+
+  function resetInactivity(){
+    clearTimeout(inactivityTimer);
+
+    inactivityTimer = setTimeout(async ()=>{
+      if(currentUser){
+        await syncFirebase(false);
+        alert("Sesión cerrada por inactividad. Se sincronizó lo pendiente.");
+        await logout();
+      }
+    }, AUTO_LOGOUT_MS);
+  }
+
+  async function login(){
+    try{
+      if(!catalogoListo){
+        bloquearLogin("Preparando catálogo...");
+        refs.loginMsg.textContent = catalogoPreparando
+          ? "Espera: el catálogo todavía se está preparando."
+          : "El catálogo todavía no está listo.";
+
+        await prepararCatalogoAlAbrir();
+      }
+
+      if(!catalogoListo){
+        throw new Error("Catálogo no listo. No se puede entrar todavía.");
+      }
+
+      refs.btnLogin.disabled = true;
+      refs.btnLogin.textContent = "Validando usuario...";
+
+      const user = await loginFirebase();
+      currentUser = user;
+
+      localStorage.setItem("conteoUser_ABARROTESPDD_170826", JSON.stringify(currentUser));
+
+      let folio = await getMeta("folioSesion");
+      if(!folio || !String(folio).startsWith(`ABPDD-${INVENTARIO_FECHA_ID}-`)){
+        folio = generarFolio();
+        await setMeta("folioSesion", folio);
+      }
+
+      refs.userName.textContent = currentUser.nombre;
+      refs.folioTxt.textContent = folio;
+      refs.sessionInfo.textContent = `${currentUser.nombre} | ${currentUser.usuario} | ${currentUser.rol || "SIN ROL"}`;
+
+      document.body.classList.add("app-logged-in");
+      refs.viewLogin.classList.remove("active");
+      refs.viewApp.classList.add("active");
+
+      await actualizarResumen();
+
+      switchTab("Captura");
+      startTimers();
+
+    }catch(e){
+      refs.loginMsg.textContent = e.message || "Error al iniciar sesión.";
+      alert(e.message || "Error al iniciar sesión.");
+      if(catalogoListo) habilitarLogin();
+    }
+  }
+
+  async function cerrarSesionSeguro(){
+    try{
+      if(currentUser && navigator.onLine){
+        refs.syncPill.textContent = "Sincronizando...";
+        await syncFirebase(false);
+      }
+    }catch(e){
+      console.error(e);
+    }
+
+    await logout();
+  }
+
+  async function logout(){
+    await cerrarCamara();
+
+    currentUser = null;
+    localStorage.removeItem("conteoUser_ABARROTESPDD_170826");
+
+    clearInterval(syncTimer);
+    clearTimeout(inactivityTimer);
+
+    document.body.classList.remove("app-logged-in");
+    refs.viewApp.classList.remove("active");
+    refs.viewLogin.classList.add("active");
+
+    refs.loginPassword.value = "";
+    salirModoCantidad();
+    refs.codigoInput.value = "";
+    refs.buscarInput.value = "";
+    refs.resultados.innerHTML = "";
+
+    if(catalogoListo) habilitarLogin();
+  }
+
+  function startTimers(){
+    clearInterval(syncTimer);
+    syncTimer = setInterval(()=>syncFirebase(false), SYNC_INTERVAL_MS);
+    resetInactivity();
+  }
+
+  function abrirModalCamara(){
+    refs.scannerModal.classList.add("show");
+    refs.scannerModal.setAttribute("aria-hidden","false");
+    refs.scannerMsg.textContent = "Abriendo cámara...";
+    document.body.style.overflow = "hidden";
+  }
+
+  async function cerrarCamara(){
+    if(lector){
+      try{
+        await lector.stop();
+      }catch{}
+
+      try{
+        await lector.clear();
+      }catch{}
+
+      lector = null;
+    }
+
+    refs.lector.innerHTML = "";
+    refs.scannerModal.classList.remove("show");
+    refs.scannerModal.setAttribute("aria-hidden","true");
+    refs.scannerMsg.textContent = "Cámara cerrada.";
+    document.body.style.overflow = "";
+  }
+
+  async function startStopCamara(){
+    resetInactivity();
+
+    if(lector){
+      await cerrarCamara();
+      return;
+    }
+
+    abrirModalCamara();
+    lector = new Html5Qrcode("lector");
+
+    try{
+      const box = Math.floor(Math.min(window.innerWidth * .78, window.innerHeight * .48, 340));
+
+      await lector.start(
+        { facingMode:"environment" },
+        { fps:10, qrbox:{ width:box, height:box } },
+        async codigo => {
+          refs.scannerMsg.textContent = `Código detectado: ${codigo}`;
+          beep(80,980);
+
+          await cerrarCamara();
+
+          refs.codigoInput.value = codigo;
+          await procesarCodigo(codigo);
+        },
+        () => {}
+      );
+
+      refs.scannerMsg.textContent = "Buscando código... Puedes cerrar si no vas a capturar.";
+
+    }catch(e){
+      await cerrarCamara();
+      alert("No se pudo abrir la cámara. Revisa permisos del navegador.");
+    }
+  }
+
+  async function procesarCodigo(codigo){
+    const p = await buscarProductoPorCodigo(codigo);
+
+    if(!p){
+      beep(160,300);
+      const info = variantesCodigoBusqueda(codigo);
+      const extra = info.bascula
+        ? `\n\nCódigo báscula detectado. SKU extraído: ${info.bascula.sku} / ${info.bascula.sku5}. Peso: ${info.bascula.pesoKg} kg.\nRevisa que ese SKU esté en codigoBarra o codigosEquivalentes del producto.`
+        : "";
+      alert(`Producto no encontrado en catálogo local.${extra}`);
+      return;
+    }
+
+    if(p.__codigoBascula && p.__cantidadDetectada){
+      await agregarPartida(p, p.__cantidadDetectada, "BASCULA");
+      return;
+    }
+
+    mostrarProducto(p);
+  }
+
+  async function renderBusqueda(term){
+    refs.resultados.innerHTML = "Buscando...";
+
+    const rows = await buscarProductosTexto(term);
+
+    if(!rows.length){
+      refs.resultados.innerHTML = `<div class="subtitle">Sin resultados.</div>`;
+      return;
+    }
+
+    refs.resultados.innerHTML = rows.map(p=>`
+      <div class="result-item">
+        <div class="result-title">${escapeHtml(p.concepto || "SIN DESCRIPCIÓN")}</div>
+        <div class="result-code">
+          ${escapeHtml(p.codigoBarra || p.id)}
+          ${Array.isArray(p.codigosEquivalentes) && p.codigosEquivalentes.length ? " | Equiv: " + escapeHtml(p.codigosEquivalentes.join(", ")) : ""}
+        </div>
+        <button class="btn2 btn-small mt" data-use-product="${escapeHtml(p.id)}">Usar producto</button>
+      </div>
+    `).join("");
+  }
+
+  async function init(){
+    refs.splashScreen.classList.add("hidden");
+
+    actualizarOnline();
+    window.addEventListener("online", actualizarOnline);
+    window.addEventListener("offline", actualizarOnline);
+
+    idb = await openIDB();
+
+    prepararCatalogoAlAbrir().catch(console.error);
+
+    refs.btnLogin.addEventListener("click", login);
+
+    refs.loginPassword.addEventListener("keydown", e => {
+      if(e.key === "Enter") login();
+    });
+
+    refs.btnGuardar.addEventListener("click", async ()=>{
+      if(!currentProduct) return alert("No hay producto seleccionado.");
+
+      const cantidad = normalizarCantidad(refs.cantidadInput.value);
+      if(!cantidad) return alert("Captura cantidad válida.");
+
+      await agregarPartida(currentProduct, cantidad, "MANUAL");
+    });
+
+    refs.btnCancelarCantidad.addEventListener("click", salirModoCantidad);
+
+    refs.codigoInput.addEventListener("keydown", async e=>{
+      if(e.key !== "Enter") return;
+
+      const codigo = refs.codigoInput.value.trim();
+      if(!codigo) return;
+
+      await procesarCodigo(codigo);
+    });
+
+    refs.buscarInput.addEventListener("input", ()=>{
+      clearTimeout(buscarTimer);
+
+      const term = refs.buscarInput.value.trim();
+
+      if(term.length < 2){
+        refs.resultados.innerHTML = "";
+        return;
+      }
+
+      buscarTimer = setTimeout(()=>renderBusqueda(term),180);
+    });
+
+    refs.resultados.addEventListener("click", async e=>{
+      const btn = e.target.closest("[data-use-product]");
+      if(!btn) return;
+
+      const id = btn.dataset.useProduct;
+      const p = await idbGet("productos", id);
+
+      if(p){
+        mostrarProducto(p);
+        switchTab("Captura");
+      }
+    });
+
+    refs.btnCamara.addEventListener("click", startStopCamara);
+    refs.btnCerrarCamara.addEventListener("click", cerrarCamara);
+
+    refs.btnReloadCart.addEventListener("click", renderCarrito);
+    refs.btnFinalizar.addEventListener("click", finalizarConteo);
+
+    refs.btnLogout.addEventListener("click", cerrarSesionSeguro);
+
+    refs.btnSyncNow.addEventListener("click", ()=>syncFirebase(true));
+    refs.btnSyncSession.addEventListener("click", ()=>syncFirebase(true));
+
+    refs.cartList.addEventListener("click", async e=>{
+      const btn = e.target.closest("[data-act]");
+      if(!btn) return;
+
+      await modificarPartida(btn.dataset.id, btn.dataset.act);
+    });
+
+    document.querySelectorAll(".tab").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        switchTab(btn.dataset.tab);
+      });
+    });
+
+    ["click","keydown","touchstart"].forEach(evt=>{
+      document.addEventListener(evt, resetInactivity, { passive:true });
+    });
+  }
+
+  init();
+
+</script>
+</body>
+</html>

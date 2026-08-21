@@ -1,0 +1,3572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listado Inventario Allende 1</title>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root {
+      --azul: #00416A;
+      --azul2: #0c6cbd;
+      --gris: #e5e7eb;
+      --gris2: #f8fafc;
+      --texto: #1f2937;
+      --verde: #166534;
+      --rojo: #991b1b;
+      --naranja: #b45309;
+      --shadow: 0 10px 28px rgba(0,0,0,.10);
+
+      --inv-head: #dbeafe;
+      --inv-cell: #f8fbff;
+
+      --trans-head: #fef3c7;
+      --trans-cell: #fffbeb;
+
+      --aju-head: #ede9fe;
+      --aju-cell: #faf5ff;
+
+      --vta-head: #fee2e2;
+      --vta-cell: #fff5f5;
+
+      --neto-head: #ecfccb;
+      --neto-cell: #f7fee7;
+
+      --dev-head: #fecaca;
+      --dev-cell: #fff1f2;
+
+      --merma-head: #fca5a5;
+      --merma-cell: #fef2f2;
+
+      --inter-head: #bbf7d0;
+      --inter-cell: #f0fdf4;
+
+      --intsal-head: #fdba74;
+      --intsal-cell: #fff7ed;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f6fb;
+      color: var(--texto);
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: none;
+      padding: 6px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .topbar {
+      background: linear-gradient(135deg, var(--azul), var(--azul2));
+      color: white;
+      padding: 12px 16px;
+      position: relative;
+    }
+
+    .topbar h1 {
+      margin: 0 0 6px;
+      font-size: 21px;
+      padding-right: 64px;
+    }
+
+    .topbar p {
+      margin: 0;
+      opacity: .95;
+      font-size: 12px;
+      padding-right: 64px;
+    }
+
+    .icon-btn {
+      position: absolute;
+      right: 12px;
+      top: 10px;
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255,255,255,.16);
+      color: white;
+      font-size: 21px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+    }
+
+    .icon-btn:hover {
+      background: rgba(255,255,255,.24);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--gris);
+      background: #fff;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #475569;
+    }
+
+    .field input,
+    .field button,
+    .field select,
+    .field textarea {
+      min-height: 36px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      padding: 5px 7px;
+      font-size: 12px;
+      font-family: Arial, sans-serif;
+      background: white;
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .field button {
+      cursor: pointer;
+      border: none;
+      background: var(--azul);
+      color: white;
+      font-weight: bold;
+    }
+
+    .field button:hover {
+      filter: brightness(1.05);
+    }
+
+    .field button.sec {
+      background: #0f766e;
+    }
+
+    .field button.warn {
+      background: #b45309;
+    }
+
+    .field button.danger {
+      background: #b91c1c;
+    }
+
+    .status {
+      padding: 12px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--gris);
+      background: var(--gris2);
+    }
+
+    .status.ok { color: var(--verde); }
+    .status.error { color: var(--rojo); }
+    .status.warn { color: var(--naranja); }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gris);
+      background: #fff;
+    }
+
+    .pill {
+      background: #eef2ff;
+      color: #1e3a8a;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      height: calc(100vh - 174px);
+      max-height: none;
+      background: white;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: max-content;
+      min-width: 100%;
+      font-size: 11px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      color: #0f172a;
+    }
+
+    thead tr:first-child th {
+      top: 0;
+      height: 28px;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    thead tr:nth-child(2) th {
+      top: 28px;
+      height: 28px;
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    thead th[rowspan="2"] {
+      vertical-align: middle;
+      text-align: left;
+      z-index: 12;
+    }
+
+    .tipo-head {
+      border-bottom: 3px solid rgba(255,255,255,.9);
+      letter-spacing: .2px;
+    }
+
+    th, td {
+      border: 1px solid #dbe4f0;
+      padding: 5px 7px;
+      white-space: nowrap;
+      text-align: right;
+      vertical-align: middle;
+    }
+
+    th.left, td.left {
+      text-align: left;
+    }
+
+    /* Columnas fijas: el ancho incluye padding y borde para que no se encimen
+       al mover el scroll horizontal. */
+    .sticky1 {
+      position: sticky;
+      left: 0;
+      z-index: 7;
+      box-sizing: border-box;
+      width: 118px;
+      min-width: 118px;
+      max-width: 118px;
+      background: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sticky2 {
+      position: sticky;
+      left: 118px;
+      z-index: 6;
+      box-sizing: border-box;
+      width: 300px;
+      min-width: 300px;
+      max-width: 300px;
+      background: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 2px 0 0 #cbd5e1;
+    }
+
+    thead .sticky1,
+    thead .sticky2,
+    tfoot .sticky1,
+    tfoot .sticky2 {
+      background: #dbeafe;
+      z-index: 10;
+    }
+
+    th.inv-col { background: var(--inv-head); }
+    td.inv-col { background: var(--inv-cell); }
+
+    th.trans-col { background: var(--trans-head); }
+    td.trans-col { background: var(--trans-cell); }
+
+    th.ini-col { background: #cffafe; }
+    td.ini-col {
+      background: #ecfeff;
+      font-weight: 900;
+      color: #155e75;
+    }
+
+    th.aju-col {
+      background: #c4b5fd !important;
+      color: #3b0764;
+      font-weight: 900;
+      border-left: 3px solid #7c3aed;
+      border-right: 3px solid #7c3aed;
+    }
+
+    td.aju-col {
+      background: #ede9fe !important;
+      color: #4c1d95;
+      font-weight: 900;
+      border-left: 3px solid #7c3aed;
+      border-right: 3px solid #7c3aed;
+    }
+
+    th.vta-col { background: var(--vta-head); }
+    td.vta-col { background: var(--vta-cell); }
+
+    th.dev-col { background: var(--dev-head); }
+    td.dev-col { background: var(--dev-cell); }
+
+    th.merma-col { background: var(--merma-head); }
+    td.merma-col { background: var(--merma-cell); }
+
+    th.inter-col { background: var(--inter-head); }
+    td.inter-col { background: var(--inter-cell); }
+
+    th.intsal-col { background: var(--intsal-head); }
+    td.intsal-col { background: var(--intsal-cell); }
+
+    th.total-col, td.total-col {
+      background: #f8fafc;
+      font-weight: bold;
+    }
+
+    th.neto-col { background: var(--neto-head); }
+    td.neto-col {
+      background: var(--neto-cell);
+      font-weight: bold;
+    }
+
+    td.num-zero {
+      color: #94a3b8;
+    }
+
+    td.negativo {
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    tfoot td {
+      position: sticky;
+      bottom: 0;
+      background: #ecfdf5;
+      font-weight: bold;
+      z-index: 3;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .config-layout {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 16px;
+      padding: 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--gris);
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.04);
+    }
+
+    .panel h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      color: #0f172a;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .grid-1 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .muted {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .tag.ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .tag.off {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .mini-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      margin-right: 6px;
+    }
+
+    .mini-btn.edit { background: #0c6cbd; }
+    .mini-btn.del { background: #b91c1c; }
+
+    .subhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .subhead .title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #0f172a;
+    }
+
+    .back-btn {
+      border: none;
+      background: #0f766e;
+      color: white;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .config-table-wrap {
+      overflow: auto;
+      max-height: calc(100vh - 260px);
+    }
+
+    .empty-box {
+      padding: 22px;
+      text-align: center;
+      color: #64748b;
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+    }
+
+
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+    }
+
+    .loading-overlay.oculto {
+      display: none;
+    }
+
+    .loading-box {
+      background: white;
+      border-radius: 18px;
+      padding: 24px 34px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.18);
+      text-align: center;
+      min-width: 280px;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #e5e7eb;
+      border-top: 5px solid #0c6cbd;
+      border-radius: 50%;
+      animation: girar .9s linear infinite;
+      margin: 0 auto 14px;
+    }
+
+    @keyframes girar {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    #loadingTexto {
+      font-weight: 900;
+      color: #0f172a;
+      font-size: 16px;
+    }
+
+    #loadingSubtexto {
+      margin-top: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+
+    .module-btn {
+      border: none; border-radius: 10px; padding: 9px 14px; cursor: pointer;
+      background: #7c3aed; color: #fff; font-weight: 800; font-size: 12px;
+    }
+    .conteo-layout { display:grid; grid-template-columns:minmax(0, 1.6fr) minmax(330px, .8fr); gap:12px; padding:12px; background:#f8fafc; }
+    .conteo-toolbar { display:grid; grid-template-columns:1fr 180px 160px; gap:8px; margin-bottom:10px; }
+    .conteo-toolbar input, .conteo-toolbar select, .conteo-toolbar button { min-height:36px; border:1px solid #cbd5e1; border-radius:9px; padding:6px 9px; font-size:12px; }
+    .conteo-toolbar button { border:none; background:#00416A; color:#fff; font-weight:800; cursor:pointer; }
+    .conteo-table-wrap { max-height:calc(100vh - 230px); overflow:auto; border:1px solid #dbe4f0; border-radius:10px; }
+    #tablaConteoArticulos { width:100%; min-width:680px; font-size:11px; }
+    #tablaConteoArticulos th { position:sticky; top:0; z-index:3; background:#dbeafe; text-align:left; }
+    #tablaConteoArticulos td:nth-child(1), #tablaConteoArticulos th:nth-child(1) { width:42px; text-align:center; }
+    #tablaConteoArticulos td:nth-child(4), #tablaConteoArticulos th:nth-child(4) { text-align:right; width:120px; }
+    .conteo-selection-bar { display:flex; justify-content:space-between; gap:10px; align-items:center; margin:8px 0; font-size:12px; font-weight:700; }
+    .lista-card { border:1px solid #dbe4f0; border-radius:10px; padding:10px; margin-bottom:8px; background:#fff; }
+    .lista-card h4 { margin:0 0 5px; font-size:14px; }
+    .lista-meta { color:#64748b; font-size:11px; margin-bottom:8px; }
+    .lista-actions { display:flex; flex-wrap:wrap; gap:6px; }
+    .lista-actions button { border:none; border-radius:7px; padding:6px 8px; color:#fff; font-size:11px; font-weight:700; cursor:pointer; }
+    .btn-lista-editar { background:#0c6cbd; } .btn-lista-pdf { background:#0f766e; } .btn-lista-eliminar { background:#b91c1c; }
+    .conteo-form { display:grid; gap:8px; margin-bottom:12px; }
+    .conteo-form input, .conteo-form textarea { width:100%; min-height:36px; border:1px solid #cbd5e1; border-radius:9px; padding:7px 9px; font:12px Arial; }
+    .conteo-form textarea { min-height:60px; resize:vertical; }
+    .conteo-form-actions { display:flex; gap:7px; }
+    .conteo-form-actions button { flex:1; border:none; border-radius:8px; min-height:34px; color:#fff; font-weight:800; cursor:pointer; }
+    #btnGuardarListaConteo { background:#166534; } #btnNuevaListaConteo { background:#475569; }
+    .empty-listas { padding:20px; text-align:center; color:#64748b; border:1px dashed #cbd5e1; border-radius:10px; }
+
+
+    .topbar-menu { position:absolute; right:12px; top:10px; z-index:20; }
+    .topbar-menu .icon-btn { position:static; display:block; }
+    .action-menu {
+      display:none; position:absolute; right:0; top:44px; width:245px;
+      background:#fff; color:#0f172a; border:1px solid #dbe4f0; border-radius:12px;
+      box-shadow:0 16px 40px rgba(15,23,42,.24); padding:7px; z-index:50;
+    }
+    .action-menu.open { display:block; }
+    .action-menu button {
+      width:100%; border:0; background:#fff; color:#0f172a; text-align:left;
+      padding:10px 11px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;
+    }
+    .action-menu button:hover { background:#eff6ff; }
+    .action-menu .menu-danger:hover { background:#fff1f2; color:#b91c1c; }
+    .menu-separator { height:1px; background:#e2e8f0; margin:5px 3px; }
+
+    .modal-overlay {
+      display:none; position:fixed; inset:0; background:rgba(15,23,42,.58); z-index:1000;
+      align-items:center; justify-content:center; padding:16px;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal-card { width:min(620px, 100%); background:#fff; border-radius:16px; box-shadow:0 24px 70px rgba(0,0,0,.3); overflow:hidden; }
+    .modal-head { background:linear-gradient(135deg,var(--azul),var(--azul2)); color:#fff; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; }
+    .modal-head h2 { margin:0; font-size:18px; }
+    .modal-close { border:0; background:rgba(255,255,255,.18); color:#fff; width:34px; height:34px; border-radius:9px; font-size:20px; cursor:pointer; }
+    .modal-body { padding:16px; display:grid; gap:11px; }
+    .modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .modal-actions { display:flex; gap:8px; justify-content:flex-end; padding:0 16px 16px; }
+    .modal-actions button { min-width:130px; }
+    .adjust-preview { padding:10px 12px; border-radius:10px; background:#f1f5f9; font-size:12px; font-weight:700; }
+    @media (max-width:650px){ .modal-grid{grid-template-columns:1fr;} }
+
+    @media (max-width: 1200px) {
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .config-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sticky2 {
+        width: 220px;
+        min-width: 220px;
+        max-width: 220px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar h1 {
+        font-size: 20px;
+      }
+    }
+    .ajuste-resultados {
+      display:none; max-height:180px; overflow:auto; border:1px solid #cbd5e1;
+      border-radius:8px; background:#fff; margin-top:4px; box-shadow:0 8px 20px rgba(0,0,0,.12);
+      position:absolute; left:0; right:0; z-index:30;
+    }
+    .ajuste-resultados.open { display:block; }
+    .ajuste-opcion { padding:8px 10px; cursor:pointer; border-bottom:1px solid #eef2f7; font-size:12px; }
+    .ajuste-opcion:last-child { border-bottom:0; }
+    .ajuste-opcion:hover, .ajuste-opcion.active { background:#eaf4ff; }
+    .ajuste-opcion strong { display:block; color:#0f172a; }
+    .ajuste-opcion span { color:#475569; }
+    .field.ajuste-buscador { position:relative; }
+    .ajuste-lote-wrap { margin-top:12px; border:1px solid #dbe3ec; border-radius:9px; overflow:hidden; }
+    .ajuste-lote-head { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:#f8fafc; font-size:12px; font-weight:700; }
+    .ajuste-lote-scroll { max-height:190px; overflow:auto; }
+    .ajuste-lote-table { width:100%; border-collapse:collapse; font-size:11px; }
+    .ajuste-lote-table th, .ajuste-lote-table td { padding:6px 7px; border-bottom:1px solid #eef2f7; text-align:left; }
+    .ajuste-lote-table th { position:sticky; top:0; background:#fff; z-index:1; }
+    .ajuste-lote-table td.num { text-align:right; }
+    .btn-quitar-ajuste { border:0; background:#fee2e2; color:#991b1b; border-radius:6px; cursor:pointer; padding:3px 7px; }
+
+
+    /* ===== Vista principal compacta estilo operativo ===== */
+    #viewReporte .card { border-radius: 0; box-shadow: none; }
+    #viewReporte .topbar-compacta {
+      background: #fff;
+      color: #111827;
+      padding: 10px 66px 9px 12px;
+      min-height: 86px;
+      border-bottom: 3px solid #b91c1c;
+      display: flex;
+      align-items: flex-end;
+    }
+    #viewReporte .controles-principales {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 205px 175px 175px minmax(300px, 480px);
+      gap: 10px;
+      align-items: end;
+    }
+    #viewReporte .controles-principales label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #7f1d1d;
+    }
+    #viewReporte .controles-principales input {
+      height: 42px;
+      min-width: 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 0 12px;
+      background: #fff;
+      color: #111827;
+      font: 14px Arial, sans-serif;
+      outline: none;
+    }
+    #viewReporte .controles-principales input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,.10);
+    }
+    #viewReporte #filtroDescripcion { width: 100%; }
+    #viewReporte .topbar-menu { top: 17px; right: 14px; }
+    #viewReporte .icon-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: #a91414;
+      color: #fff;
+      font-size: 28px;
+      line-height: 1;
+    }
+    #viewReporte .icon-btn:hover { background: #8f1111; }
+    .menu-info {
+      display: grid;
+      gap: 3px;
+      padding: 8px 10px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 5px;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .menu-info strong { color: #0f172a; font-size: 13px; }
+
+    #viewReporte .table-wrap {
+      height: calc(100vh - 104px);
+      overflow: auto;
+      scrollbar-gutter: stable;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    #viewReporte #tablaPivot { font-size: 11px; width: max-content; min-width: 100%; }
+    #viewReporte #tablaPivot th,
+    #viewReporte #tablaPivot td { padding: 5px 7px; }
+    #viewReporte #tablaPivot .sticky1 {
+      width: 120px;
+      min-width: 120px;
+      max-width: 120px;
+      color: #1754c4;
+      font-weight: 900;
+    }
+    #viewReporte #tablaPivot .sticky2 {
+      left: 120px;
+      width: 425px;
+      min-width: 425px;
+      max-width: 425px;
+    }
+    #viewReporte #tablaPivot thead .sticky1,
+    #viewReporte #tablaPivot thead .sticky2 { background: #fee2e2; }
+    #viewReporte #tablaPivot tbody tr:hover td { filter: brightness(.985); }
+    #viewReporte #tablaPivot tbody tr:hover .sticky1,
+    #viewReporte #tablaPivot tbody tr:hover .sticky2 { background: #f8fafc; }
+
+    .ajuste-parpadeo {
+      background: #006eff !important;
+      color: #fff !important;
+      font-weight: 900 !important;
+      animation: ajusteBlink .8s infinite;
+      box-shadow: inset 0 0 0 1px #004fc4;
+    }
+    @keyframes ajusteBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .34; }
+    }
+
+    .inventario-negativo {
+      background: #dc2626 !important;
+      color: #fff !important;
+      font-weight: 900 !important;
+      animation: inventarioNegativoBlink .85s infinite;
+      box-shadow: inset 0 0 0 2px #991b1b;
+    }
+    @keyframes inventarioNegativoBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .32; }
+    }
+
+    .pivot-scroll-horizontal {
+      position: fixed;
+      left: 0;
+      right: 18px;
+      bottom: 0;
+      height: 18px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      background: #e5e7eb;
+      border-top: 1px solid #94a3b8;
+      z-index: 2500;
+      display: none;
+    }
+    .pivot-scroll-horizontal-inner { height: 1px; }
+
+    @media (max-width: 1050px) {
+      #viewReporte .controles-principales {
+        grid-template-columns: 190px 155px 155px minmax(240px, 1fr);
+      }
+      #viewReporte #tablaPivot .sticky2 {
+        width: 330px; min-width: 330px; max-width: 330px;
+      }
+    }
+    @media (max-width: 760px) {
+      #viewReporte .topbar-compacta { padding-right: 58px; min-height: auto; }
+      #viewReporte .controles-principales { grid-template-columns: 1fr 1fr; }
+      #viewReporte #filtroDescripcion { grid-column: 1 / -1; }
+      #viewReporte .table-wrap { height: calc(100vh - 160px); }
+      .pivot-scroll-horizontal { right: 0; }
+      #viewReporte #tablaPivot .sticky1 { width: 82px; min-width: 82px; max-width: 82px; }
+      #viewReporte #tablaPivot .sticky2 { left: 82px; width: 250px; min-width: 250px; max-width: 250px; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- VISTA REPORTE -->
+    <div id="viewReporte" class="view active">
+      <div class="card">
+        <div class="topbar topbar-compacta">
+          <div class="controles-principales">
+            <label class="control-semana">
+              <span>Semana</span>
+              <input type="week" id="semanaInput" />
+            </label>
+
+            <label class="control-fecha">
+              <span>Fecha inicio</span>
+              <input type="date" id="fechaInicioVisible" readonly />
+            </label>
+
+            <label class="control-fecha">
+              <span>Fecha fin</span>
+              <input type="date" id="fechaFinVisible" readonly />
+            </label>
+
+            <input type="search" id="filtroDescripcion" autocomplete="off" placeholder="Buscar por código o descripción..." aria-label="Buscar por código o descripción" />
+          </div>
+
+          <div class="topbar-menu">
+            <button class="icon-btn" id="btnMenuPrincipal" title="Más opciones" aria-label="Más opciones">⋮</button>
+            <div class="action-menu" id="menuPrincipal">
+              <div class="menu-info">
+                <strong>Inventario <span id="tituloTienda">ALLENDE 2</span></strong>
+                <span>Movimientos semanales y existencia teórica.</span>
+              </div>
+              <button id="btnCargar">📅 Cargar semana</button>
+              <button id="btnActualizarFirebase">🔄 Actualizar datos</button>
+              <button id="btnExportar">📊 Exportar Excel</button>
+              <button id="btnAbrirConteo">🧾 Conteo diario</button>
+              <div class="menu-separator"></div>
+              <button id="btnAbrirAjuste">🛠️ Capturar ajuste</button>
+              <button id="btnAbrirConfig">⚙️ Configuración de equivalencias</button>
+            </div>
+          </div>
+        </div>
+
+<div id="status" class="status" style="display:none;"></div>
+<div id="summary" class="summary" style="display:none;"></div>
+        
+        <div class="table-wrap" id="tableWrapPrincipal">
+          <table id="tablaPivot">
+            <thead></thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+        <div class="pivot-scroll-horizontal" id="pivotScrollHorizontal" aria-hidden="true">
+          <div class="pivot-scroll-horizontal-inner" id="pivotScrollHorizontalInner"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- VISTA CONTEO DIARIO -->
+    <div id="viewConteo" class="view">
+      <div class="card">
+        <div class="topbar">
+          <h1>Conteo Diario - PROVEEDORA ALLENDE 2</h1>
+          <p>Selecciona artículos usando únicamente código, descripción y existencia total calculada. Las listas quedan configuradas en Firebase.</p>
+        </div>
+        <div class="controls" style="grid-template-columns:1fr;">
+          <div class="subhead">
+            <div class="title">Listas configuradas en /TIENDAS/ALLENDE 2/CONTEO_DIARIO</div>
+            <button class="back-btn" id="btnVolverDesdeConteo">← Volver al reporte</button>
+          </div>
+        </div>
+        <div id="statusConteo" class="status">Listo.</div>
+        <div class="conteo-layout">
+          <div class="panel">
+            <h3>Artículos disponibles</h3>
+            <div class="conteo-toolbar">
+              <input id="filtroConteo" type="text" placeholder="Buscar código o descripción">
+              <select id="filtroSeleccionConteo">
+                <option value="todos">Todos</option><option value="seleccionados">Seleccionados</option><option value="disponibles">No seleccionados</option>
+              </select>
+              <button id="btnSeleccionarVisibles">Seleccionar visibles</button>
+            </div>
+            <div class="conteo-selection-bar">
+              <span id="resumenSeleccionConteo">0 artículos seleccionados</span>
+              <button class="mini-btn del" id="btnLimpiarSeleccionConteo">Limpiar selección</button>
+            </div>
+            <div class="conteo-table-wrap">
+              <table id="tablaConteoArticulos">
+                <thead><tr><th>Sel.</th><th>Código</th><th>Descripción</th><th>Existencia total</th></tr></thead>
+                <tbody id="tbodyConteoArticulos"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Crear o editar lista</h3>
+            <div class="conteo-form">
+              <input id="nombreListaConteo" maxlength="60" placeholder="Ej. CONTEO A">
+              <textarea id="descripcionListaConteo" maxlength="200" placeholder="Descripción opcional"></textarea>
+              <div class="conteo-form-actions">
+                <button id="btnNuevaListaConteo">Nueva</button>
+                <button id="btnGuardarListaConteo">Guardar lista</button>
+              </div>
+            </div>
+            <h3>Listas guardadas</h3>
+            <div id="listasConteoGuardadas"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISTA CONFIGURACION -->
+    <div id="viewConfig" class="view">
+      <div class="card">
+        <div class="topbar">
+          <h1>Configuración de equivalencias - <span id="tituloTiendaConfig">ALLENDE 1</span></h1>
+          <p>
+            Módulo oculto para administrar conversiones por tienda.
+          </p>
+        </div>
+
+        <div class="controls" style="grid-template-columns: 1fr;">
+          <div class="subhead">
+            <div class="title">Reglas por tienda en Firebase</div>
+            <button class="back-btn" id="btnVolverReporte">← Volver al reporte</button>
+          </div>
+        </div>
+
+        <div id="statusConfig" class="status">Listo.</div>
+
+        <div class="config-layout">
+          <div class="panel">
+            <h3>Formulario</h3>
+
+            <div class="grid-2">
+              <div class="field">
+                <label>Código venta</label>
+                <input list="listaCodigosVenta" type="text" id="codigoVenta" placeholder="Ej. 7501090000000" />
+              </div>
+              <div class="field">
+                <label>Código origen</label>
+                <input list="listaCodigosOrigen" type="text" id="codigoOrigen" placeholder="Ej. 177177" />
+              </div>
+            </div>
+
+            <datalist id="listaCodigosVenta"></datalist>
+            <datalist id="listaCodigosOrigen"></datalist>
+
+            <div class="grid-2">
+              <div class="field">
+                <label>Descripción venta</label>
+                <input type="text" id="descripcionVenta" placeholder="Descripción del código de venta" />
+              </div>
+              <div class="field">
+                <label>Descripción origen</label>
+                <input type="text" id="descripcionOrigen" placeholder="Descripción del código origen" />
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label>Factor</label>
+                <input type="number" id="factor" min="0.0001" step="0.0001" placeholder="Ej. 500" />
+              </div>
+              <div class="field">
+                <label>Activo</label>
+                <select id="activo">
+                  <option value="true">Sí</option>
+                  <option value="false">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-1">
+              <div class="field">
+                <label>Notas</label>
+                <textarea id="notas" placeholder="Comentario opcional de la regla"></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button id="btnNuevo">Nuevo</button>
+              <button id="btnGuardar" class="sec">Guardar</button>
+              <button id="btnEliminar" class="danger">Eliminar</button>
+              <button id="btnRecargarConfig" class="warn">Recargar reglas</button>
+            </div>
+
+            <div class="muted" style="margin-top:10px;">
+              Código venta = producto que se vende.  
+              Código origen = producto real que se descuenta.
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Equivalencias registradas</h3>
+            <div class="config-table-wrap">
+              <table id="tablaEquivalencias">
+                <thead>
+                  <tr>
+                    <th class="left">Código venta</th>
+                    <th class="left">Descripción venta</th>
+                    <th class="left">Código origen</th>
+                    <th class="left">Descripción origen</th>
+                    <th>Factor</th>
+                    <th>Activo</th>
+                    <th class="left">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyEquivalencias"></tbody>
+              </table>
+              <div id="emptyEquivalencias" class="empty-box" style="display:none;">
+                No hay equivalencias registradas para esta tienda.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div class="modal-overlay" id="modalAjuste">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tituloModalAjuste">
+        <div class="modal-head">
+          <h2 id="tituloModalAjuste">Capturar ajuste de inventario</h2>
+          <button class="modal-close" id="btnCerrarAjuste" aria-label="Cerrar">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-grid">
+            <div class="field">
+              <label>Fecha del ajuste</label>
+              <input type="date" id="ajusteFecha" min="2026-04-02">
+            </div>
+            <div class="field">
+              <label>Hora del ajuste</label>
+              <input type="time" id="ajusteHora" step="60">
+            </div>
+          </div>
+          <div class="field ajuste-buscador">
+            <label>Buscar por código o descripción</label>
+            <input type="text" id="ajusteCodigo" autocomplete="off" placeholder="Escribe código o descripción">
+            <div id="resultadosAjuste" class="ajuste-resultados"></div>
+          </div>
+          <div class="field">
+            <label>Descripción</label>
+            <input type="text" id="ajusteDescripcion" placeholder="Descripción del producto">
+          </div>
+          <div class="modal-grid">
+            <div class="field">
+              <label>Existencia calculada</label>
+              <input type="number" id="ajusteExistenciaSistema" step="0.0001" readonly>
+            </div>
+            <div class="field">
+              <label>Conteo físico correcto</label>
+              <input type="number" id="ajusteConteoFisico" step="0.0001" placeholder="Cantidad real">
+            </div>
+          </div>
+          <div class="field">
+            <label>Motivo / observaciones</label>
+            <textarea id="ajusteNotas" rows="3" placeholder="Motivo del ajuste"></textarea>
+          </div>
+          <div class="adjust-preview" id="ajustePreview">Diferencia del ajuste: 0</div>
+          <button id="btnAgregarAjusteLote" type="button" style="width:100%;margin-top:8px;">＋ Agregar al lote</button>
+          <div class="ajuste-lote-wrap">
+            <div class="ajuste-lote-head"><span>Ajustes pendientes</span><span id="contadorAjustesLote">0 artículos</span></div>
+            <div class="ajuste-lote-scroll">
+              <table class="ajuste-lote-table">
+                <thead><tr><th>Código</th><th>Descripción</th><th>Sistema</th><th>Físico</th><th>Dif.</th><th></th></tr></thead>
+                <tbody id="tbodyAjustesLote"><tr><td colspan="6">Todavía no hay ajustes agregados.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="statusAjuste" class="status" style="display:none"></div>
+        </div>
+        <div class="modal-actions">
+          <button id="btnCancelarAjuste" class="sec">Cancelar</button>
+          <button id="btnGuardarAjuste">Guardar lote (0)</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { enviarLoteAjustesTelegram } from "./js/telegramAjustes.js";
+    import { mostrarLoading, cambiarLoading, ocultarLoading } from "./js/loading.js";
+    import { conCache, borrarCacheTienda } from "./js/cacheDB.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSy...",
+      authDomain: "inventariopv-643f1.firebaseapp.com",
+      projectId: "inventariopv-643f1",
+      storageBucket: "inventariopv-643f1.firebasestorage.app",
+      messagingSenderId: "96242533231",
+      appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const db = firebase.firestore();
+
+    const $ = (id) => document.getElementById(id);
+
+    const tabla = $("tablaPivot");
+    const thead = tabla.querySelector("thead");
+    const tbody = tabla.querySelector("tbody");
+    const tfoot = tabla.querySelector("tfoot");
+
+    let ultimaPivot = null;
+    let equivalenciasActuales = [];
+    let equivalenciasMap = {}; // Reglas antiguas de factor: se conservan solo para configuración manual
+    let equivalentesCatalogoMap = {}; // Alias reales desde productos.codigosEquivalentes
+    let totalAliasAplicadosUltimaCarga = 0;
+    let reglaEditandoId = null;
+    let opcionesCodigos = [];
+    let seleccionConteo = new Set();
+    let listaConteoEditandoId = null;
+    let listasConteoActuales = [];
+
+    function getTiendaActual() {
+      return "ALLENDE 2";
+    }
+
+    function getRefsPorTienda() {
+      const TIENDA = getTiendaActual();
+
+      return {
+        TIENDA,
+        INVENTARIOS_REF: db.collection("TIENDAS").doc(TIENDA).collection("inventario1"),
+        VENTAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("ventas"),
+        TRANSFERENCIAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("SURTIDOTRANS"),
+        AJUSTES_REF: db.collection("TIENDAS").doc(TIENDA).collection("ajustes_inventario"),
+        DEVOLUCIONES_REF: db.collection("TIENDAS").doc(TIENDA).collection("DEVOLUCION"),
+        INTERCAMBIOS_REF: db.collection("TIENDAS").doc(TIENDA).collection("intercambios"),
+        INTERCAMBIOS_SALIDA_REF: db.collection("TIENDAS").doc("ALLENDE 1").collection("intercambios2"),
+        MERMAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("MERMA"),
+        EQUIVALENCIAS_REF: db.collection("TIENDAS").doc(TIENDA).collection("configuracion_equivalencias"),
+        PRODUCTOS_REF: db.collection("productos"),
+        CONTEO_DIARIO_REF: db.collection("TIENDAS").doc(TIENDA).collection("CONTEO_DIARIO")
+      };
+    }
+
+    function actualizarTitulosTienda() {
+      const tienda = getTiendaActual();
+      $("tituloTienda").textContent = tienda;
+      $("tituloTiendaConfig").textContent = tienda;
+    }
+
+    function setStatus(msg, type = "") {
+      const el = $("status");
+      el.textContent = msg;
+      el.className = "status " + type;
+    }
+
+    function setStatusConfig(msg, type = "") {
+      const el = $("statusConfig");
+      el.textContent = msg;
+      el.className = "status " + type;
+    }
+
+    function fmtNum(n) {
+      return Number(n || 0).toLocaleString("es-MX", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function limpiarTabla() {
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      tfoot.innerHTML = "";
+      $("summary").innerHTML = "";
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function normalizarFecha(valor) {
+      if (!valor) return "";
+
+      if (typeof valor === "string") {
+        const v = valor.trim();
+
+        const m1 = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m1) {
+          const [, dd, mm, yyyy] = m1;
+          return `${yyyy}-${mm}-${dd}`;
+        }
+
+        const m2 = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m2) {
+          return `${m2[1]}-${m2[2]}-${m2[3]}`;
+        }
+
+        return v;
+      }
+
+      if (valor && typeof valor.toDate === "function") {
+        const d = valor.toDate();
+        return d.toISOString().slice(0, 10);
+      }
+
+      if (valor && typeof valor.seconds === "number") {
+        const d = new Date(valor.seconds * 1000);
+        return d.toISOString().slice(0, 10);
+      }
+
+      return String(valor).trim();
+    }
+
+
+    function normalizarFechaMs(valor) {
+      if (!valor) return 0;
+
+      if (valor && typeof valor.toDate === "function") {
+        return valor.toDate().getTime();
+      }
+
+      if (valor && typeof valor.seconds === "number") {
+        return valor.seconds * 1000;
+      }
+
+      const d = new Date(valor);
+      const ms = d.getTime();
+      return Number.isFinite(ms) ? ms : 0;
+    }
+
+
+    function fechaLocalDesdeISO(iso) {
+      const [yyyy, mm, dd] = String(iso || "").split("-").map(Number);
+      if (!yyyy || !mm || !dd) return null;
+      return new Date(yyyy, mm - 1, dd);
+    }
+
+    // Punto cero operativo de ALLENDE 2: 1 de julio de 2026.
+    // BASE = 0. Todo movimiento anterior queda fuera.
+    // Los conteos físicos posteriores NO cambian la base: generan AJUSTES acumulativos.
+    const FECHA_INVENTARIO_BASE_ISO = "2026-07-01";
+    const FECHA_INVENTARIO_BASE = fechaLocalDesdeISO(FECHA_INVENTARIO_BASE_ISO);
+    const FECHA_INVENTARIO_BASE_MS = FECHA_INVENTARIO_BASE.getTime();
+
+    function configurarLimiteSemana() {
+      const info = getISOWeekInfo(FECHA_INVENTARIO_BASE);
+      const semanaMinima = `${info.year}-W${String(info.week).padStart(2, "0")}`;
+      const input = $("semanaInput");
+      input.min = semanaMinima;
+      input.title = `Punto cero ${FECHA_INVENTARIO_BASE_ISO} · Base 0 · Los físicos posteriores generan ajustes`;
+
+      if (input.value && input.value < semanaMinima) {
+        input.value = semanaMinima;
+      }
+    }
+
+    function fechaISODesdeDate(d) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function inicioSemanaLunes(d) {
+      const base = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dia = base.getDay(); // domingo=0, lunes=1
+      const ajuste = dia === 0 ? -6 : 1 - dia;
+      base.setDate(base.getDate() + ajuste);
+      base.setHours(0, 0, 0, 0);
+      return base;
+    }
+
+    function getISOWeekInfo(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return {
+        year: d.getUTCFullYear(),
+        week: weekNo
+      };
+    }
+
+    function setSemanaInputDesdeFecha(fecha) {
+      const info = getISOWeekInfo(fecha);
+      $("semanaInput").value = `${info.year}-W${String(info.week).padStart(2, "0")}`;
+    }
+
+    function getRangoSemanaSeleccionada() {
+      const valor = String($("semanaInput").value || "").trim();
+      if (!valor) {
+        setSemanaInputDesdeFecha(new Date());
+      }
+
+      const limpio = String($("semanaInput").value || "").trim();
+      const semanaMinima = String($("semanaInput").min || "").trim();
+      if (semanaMinima && limpio < semanaMinima) {
+        $("semanaInput").value = semanaMinima;
+        throw new Error(`La información está disponible desde el punto cero ${FECHA_INVENTARIO_BASE_ISO}.`);
+      }
+
+      const match = limpio.match(/^(\d{4})-W(\d{2})$/);
+      if (!match) {
+        throw new Error("Selecciona una semana válida.");
+      }
+
+      const year = Number(match[1]);
+      const week = Number(match[2]);
+
+      const jan4 = new Date(year, 0, 4);
+      const inicioWeek1 = inicioSemanaLunes(jan4);
+      const inicio = new Date(inicioWeek1);
+      inicio.setDate(inicioWeek1.getDate() + ((week - 1) * 7));
+      inicio.setHours(0, 0, 0, 0);
+
+      const fin = new Date(inicio);
+      fin.setDate(inicio.getDate() + 6);
+      fin.setHours(23, 59, 59, 999);
+
+      return {
+        semana: limpio,
+        inicio,
+        fin,
+        inicioISO: fechaISODesdeDate(inicio),
+        finISO: fechaISODesdeDate(fin),
+        inicioMs: inicio.getTime(),
+        finMs: fin.getTime()
+      };
+    }
+
+    function actualizarRangoVisible() {
+      try {
+        const rango = getRangoSemanaSeleccionada();
+        if ($("fechaInicioVisible")) $("fechaInicioVisible").value = rango.inicioISO;
+        if ($("fechaFinVisible")) $("fechaFinVisible").value = rango.finISO;
+      } catch (_) {
+        if ($("fechaInicioVisible")) $("fechaInicioVisible").value = "";
+        if ($("fechaFinVisible")) $("fechaFinVisible").value = "";
+      }
+    }
+
+    function moverSemana(delta) {
+      mostrarLoading(
+        delta > 0 ? "Cargando semana siguiente..." : "Cargando semana anterior...",
+        "Calculando con datos locales..."
+      );
+
+      const rango = getRangoSemanaSeleccionada();
+      const nueva = new Date(rango.inicio);
+      nueva.setDate(nueva.getDate() + (delta * 7));
+      setSemanaInputDesdeFecha(nueva);
+      actualizarRangoVisible();
+      cargarTodo();
+    }
+
+    function fechaItemMsSeguro(item) {
+      const directo = Number(item.fechaMs || 0);
+      if (Number.isFinite(directo) && directo > 0) return directo;
+
+      const fecha = fechaLocalDesdeISO(item.fecha);
+      return fecha ? fecha.getTime() : 0;
+    }
+
+    function construirRegistrosSemanaConArrastre(registros, rangoSemana) {
+      const anteriores = [];
+      const semana = [];
+
+      for (const item of registros) {
+        const fecha = String(item.fecha || "").trim();
+        if (!fecha) continue;
+
+        const ms = fechaItemMsSeguro(item);
+        if (!ms) continue;
+
+        // Todo lo anterior al inventario base queda fuera del reporte y del arrastre.
+        if (ms < FECHA_INVENTARIO_BASE_MS) continue;
+
+        if (ms < rangoSemana.inicioMs) {
+          anteriores.push(item);
+        } else if (ms <= rangoSemana.finMs) {
+          semana.push(item);
+        }
+      }
+
+      const pivotAnterior = anteriores.length
+        ? construirPivotSeparado(anteriores)
+        : { rows: [] };
+
+      const iniciales = [];
+
+      for (const row of pivotAnterior.rows || []) {
+        const saldo = Number(row.neto || 0);
+        if (!Number.isFinite(saldo) || saldo === 0) continue;
+
+        iniciales.push({
+          origen: "INI",
+          id: `INI_${rangoSemana.semana}_${row.codigoKey}`,
+          codigo: row.codigo,
+          codigoKey: row.codigoKey,
+          descripcion: row.descripcion || "",
+          fecha: rangoSemana.inicioMs < FECHA_INVENTARIO_BASE_MS
+            ? FECHA_INVENTARIO_BASE_ISO
+            : rangoSemana.inicioISO,
+          fechaMs: Math.max(rangoSemana.inicioMs, FECHA_INVENTARIO_BASE_MS),
+          cantidad: saldo,
+          arrastrado: true
+        });
+      }
+
+      return {
+        registros: [...iniciales, ...semana],
+        totalAnteriores: anteriores.length,
+        totalSemana: semana.length,
+        totalIniciales: iniciales.length,
+        semana: rangoSemana.semana,
+        inicioISO: rangoSemana.inicioISO,
+        finISO: rangoSemana.finISO
+      };
+    }
+
+    function normalizarCodigo(valor) {
+      const s = String(valor ?? "").trim();
+      if (!s) return "";
+
+      const soloDigitos = s.replace(/\D/g, "");
+      if (!soloDigitos) return s.toLowerCase();
+
+      return soloDigitos.replace(/^0+/, "") || "0";
+    }
+
+    function normalizarTexto(valor) {
+      return String(valor ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function obtenerCampo(data, nombres = []) {
+      for (const nombre of nombres) {
+        if (data[nombre] !== undefined && data[nombre] !== null) {
+          return data[nombre];
+        }
+      }
+      return "";
+    }
+
+    function obtenerCantidadVenta(data) {
+      const valor = obtenerCampo(data, [
+        "Cantidad vendida",
+        "cantidad vendida",
+        "Cantidad",
+        "cantidad",
+        "cant",
+        "unidades",
+        "totalCantidad"
+      ]);
+      return Number(valor || 0);
+    }
+
+    function obtenerCodigoVenta(data) {
+      const valor = obtenerCampo(data, [
+        "Codigo",
+        "codigo",
+        "Código",
+        "CODIGO"
+      ]);
+      return String(valor || "").trim();
+    }
+
+    function obtenerDescripcionVenta(data) {
+      const valor = obtenerCampo(data, [
+        "descripcion",
+        "Descripción",
+        "Descripcion",
+        "producto",
+        "Producto"
+      ]);
+      return String(valor || "").trim();
+    }
+
+    function obtenerFechaVenta(data) {
+      const valor = obtenerCampo(data, [
+        "Fecha",
+        "fecha",
+        "FECHA"
+      ]);
+      return normalizarFecha(valor);
+    }
+
+    function mostrarVista(nombre) {
+      $("viewReporte").classList.remove("active");
+      $("viewConfig").classList.remove("active");
+      $("viewConteo").classList.remove("active");
+
+      if (nombre === "config") $("viewConfig").classList.add("active");
+      else if (nombre === "conteo") $("viewConteo").classList.add("active");
+      else $("viewReporte").classList.add("active");
+
+      const scrollAux = $("pivotScrollHorizontal");
+      if (scrollAux) {
+        if (nombre === "reporte") requestAnimationFrame(actualizarScrollHorizontalPivot);
+        else scrollAux.style.display = "none";
+      }
+    }
+
+    function limpiarFormularioConfig() {
+      reglaEditandoId = null;
+      $("codigoVenta").value = "";
+      $("descripcionVenta").value = "";
+      $("codigoOrigen").value = "";
+      $("descripcionOrigen").value = "";
+      $("factor").value = "";
+      $("activo").value = "true";
+      $("notas").value = "";
+      setStatusConfig("Formulario limpio.", "ok");
+    }
+
+    function validarFormularioConfig() {
+      const codigoVenta = String($("codigoVenta").value || "").trim();
+      const descripcionVenta = String($("descripcionVenta").value || "").trim();
+      const codigoOrigen = String($("codigoOrigen").value || "").trim();
+      const descripcionOrigen = String($("descripcionOrigen").value || "").trim();
+      const factor = Number($("factor").value || 0);
+      const activo = $("activo").value === "true";
+      const notas = String($("notas").value || "").trim();
+
+      if (!codigoVenta) {
+        throw new Error("Falta código venta.");
+      }
+
+      if (!codigoOrigen) {
+        throw new Error("Falta código origen.");
+      }
+
+      if (!Number.isFinite(factor) || factor <= 0) {
+        throw new Error("El factor debe ser mayor a 0.");
+      }
+
+      return {
+        codigoVenta,
+        codigoVentaKey: normalizarCodigo(codigoVenta),
+        descripcionVenta,
+        codigoOrigen,
+        codigoOrigenKey: normalizarCodigo(codigoOrigen),
+        descripcionOrigen,
+        factor,
+        activo,
+        notas,
+        tipo: "CAJA_A_PIEZA"
+      };
+    }
+
+function construirMapaEquivalencias(items = []) {
+  const mapa = {};
+
+  for (const item of items) {
+    if (!item.activo) continue;
+
+    const codigoVenta = String(item.codigoVenta || "").trim();
+    const codigoVentaKey = normalizarCodigo(codigoVenta);
+    if (!codigoVentaKey) continue;
+
+    mapa[codigoVentaKey] = {
+      origen: String(item.codigoOrigen || "").trim(),
+      origenKey: normalizarCodigo(item.codigoOrigen || ""),
+      factor: Number(item.factor || 0),
+      descripcionOrigen: String(item.descripcionOrigen || "").trim(),
+      descripcionDestino: String(item.descripcionVenta || "").trim(),
+      docId: item.id || ""
+    };
+  }
+
+  return mapa;
+}
+    
+    async function cargarEquivalencias() {
+      try {
+        actualizarTitulosTienda();
+        setStatusConfig("Cargando equivalencias...", "");
+        const { EQUIVALENCIAS_REF } = getRefsPorTienda();
+
+        const snap = await EQUIVALENCIAS_REF.orderBy("codigoVenta").get();
+        const items = [];
+
+        snap.forEach(doc => {
+          items.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+
+        equivalenciasActuales = items;
+        equivalenciasMap = construirMapaEquivalencias(items);
+
+        pintarTablaEquivalencias();
+        setStatusConfig(`Equivalencias cargadas: ${items.length}`, "ok");
+      } catch (err) {
+        console.error(err);
+        setStatusConfig("Error cargando equivalencias: " + err.message, "error");
+      }
+    }
+
+    function pintarTablaEquivalencias() {
+      const tbodyEq = $("tbodyEquivalencias");
+      const empty = $("emptyEquivalencias");
+      tbodyEq.innerHTML = "";
+
+      if (!equivalenciasActuales.length) {
+        empty.style.display = "block";
+        return;
+      }
+
+      empty.style.display = "none";
+
+      equivalenciasActuales.forEach(item => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td class="left">${escapeHtml(item.codigoVenta || "")}</td>
+          <td class="left">${escapeHtml(item.descripcionVenta || "")}</td>
+          <td class="left">${escapeHtml(item.codigoOrigen || "")}</td>
+          <td class="left">${escapeHtml(item.descripcionOrigen || "")}</td>
+          <td>${fmtNum(item.factor || 0)}</td>
+          <td>${item.activo ? '<span class="tag ok">Sí</span>' : '<span class="tag off">No</span>'}</td>
+          <td class="left">
+            <button class="mini-btn edit" onclick="editarRegla('${item.id}')">Editar</button>
+            <button class="mini-btn del" onclick="eliminarReglaDirecta('${item.id}')">Eliminar</button>
+          </td>
+        `;
+
+        tbodyEq.appendChild(tr);
+      });
+    }
+
+    window.editarRegla = function(id) {
+      const item = equivalenciasActuales.find(x => x.id === id);
+      if (!item) return;
+
+      reglaEditandoId = id;
+      $("codigoVenta").value = item.codigoVenta || "";
+      $("descripcionVenta").value = item.descripcionVenta || "";
+      $("codigoOrigen").value = item.codigoOrigen || "";
+      $("descripcionOrigen").value = item.descripcionOrigen || "";
+      $("factor").value = item.factor || "";
+      $("activo").value = String(Boolean(item.activo));
+      $("notas").value = item.notas || "";
+
+      setStatusConfig(`Editando regla ${item.codigoVenta} → ${item.codigoOrigen}`, "warn");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    window.eliminarReglaDirecta = async function(id) {
+      try {
+        const item = equivalenciasActuales.find(x => x.id === id);
+        if (!item) return;
+
+        const ok = confirm(`¿Eliminar equivalencia ${item.codigoVenta} → ${item.codigoOrigen}?`);
+        if (!ok) return;
+
+        const { EQUIVALENCIAS_REF } = getRefsPorTienda();
+        await EQUIVALENCIAS_REF.doc(id).delete();
+
+        await cargarEquivalencias();
+        limpiarFormularioConfig();
+        setStatusConfig("Equivalencia eliminada.", "ok");
+      } catch (err) {
+        console.error(err);
+        setStatusConfig("Error al eliminar: " + err.message, "error");
+      }
+    };
+
+    async function guardarRegla() {
+      try {
+        actualizarTitulosTienda();
+        const tienda = getTiendaActual();
+        const payload = validarFormularioConfig();
+        const { EQUIVALENCIAS_REF } = getRefsPorTienda();
+
+        const data = {
+          ...payload,
+          sucursal: tienda,
+          actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (reglaEditandoId) {
+          await EQUIVALENCIAS_REF.doc(reglaEditandoId).update(data);
+          setStatusConfig("Equivalencia actualizada.", "ok");
+        } else {
+          data.creadoEn = firebase.firestore.FieldValue.serverTimestamp();
+          await EQUIVALENCIAS_REF.add(data);
+          setStatusConfig("Equivalencia guardada.", "ok");
+        }
+
+        await cargarEquivalencias();
+        limpiarFormularioConfig();
+      } catch (err) {
+        console.error(err);
+        setStatusConfig("Error al guardar: " + err.message, "error");
+      }
+    }
+
+    async function eliminarReglaFormulario() {
+      try {
+        if (!reglaEditandoId) {
+          throw new Error("Primero selecciona una regla con Editar.");
+        }
+
+        const item = equivalenciasActuales.find(x => x.id === reglaEditandoId);
+        const ok = confirm(`¿Eliminar equivalencia ${item?.codigoVenta || ""} → ${item?.codigoOrigen || ""}?`);
+        if (!ok) return;
+
+        const { EQUIVALENCIAS_REF } = getRefsPorTienda();
+        await EQUIVALENCIAS_REF.doc(reglaEditandoId).delete();
+
+        await cargarEquivalencias();
+        limpiarFormularioConfig();
+        setStatusConfig("Equivalencia eliminada.", "ok");
+      } catch (err) {
+        console.error(err);
+        setStatusConfig("Error al eliminar: " + err.message, "error");
+      }
+    }
+
+
+    async function cargarEquivalentesCatalogo() {
+      const { PRODUCTOS_REF } = getRefsPorTienda();
+
+      const snap = await PRODUCTOS_REF
+        .where("activo", "==", true)
+        .get();
+
+      const mapa = {};
+      const catalogo = new Map();
+
+      snap.forEach(doc => {
+        const p = doc.data() || {};
+
+        const codigoOriginal = String(
+          p.codigoBarra ??
+          p.codigo ??
+          p.Codigo ??
+          doc.id ??
+          ""
+        ).trim();
+
+        if (!codigoOriginal) return;
+
+        const codigoOriginalKey = normalizarCodigo(codigoOriginal);
+
+        const descripcionOriginal = String(
+          p.concepto ??
+          p.descripcion ??
+          p.Descripcion ??
+          ""
+        ).trim();
+
+        catalogo.set(codigoOriginal, descripcionOriginal);
+
+        const equivalentes = Array.isArray(p.codigosEquivalentes)
+          ? p.codigosEquivalentes
+          : [];
+
+        equivalentes.forEach(eq => {
+          const codigoEquivalente = String(eq ?? "").trim();
+          if (!codigoEquivalente) return;
+
+          const codigoEquivalenteKey = normalizarCodigo(codigoEquivalente);
+          if (!codigoEquivalenteKey) return;
+
+          mapa[codigoEquivalenteKey] = {
+            codigoOriginal,
+            codigoOriginalKey,
+            descripcionOriginal,
+            codigoEquivalente
+          };
+
+          if (!catalogo.has(codigoEquivalente)) {
+            catalogo.set(
+              codigoEquivalente,
+              `${descripcionOriginal} (alias de ${codigoOriginal})`
+            );
+          }
+        });
+      });
+
+      equivalentesCatalogoMap = mapa;
+
+      return {
+        totalProductos: snap.size,
+        totalAliases: Object.keys(mapa).length,
+        catalogo
+      };
+    }
+
+    function resolverVentaPorCodigoEquivalente(codigo, descripcion) {
+      const codigoVenta = String(codigo || "").trim();
+      const codigoVentaKey = normalizarCodigo(codigoVenta);
+
+      const alias = equivalentesCatalogoMap[codigoVentaKey];
+
+      if (!alias) {
+        return {
+          codigo: codigoVenta,
+          codigoKey: codigoVentaKey,
+          descripcion,
+          fueAlias: false,
+          codigoVendidoOriginal: codigoVenta
+        };
+      }
+
+      return {
+        codigo: alias.codigoOriginal,
+        codigoKey: alias.codigoOriginalKey,
+        descripcion: alias.descripcionOriginal || descripcion,
+        fueAlias: true,
+        codigoVendidoOriginal: codigoVenta,
+        codigoEquivalente: alias.codigoEquivalente
+      };
+    }
+
+    async function cargarInventarios() {
+      // ALLENDE 2 usa BASE CERO desde 2026-07-01.
+      // Los inventarios físicos posteriores son solo capturas de conteo y NO entran
+      // directamente al cálculo. Su diferencia se registra en ajustes_inventario.
+      // Por eso aquí no se consulta inventario1: evita lecturas históricas innecesarias.
+      return {
+        docs: [],
+        totalFolios: 0,
+        catalogo: new Map()
+      };
+    }
+
+    async function cargarVentas() {
+      const { VENTAS_REF } = getRefsPorTienda();
+      const ventasSnap = await VENTAS_REF.where("Fecha", ">=", FECHA_INVENTARIO_BASE_ISO).get();
+      const docs = [];
+      const catalogo = new Map();
+
+      ventasSnap.forEach(doc => {
+        const data = doc.data() || {};
+
+        const codigoLeido = obtenerCodigoVenta(data);
+        const descripcionLeida = obtenerDescripcionVenta(data);
+        const resuelto = resolverVentaPorCodigoEquivalente(codigoLeido, descripcionLeida);
+
+        const venta = {
+          origen: "VTA",
+          id: doc.id,
+          codigo: resuelto.codigo,
+          codigoKey: resuelto.codigoKey,
+          descripcion: resuelto.descripcion,
+          fecha: obtenerFechaVenta(data),
+           fechaMs: normalizarFechaMs(data.fecha ?? data.Fecha),  
+          cantidad: obtenerCantidadVenta(data),
+          aliasAplicado: resuelto.fueAlias,
+          codigoVendidoOriginal: resuelto.codigoVendidoOriginal
+        };
+
+        if (venta.codigoKey && venta.fecha) {
+          docs.push(venta);
+        }
+
+        if (resuelto.codigo && !catalogo.has(resuelto.codigo)) {
+          catalogo.set(resuelto.codigo, resuelto.descripcion);
+        }
+
+        if (resuelto.fueAlias && resuelto.codigoVendidoOriginal && !catalogo.has(resuelto.codigoVendidoOriginal)) {
+          catalogo.set(
+            resuelto.codigoVendidoOriginal,
+            `${resuelto.descripcion} (alias de ${resuelto.codigo})`
+          );
+        }
+      });
+
+      return {
+        docs,
+        totalVentasDocs: ventasSnap.size,
+        totalAliasAplicados: docs.filter(x => x.aliasAplicado).length,
+        catalogo
+      };
+    }
+
+    async function cargarAjustesInventario() {
+      const { AJUSTES_REF } = getRefsPorTienda();
+      const ajustesSnap = await AJUSTES_REF.where("fecha_ajuste", ">=", FECHA_INVENTARIO_BASE_ISO).get();
+      const docs = [];
+      const catalogo = new Map();
+
+      ajustesSnap.forEach(doc => {
+        const data = doc.data() || {};
+
+        const codigoOriginal = String(data.codigo || data.Codigo || "").trim();
+        const descripcion = String(data.descripcion || data.Descripcion || "").trim();
+        const fechaValor = data.fecha_hora || data.fechaHora || data.fecha_ajuste || data.fecha || data.Fecha || "";
+        const fecha = normalizarFecha(fechaValor);
+        const fechaMs = normalizarFechaMs(fechaValor);
+        const cantidad = Number(data.ajuste ?? data.cantidad ?? data.Cantidad ?? 0);
+
+        if (!codigoOriginal || !fecha || !Number.isFinite(cantidad)) return;
+
+        docs.push({
+          origen: "AJU",
+          id: doc.id,
+          codigo: codigoOriginal,
+          codigoKey: normalizarCodigo(codigoOriginal),
+          descripcion,
+          fecha,
+          fechaMs,
+          cantidad,
+          ajuste: Number(data.ajuste ?? 0),
+          tipo: String(data.tipo || "MANUAL"),
+          usuario: String(data.usuario || ""),
+          captura_usuario: data.captura_usuario ?? "",
+          sucursal: String(data.sucursal || getTiendaActual())
+        });
+
+        if (codigoOriginal && !catalogo.has(codigoOriginal)) {
+          catalogo.set(codigoOriginal, descripcion);
+        }
+      });
+
+      return {
+        docs,
+        totalAjustesDocs: ajustesSnap.size,
+        catalogo
+      };
+    }
+
+    async function cargarTransferencias() {
+      const { TRANSFERENCIAS_REF } = getRefsPorTienda();
+      const transferSnap = await TRANSFERENCIAS_REF.where("fecha_guardado_server", ">=", firebase.firestore.Timestamp.fromDate(FECHA_INVENTARIO_BASE)).get();
+      const docs = [];
+      const catalogo = new Map();
+
+      for (const doc of transferSnap.docs) {
+        const data = doc.data() || {};
+
+        let fecha = normalizarFecha(
+          data.fecha_guardado_server ||
+          data.fecha_guardado ||
+          data.fecha_surtido_completo
+        );
+
+        if (!fecha) {
+          const matchId = String(doc.id).match(/(\d{4})(\d{2})(\d{2})/);
+          if (matchId) {
+            fecha = `${matchId[1]}-${matchId[2]}-${matchId[3]}`;
+          }
+        }
+
+        const detalle = Array.isArray(data.detalle) ? data.detalle : [];
+
+        for (const item of detalle) {
+          const codigoOriginal = String(item.codigo || "").trim();
+          const cantidad = Number(item.cantidad_surtida ?? item.cantidad_solicitada ?? 0);
+          const descripcion = String(item.nombre || "").trim();
+
+          if (!codigoOriginal || !fecha || !Number.isFinite(cantidad) || cantidad <= 0) {
+            continue;
+          }
+
+          docs.push({
+            origen: "TRANS",
+            id: `${doc.id}_${codigoOriginal}`,
+            codigo: codigoOriginal,
+            codigoKey: normalizarCodigo(codigoOriginal),
+            descripcion,
+            fecha,
+              fechaMs: normalizarFechaMs(
+    data.fecha_guardado_server ||
+    data.fecha_guardado ||
+    data.fecha_surtido_completo
+  ),
+            cantidad
+          });
+
+          if (codigoOriginal && !catalogo.has(codigoOriginal)) {
+            catalogo.set(codigoOriginal, descripcion);
+          }
+        }
+      }
+
+      return {
+        docs,
+        totalTransferDocs: transferSnap.size,
+        catalogo
+      };
+    }
+
+
+    async function cargarDevoluciones() {
+      const { DEVOLUCIONES_REF } = getRefsPorTienda();
+      const snap = await DEVOLUCIONES_REF.where("creadoEn", ">=", firebase.firestore.Timestamp.fromDate(FECHA_INVENTARIO_BASE)).get();
+      const docs = [];
+      const catalogo = new Map();
+
+      snap.forEach(doc => {
+        const data = doc.data() || {};
+
+        // Devolución operativa: se pinta como salida desde que se genera.
+        // No espera autorización ni aplicadoInventario porque la mercancía ya salió.
+        const esDevolucionValida =
+          data.tipoMovimientoPendiente === "SALIDA_DEVOLUCION_MATRIZ" ||
+          data.tipoDocumento === "DEVOLUCION_MERCANCIA_MATRIZ" ||
+          data.origen === "APP_DEVOLUCION_MATRIZ_TIENDA" ||
+          data.aplicadoInventario === true;
+
+        if (!esDevolucionValida) return;
+
+        const fechaBase = data.actualizadoEn || data.creadoEn || data.actualizadoEnLocal || data.creadoEnLocal || "";
+        const fecha = normalizarFecha(fechaBase);
+        const productos = Array.isArray(data.productos) ? data.productos : [];
+
+        productos.forEach(item => {
+          const codigoOriginal = String(item.codigo || item.productoId || "").trim();
+          const descripcion = String(item.descripcion || item.concepto || "").trim();
+          const cantidad = Number(item.cantidad || 0);
+
+          if (!codigoOriginal || !fecha || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+          docs.push({
+            origen: "DEV",
+            id: `${doc.id}_${codigoOriginal}`,
+            codigo: codigoOriginal,
+            codigoKey: normalizarCodigo(codigoOriginal),
+            descripcion,
+            fecha,
+            fechaMs: normalizarFechaMs(fechaBase),
+            cantidad
+          });
+
+          if (!catalogo.has(codigoOriginal)) {
+            catalogo.set(codigoOriginal, descripcion);
+          }
+        });
+      });
+
+      return {
+        docs,
+        totalDevolucionesDocs: snap.size,
+        catalogo
+      };
+    }
+
+    async function cargarIntercambios() {
+      const { INTERCAMBIOS_REF } = getRefsPorTienda();
+      const snap = await INTERCAMBIOS_REF.where("fecha_autorizacion", ">=", firebase.firestore.Timestamp.fromDate(FECHA_INVENTARIO_BASE)).get();
+      const docs = [];
+      const catalogo = new Map();
+
+      snap.forEach(doc => {
+        const data = doc.data() || {};
+
+        // Entrada teórica: documento autorizado e item autorizado.
+        if (String(data.estado || "").toUpperCase() !== "AUTORIZADO") return;
+
+        const fechaBase = data.fecha_autorizacion || data.updatedAt || data.fecha_solicitud || "";
+        const fecha = normalizarFecha(fechaBase);
+        const items = Array.isArray(data.items) ? data.items : [];
+
+        items.forEach(item => {
+          if (String(item.estado_item || "").toUpperCase() !== "AUTORIZADO") return;
+
+          const codigoOriginal = String(item.codigo || item.productoId || "").trim();
+          const descripcion = String(item.descripcion || item.concepto || "").trim();
+          const cantidad = Number(item.cantidad_autorizada ?? item.cantidad_solicitada ?? item.cantidad ?? 0);
+
+          if (!codigoOriginal || !fecha || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+          docs.push({
+            origen: "INTER",
+            id: `${doc.id}_${codigoOriginal}`,
+            codigo: codigoOriginal,
+            codigoKey: normalizarCodigo(codigoOriginal),
+            descripcion,
+            fecha,
+            fechaMs: normalizarFechaMs(fechaBase),
+            cantidad
+          });
+
+          if (!catalogo.has(codigoOriginal)) {
+            catalogo.set(codigoOriginal, descripcion);
+          }
+        });
+      });
+
+      return {
+        docs,
+        totalIntercambiosDocs: snap.size,
+        catalogo
+      };
+    }
+
+    async function cargarIntercambiosSalida() {
+      const { INTERCAMBIOS_SALIDA_REF } = getRefsPorTienda();
+      const snap = await INTERCAMBIOS_SALIDA_REF.where("fecha_autorizacion", ">=", firebase.firestore.Timestamp.fromDate(FECHA_INVENTARIO_BASE)).get();
+      const docs = [];
+      const catalogo = new Map();
+
+      snap.forEach(doc => {
+        const data = doc.data() || {};
+        const estadoDocumento = String(data.estado || "").toUpperCase();
+        const solicita = String(data.tienda_solicita || "ALLENDE 1").toUpperCase();
+        const contesta = String(data.tienda_contesta || "ALLENDE 2").toUpperCase();
+
+        // Salida para ALLENDE 2: solicitud creada por ALLENDE 1 y autorizada por ALLENDE 2.
+        if (!['AUTORIZADO', 'AUTORIZADO_PARCIAL'].includes(estadoDocumento)) return;
+        if (solicita !== 'ALLENDE 1' || contesta !== 'ALLENDE 2') return;
+
+        const fechaBase = data.fecha_autorizacion || data.updatedAt || data.fecha_autorizacion_local || "";
+        const fecha = normalizarFecha(fechaBase);
+        const items = Array.isArray(data.items) ? data.items : [];
+
+        items.forEach(item => {
+          const estadoItem = String(item.estado_item || "").toUpperCase();
+          if (!['AUTORIZADO', 'AUTORIZADO_PARCIAL'].includes(estadoItem)) return;
+
+          const codigoOriginal = String(item.codigo || item.productoId || "").trim();
+          const descripcion = String(item.descripcion || item.concepto || "").trim();
+          const cantidad = Number(item.cantidad_autorizada ?? 0);
+
+          if (!codigoOriginal || !fecha || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+          docs.push({
+            origen: "INTSAL",
+            id: `${doc.id}_${codigoOriginal}`,
+            codigo: codigoOriginal,
+            codigoKey: normalizarCodigo(codigoOriginal),
+            descripcion,
+            fecha,
+            fechaMs: normalizarFechaMs(fechaBase),
+            cantidad
+          });
+
+          if (!catalogo.has(codigoOriginal)) catalogo.set(codigoOriginal, descripcion);
+        });
+      });
+
+      return {
+        docs,
+        totalIntercambiosSalidaDocs: snap.size,
+        catalogo
+      };
+    }
+
+    async function cargarMermas() {
+      const { MERMAS_REF } = getRefsPorTienda();
+      const snap = await MERMAS_REF.where("creadoEn", ">=", firebase.firestore.Timestamp.fromDate(FECHA_INVENTARIO_BASE)).get();
+      const docs = [];
+      const catalogo = new Map();
+
+      snap.forEach(doc => {
+        const data = doc.data() || {};
+
+        // Merma operativa: se pinta aunque siga pendiente de auditoría o aplicación.
+        // Si existe en MERMAS con productos, se considera salida teórica pendiente.
+        const esMermaValida =
+          data.tipoMovimientoPendiente === "SALIDA_MERMA" ||
+          data.tipoDocumento === "SOLICITUD_MERMA" ||
+          data.estado === "SOLICITADA" ||
+          data.aplicadoInventario === true;
+
+        if (!esMermaValida) return;
+
+        const fechaBase = data.actualizadoEn || data.creadoEn || data.actualizadoEnLocal || data.creadoEnLocal || "";
+        const fecha = normalizarFecha(fechaBase);
+        const productos = Array.isArray(data.productos) ? data.productos : [];
+
+        productos.forEach(item => {
+          const codigoOriginal = String(item.codigo || item.productoId || "").trim();
+          const descripcion = String(item.descripcion || item.concepto || "").trim();
+          const cantidad = Number(item.cantidad || 0);
+
+          if (!codigoOriginal || !fecha || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+          docs.push({
+            origen: "MERMA",
+            id: `${doc.id}_${codigoOriginal}`,
+            codigo: codigoOriginal,
+            codigoKey: normalizarCodigo(codigoOriginal),
+            descripcion,
+            fecha,
+            fechaMs: normalizarFechaMs(fechaBase),
+            cantidad
+          });
+
+          if (!catalogo.has(codigoOriginal)) {
+            catalogo.set(codigoOriginal, descripcion);
+          }
+        });
+      });
+
+      return {
+        docs,
+        totalMermasDocs: snap.size,
+        catalogo
+      };
+    }
+
+    function refrescarDatalistsOpciones() {
+      const ventaList = $("listaCodigosVenta");
+      const origenList = $("listaCodigosOrigen");
+      ventaList.innerHTML = "";
+      origenList.innerHTML = "";
+
+      opcionesCodigos
+        .sort((a, b) => String(a.codigo).localeCompare(String(b.codigo), "es"))
+        .forEach(item => {
+          const opt1 = document.createElement("option");
+          opt1.value = item.codigo;
+          opt1.label = `${item.codigo} - ${item.descripcion || ""}`;
+          ventaList.appendChild(opt1);
+
+          const opt2 = document.createElement("option");
+          opt2.value = item.codigo;
+          opt2.label = `${item.codigo} - ${item.descripcion || ""}`;
+          origenList.appendChild(opt2);
+        });
+    }
+
+    function cargarDescripcionAutomatica(inputCodigoId, inputDescId) {
+      const codigo = String($(inputCodigoId).value || "").trim();
+      if (!codigo) return;
+
+      const encontrado = opcionesCodigos.find(x => String(x.codigo) === codigo);
+      if (encontrado && !$(inputDescId).value.trim()) {
+        $(inputDescId).value = encontrado.descripcion || "";
+      }
+    }
+
+    function aplicarEquivalenciasEmpaque(registros) {
+      const virtuales = [];
+
+      for (const item of registros) {
+        if (item.origen !== "VTA") continue;
+
+const codigoVendido = String(item.codigoVendidoOriginal || item.codigo || "").trim();
+const codigoVendidoKey = normalizarCodigo(codigoVendido);
+const eq = equivalenciasMap[codigoVendidoKey];
+if (!eq) continue;
+        
+        const piezasVendidas = Number(item.cantidad || 0);
+        if (!Number.isFinite(piezasVendidas) || piezasVendidas <= 0) continue;
+
+        const fecha = String(item.fecha || "").trim();
+        if (!fecha) continue;
+
+        const cajasConsumidas = piezasVendidas / Number(eq.factor || 1);
+        if (!Number.isFinite(cajasConsumidas) || cajasConsumidas <= 0) continue;
+
+        virtuales.push({
+          origen: "INV",
+          id: `EQ_INV_${item.id}`,
+codigo: codigoVendido,
+codigoKey: codigoVendidoKey,
+          descripcion: eq.descripcionDestino || item.descripcion || "",
+          fecha,
+          cantidad: piezasVendidas,
+          virtual: true,
+          nota: `Entrada virtual por equivalencia`
+        });
+
+        virtuales.push({
+          origen: "VTA",
+          id: `EQ_VTA_${item.id}`,
+          codigo: String(eq.origen).trim(),
+          codigoKey: normalizarCodigo(eq.origen),
+          descripcion: eq.descripcionOrigen || "",
+          fecha,
+          cantidad: cajasConsumidas,
+          virtual: true,
+          nota: `Salida virtual por venta de piezas`
+        });
+      }
+
+      return {
+        registros: [...registros, ...virtuales],
+        totalVirtuales: virtuales.length,
+        totalVirtualesInv: virtuales.filter(x => x.origen === "INV").length,
+        totalVirtualesVta: virtuales.filter(x => x.origen === "VTA").length
+      };
+    }
+
+    async function cargarTodo() {
+      mostrarLoading("Cargando reporte...", "Preparando consulta semanal...");
+
+      try {
+        actualizarTitulosTienda();
+        limpiarTabla();
+        const rangoSemana = getRangoSemanaSeleccionada();
+        setStatus(`Consultando semana ${rangoSemana.semana} (${rangoSemana.inicioISO} a ${rangoSemana.finISO}) con inventario arrastrado...`);
+
+        cambiarLoading("Cargando equivalencias...", "Consultando reglas de conversión...");
+        await cargarEquivalencias(); // Se conserva para no romper el módulo viejo, pero el inventario usa codigosEquivalentes del catálogo.
+
+        cambiarLoading("Cargando catálogo...", "Consultando códigos equivalentes...");
+        const equivalentesCatalogoData = await cargarEquivalentesCatalogo();
+
+        const tiendaCache = getTiendaActual();
+        cambiarLoading("Cargando movimientos...", "Usando IndexedDB si ya existen datos locales...");
+
+        const [
+          inventariosData,
+          ventasData,
+          transferenciasData,
+          ajustesData,
+          devolucionesData,
+          intercambiosData,
+          intercambiosSalidaData,
+          mermasData
+        ] = await Promise.all([
+          conCache(tiendaCache, "inventarios", cargarInventarios),
+          conCache(tiendaCache, "ventas", cargarVentas),
+          conCache(tiendaCache, "transferencias", cargarTransferencias),
+          conCache(tiendaCache, "ajustes", cargarAjustesInventario),
+          conCache(tiendaCache, "devoluciones", cargarDevoluciones),
+          conCache(tiendaCache, "intercambios", cargarIntercambios),
+          conCache(tiendaCache, "intercambios_salida_allende2", cargarIntercambiosSalida),
+          conCache(tiendaCache, "mermas", cargarMermas)
+        ]);
+
+        totalAliasAplicadosUltimaCarga = ventasData.totalAliasAplicados || 0;
+
+        cambiarLoading("Construyendo catálogo...", "Uniendo códigos y descripciones...");
+
+        const catalogo = new Map();
+
+        [
+          equivalentesCatalogoData.catalogo,
+          ajustesData.catalogo,
+          inventariosData.catalogo,
+          ventasData.catalogo,
+          transferenciasData.catalogo,
+          devolucionesData.catalogo,
+          intercambiosData.catalogo,
+          intercambiosSalidaData.catalogo,
+          mermasData.catalogo
+        ].forEach(mapita => {
+          mapita.forEach((descripcion, codigo) => {
+            if (codigo && !catalogo.has(codigo)) {
+              catalogo.set(codigo, descripcion || "");
+            }
+          });
+        });
+
+        opcionesCodigos = Array.from(catalogo.entries()).map(([codigo, descripcion]) => ({
+          codigo,
+          descripcion
+        }));
+        refrescarDatalistsOpciones();
+
+        let registros = [
+          ...ajustesData.docs,
+          ...inventariosData.docs,
+          ...transferenciasData.docs,
+          ...intercambiosData.docs,
+          ...intercambiosSalidaData.docs,
+          ...ventasData.docs,
+          ...devolucionesData.docs,
+          ...mermasData.docs
+        ];
+
+        cambiarLoading("Calculando equivalencias...", "Aplicando empaques y alias...");
+
+        const empaqueData = aplicarEquivalenciasEmpaque(registros);
+        registros = empaqueData.registros;
+
+        cambiarLoading("Calculando semana...", "Arrastrando inventario inicial...");
+
+        const semanaData = construirRegistrosSemanaConArrastre(registros, rangoSemana);
+        registros = semanaData.registros;
+        
+        const equivalenciasData = {
+          semana: semanaData.semana,
+          inicioISO: semanaData.inicioISO,
+          finISO: semanaData.finISO,
+          totalAnteriores: semanaData.totalAnteriores,
+          totalSemana: semanaData.totalSemana,
+          totalIniciales: semanaData.totalIniciales,
+totalVirtuales: empaqueData.totalVirtuales,
+totalVirtualesInv: empaqueData.totalVirtualesInv,
+totalVirtualesVta: empaqueData.totalVirtualesVta,
+          totalAliasesCatalogo: equivalentesCatalogoData.totalAliases || 0,
+          totalAliasAplicados: ventasData.totalAliasAplicados || 0,
+          totalAjustes: ajustesData.docs.length || 0,
+          totalDevoluciones: devolucionesData.docs.length || 0,
+          totalIntercambios: intercambiosData.docs.length || 0,
+          totalIntercambiosSalida: intercambiosSalidaData.docs.length || 0,
+          totalMermas: mermasData.docs.length || 0
+        };
+
+        registros.sort((a, b) => {
+          const fa = String(a.fecha || "");
+          const fb = String(b.fecha || "");
+          if (fa !== fb) return fa.localeCompare(fb, "es");
+
+          const ordenOrigen = { INI: 0, AJU: 1, INV: 2, TRANS: 3, INTER: 4, INTSAL: 5, VTA: 6, DEV: 7, MERMA: 8 };
+          if (a.origen !== b.origen) {
+            return (ordenOrigen[a.origen] || 99) - (ordenOrigen[b.origen] || 99);
+          }
+
+          return String(a.codigo || "").localeCompare(String(b.codigo || ""), "es");
+        });
+
+        if (!registros.length) {
+          setStatus("No se encontraron registros.", "error");
+          return;
+        }
+
+        cambiarLoading("Generando tabla...", "Pintando reporte semanal...");
+
+        const pivot = construirPivotSeparado(registros);
+        ultimaPivot = pivot;
+
+        pintarTabla(pivot);
+
+setStatus("", "");
+        
+      } catch (err) {
+        console.error(err);
+        setStatus("Error al consultar Firestore: " + err.message, "error");
+      } finally {
+        ocultarLoading();
+      }
+    }
+
+    function construirPivotSeparado(registros) {
+      const mapa = new Map();
+
+      const totalIniPorFecha = {};
+      const totalAjuPorFecha = {};
+      const totalInvPorFecha = {};
+      const totalTransPorFecha = {};
+      const totalInterPorFecha = {};
+      const totalIntSalPorFecha = {};
+      const totalVtaPorFecha = {};
+      const totalDevPorFecha = {};
+      const totalMermaPorFecha = {};
+
+      const fechasConMovimiento = new Set();
+
+      for (const item of registros) {
+        const codigoKey = String(item.codigoKey || "").trim();
+        const fecha = String(item.fecha || "").trim();
+        const cantidad = Number(item.cantidad || 0);
+        const origen = String(item.origen || "").trim();
+
+        if (!codigoKey || !fecha) continue;
+
+        if (cantidad > 0 || origen === "AJU") {
+          fechasConMovimiento.add(fecha);
+        }
+
+        if (!mapa.has(codigoKey)) {
+          mapa.set(codigoKey, {
+            codigo: String(item.codigo || "").trim(),
+            codigoKey,
+            descripcion: String(item.descripcion || "").trim(),
+            iniPorFecha: {},
+            ajuPorFecha: {},
+            invPorFecha: {},
+            transPorFecha: {},
+            interPorFecha: {},
+            intSalPorFecha: {},
+            vtaPorFecha: {},
+            devPorFecha: {},
+            mermaPorFecha: {},
+            ajustesEventos: [],
+            totalAju: 0,
+            ultimoAjusteFecha: "",
+            ultimoAjusteCantidad: null,
+            totalIni: 0,
+            totalInvBase: 0,
+            totalTrans: 0,
+            totalInter: 0,
+            totalIntSal: 0,
+            totalInv: 0,
+            totalVta: 0,
+            totalDev: 0,
+            totalMerma: 0,
+            totalVtaAlias: 0,
+            aliasCodigos: new Set(),
+            neto: 0
+          });
+        }
+
+        const row = mapa.get(codigoKey);
+
+        if (item.codigo && !row.codigo) row.codigo = item.codigo;
+        if (item.descripcion && !row.descripcion) row.descripcion = item.descripcion;
+
+        if (origen === "INI") {
+          row.iniPorFecha[fecha] = (row.iniPorFecha[fecha] || 0) + cantidad;
+          row.totalIni += cantidad;
+          totalIniPorFecha[fecha] = (totalIniPorFecha[fecha] || 0) + cantidad;
+
+        } else if (origen === "AJU") {
+          row.ajuPorFecha[fecha] = (row.ajuPorFecha[fecha] || 0) + cantidad;
+          row.ajustesEventos.push({
+            fecha,
+            fechaMs: Number(item.fechaMs || 0),
+            cantidad,
+            id: item.id,
+            usuario: item.usuario || "",
+            tipo: item.tipo || "MANUAL"
+          });
+          row.totalAju += cantidad;
+          totalAjuPorFecha[fecha] = (totalAjuPorFecha[fecha] || 0) + cantidad;
+
+        } else if (origen === "INV") {
+          row.invPorFecha[fecha] = (row.invPorFecha[fecha] || 0) + cantidad;
+          totalInvPorFecha[fecha] = (totalInvPorFecha[fecha] || 0) + cantidad;
+
+        } else if (origen === "TRANS") {
+          row.transPorFecha[fecha] = (row.transPorFecha[fecha] || 0) + cantidad;
+          totalTransPorFecha[fecha] = (totalTransPorFecha[fecha] || 0) + cantidad;
+
+        } else if (origen === "INTER") {
+          row.interPorFecha[fecha] = (row.interPorFecha[fecha] || 0) + cantidad;
+          totalInterPorFecha[fecha] = (totalInterPorFecha[fecha] || 0) + cantidad;
+
+        } else if (origen === "INTSAL") {
+          row.intSalPorFecha[fecha] = (row.intSalPorFecha[fecha] || 0) + cantidad;
+          totalIntSalPorFecha[fecha] = (totalIntSalPorFecha[fecha] || 0) + cantidad;
+
+        } else if (origen === "VTA") {
+          row.vtaPorFecha[fecha] = (row.vtaPorFecha[fecha] || 0) + cantidad;
+          if (item.aliasAplicado) {
+            row.totalVtaAlias += cantidad;
+            if (item.codigoVendidoOriginal) row.aliasCodigos.add(String(item.codigoVendidoOriginal));
+          }
+          totalVtaPorFecha[fecha] = (totalVtaPorFecha[fecha] || 0) + cantidad;
+
+        } else if (origen === "DEV") {
+          row.devPorFecha[fecha] = (row.devPorFecha[fecha] || 0) + cantidad;
+          totalDevPorFecha[fecha] = (totalDevPorFecha[fecha] || 0) + cantidad;
+
+        } else if (origen === "MERMA") {
+          row.mermaPorFecha[fecha] = (row.mermaPorFecha[fecha] || 0) + cantidad;
+          totalMermaPorFecha[fecha] = (totalMermaPorFecha[fecha] || 0) + cantidad;
+        }
+      }
+
+      const fechasMsMap = {};
+
+      for (const item of registros) {
+        if (item.fecha && item.fechaMs) {
+          fechasMsMap[item.fecha] = Math.max(
+            fechasMsMap[item.fecha] || 0,
+            item.fechaMs
+          );
+        }
+      }
+
+      const fechas = Array.from(fechasConMovimiento).sort();
+
+      const columnas = [];
+      for (const fecha of fechas) {
+        if (totalIniPorFecha[fecha] !== undefined) columnas.push({ fecha, tipo: "INI" });
+        if (totalAjuPorFecha[fecha] !== undefined) columnas.push({ fecha, tipo: "AJU" });
+        if (totalInvPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "INV" });
+        if (totalTransPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "TRANS" });
+        if (totalInterPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "INTER" });
+        if (totalIntSalPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "INTSAL" });
+        if (totalVtaPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "VTA" });
+        if (totalDevPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "DEV" });
+        if (totalMermaPorFecha[fecha] > 0) columnas.push({ fecha, tipo: "MERMA" });
+      }
+
+      let totalIniGeneral = 0;
+      let totalInvGeneralBase = 0;
+      let totalTransGeneral = 0;
+      let totalInterGeneral = 0;
+      let totalIntSalGeneral = 0;
+      let totalVtaGeneral = 0;
+      let totalDevGeneral = 0;
+      let totalMermaGeneral = 0;
+      let totalAjuGeneral = 0;
+      let totalNetoGeneral = 0;
+
+      const rows = Array.from(mapa.values()).map(row => {
+        row.ajustesEventos.sort((a, b) => {
+          if ((a.fechaMs || 0) !== (b.fechaMs || 0)) return (a.fechaMs || 0) - (b.fechaMs || 0);
+          return String(a.id || "").localeCompare(String(b.id || ""), "es");
+        });
+
+        const sumarTodo = (obj) =>
+          Object.values(obj || {}).reduce((acc, val) => acc + Number(val || 0), 0);
+
+        // Regla ALLENDE 2: PUNTO CERO FIJO = 0.
+        // Los ajustes son diferencias acumulativas (fisico - teorico), nunca una nueva base.
+        const ultimo = row.ajustesEventos.length
+          ? row.ajustesEventos[row.ajustesEventos.length - 1]
+          : null;
+        row.ultimoAjusteFecha = ultimo ? ultimo.fecha : "";
+        row.ultimoAjusteCantidad = ultimo ? Number(ultimo.cantidad || 0) : null;
+
+        row.totalAju = sumarTodo(row.ajuPorFecha);
+        row.totalInvBase = Number(row.totalIni || 0) + sumarTodo(row.invPorFecha);
+        row.totalTrans = sumarTodo(row.transPorFecha);
+        row.totalInter = sumarTodo(row.interPorFecha);
+        row.totalIntSal = sumarTodo(row.intSalPorFecha);
+        row.totalVta = sumarTodo(row.vtaPorFecha);
+        row.totalDev = sumarTodo(row.devPorFecha);
+        row.totalMerma = sumarTodo(row.mermaPorFecha);
+
+        row.totalInv = row.totalInvBase + row.totalAju + row.totalTrans + row.totalInter;
+        row.neto = row.totalInv - row.totalIntSal - row.totalVta - row.totalDev - row.totalMerma;
+
+        totalIniGeneral += row.totalIni || 0;
+        totalAjuGeneral += row.totalAju || 0;
+        totalInvGeneralBase += row.totalInvBase || 0;
+        totalTransGeneral += row.totalTrans || 0;
+        totalInterGeneral += row.totalInter || 0;
+        totalIntSalGeneral += row.totalIntSal || 0;
+        totalVtaGeneral += row.totalVta || 0;
+        totalDevGeneral += row.totalDev || 0;
+        totalMermaGeneral += row.totalMerma || 0;
+        totalNetoGeneral += row.neto || 0;
+
+        return {
+          ...row,
+          aliasCodigos: Array.from(row.aliasCodigos || [])
+        };
+      }).sort((a, b) => {
+        const da = String(a.descripcion || "").trim();
+        const db = String(b.descripcion || "").trim();
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return da.localeCompare(db, "es", { sensitivity: "base" });
+      });
+
+      return {
+        fechas,
+        columnas,
+        rows,
+        totalIniPorFecha,
+        totalAjuPorFecha,
+        totalInvPorFecha,
+        totalTransPorFecha,
+        totalInterPorFecha,
+        totalIntSalPorFecha,
+        totalVtaPorFecha,
+        totalDevPorFecha,
+        totalMermaPorFecha,
+        totalIniGeneral,
+        totalAjuGeneral,
+        totalInvGeneralBase,
+        totalTransGeneral,
+        totalInterGeneral,
+        totalIntSalGeneral,
+        totalInvGeneral: totalInvGeneralBase + totalTransGeneral + totalInterGeneral,
+        totalVtaGeneral,
+        totalDevGeneral,
+        totalMermaGeneral,
+        totalNetoGeneral,
+        totalCodigos: rows.length
+      };
+    }
+
+    function pintarResumen(registros, pivot, equivalenciasData = {}) {
+      const totalIniRegs = registros.filter(x => x.origen === "INI").length;
+      const totalInvRegs = registros.filter(x => x.origen === "INV").length;
+      const totalTransRegs = registros.filter(x => x.origen === "TRANS").length;
+      const totalInterRegs = registros.filter(x => x.origen === "INTER").length;
+      const totalIntSalRegs = registros.filter(x => x.origen === "INTSAL").length;
+      const totalVtaRegs = registros.filter(x => x.origen === "VTA").length;
+      const totalDevRegs = registros.filter(x => x.origen === "DEV").length;
+      const totalMermaRegs = registros.filter(x => x.origen === "MERMA").length;
+
+      $("summary").innerHTML = `
+        <div class="pill">Semana: ${escapeHtml(equivalenciasData.semana || "")}</div>
+        <div class="pill">Rango: ${escapeHtml(equivalenciasData.inicioISO || "")} a ${escapeHtml(equivalenciasData.finISO || "")}</div>
+        <div class="pill">Bases/arrastres semanales: ${fmtNum(totalIniRegs)}</div>
+        <div class="pill">Movimientos semana: ${fmtNum(equivalenciasData.totalSemana || 0)}</div>
+        <div class="pill">Históricos para arrastre: ${fmtNum(equivalenciasData.totalAnteriores || 0)}</div>
+        <div class="pill">Ajustes auditados: ${fmtNum(equivalenciasData.totalAjustes || 0)}</div>
+        <div class="pill">Registros inventario: ${fmtNum(totalInvRegs)}</div>
+        <div class="pill">Registros transferencias: ${fmtNum(totalTransRegs)}</div>
+        <div class="pill">Intercambios entrada: ${fmtNum(totalInterRegs)}</div>
+        <div class="pill">Intercambios salida ALLENDE 1: ${fmtNum(totalIntSalRegs)}</div>
+        <div class="pill">Registros ventas: ${fmtNum(totalVtaRegs)}</div>
+        <div class="pill">Devoluciones aplicadas: ${fmtNum(totalDevRegs)}</div>
+        <div class="pill">Mermas aplicadas: ${fmtNum(totalMermaRegs)}</div>
+        <div class="pill">Alias catálogo: ${fmtNum(equivalenciasData.totalAliasesCatalogo || 0)}</div>
+        <div class="pill">Ventas por alias: ${fmtNum(equivalenciasData.totalAliasAplicados || 0)}</div>
+        <div class="pill">Reglas factor antiguas: ${fmtNum(Object.keys(equivalenciasMap).length)}</div>
+        <div class="pill">Códigos únicos: ${fmtNum(pivot.totalCodigos)}</div>
+        <div class="pill">Fechas: ${fmtNum(pivot.fechas.length)}</div>
+        <div class="pill">Saldo inicial de semana: ${fmtNum(pivot.totalIniGeneral || 0)}</div>
+        <div class="pill">Últimas aperturas AJU: ${fmtNum(pivot.totalAjuGeneral || 0)}</div>
+        <div class="pill">Inventario base/auditado: ${fmtNum(pivot.totalInvGeneralBase)}</div>
+        <div class="pill">Transferencias: ${fmtNum(pivot.totalTransGeneral)}</div>
+        <div class="pill">Intercambios entrada: ${fmtNum(pivot.totalInterGeneral)}</div>
+        <div class="pill">INTSAL descontado: ${fmtNum(pivot.totalIntSalGeneral)}</div>
+        <div class="pill">Total inventario: ${fmtNum(pivot.totalInvGeneral)}</div>
+        <div class="pill">Total ventas: ${fmtNum(pivot.totalVtaGeneral)}</div>
+        <div class="pill">Total devoluciones: ${fmtNum(pivot.totalDevGeneral)}</div>
+        <div class="pill">Total mermas: ${fmtNum(pivot.totalMermaGeneral)}</div>
+        <div class="pill">Neto: ${fmtNum(pivot.totalNetoGeneral)}</div>
+      `;
+    }
+
+    function claseColumna(tipo) {
+      if (tipo === "INI") return "ini-col";
+      if (tipo === "AJU") return "aju-col";
+      if (tipo === "INV") return "inv-col";
+      if (tipo === "TRANS") return "trans-col";
+      if (tipo === "INTER") return "inter-col";
+      if (tipo === "INTSAL") return "intsal-col";
+      if (tipo === "VTA") return "vta-col";
+      if (tipo === "DEV") return "dev-col";
+      if (tipo === "MERMA") return "merma-col";
+      return "total-col";
+    }
+
+    function valorColumnaRow(row, col) {
+      if (col.tipo === "INI") return row.iniPorFecha[col.fecha] || 0;
+      if (col.tipo === "AJU") return row.ajuPorFecha[col.fecha];
+      if (col.tipo === "INV") return row.invPorFecha[col.fecha] || 0;
+      if (col.tipo === "TRANS") return row.transPorFecha[col.fecha] || 0;
+      if (col.tipo === "INTER") return row.interPorFecha[col.fecha] || 0;
+      if (col.tipo === "INTSAL") return row.intSalPorFecha[col.fecha] || 0;
+      if (col.tipo === "VTA") return row.vtaPorFecha[col.fecha] || 0;
+      if (col.tipo === "DEV") return row.devPorFecha[col.fecha] || 0;
+      if (col.tipo === "MERMA") return row.mermaPorFecha[col.fecha] || 0;
+      return 0;
+    }
+
+    function valorColumnaTotal(pivot, col) {
+      if (col.tipo === "INI") return pivot.totalIniPorFecha[col.fecha] || 0;
+      if (col.tipo === "AJU") return pivot.totalAjuPorFecha[col.fecha] || 0;
+      if (col.tipo === "INV") return pivot.totalInvPorFecha[col.fecha] || 0;
+      if (col.tipo === "TRANS") return pivot.totalTransPorFecha[col.fecha] || 0;
+      if (col.tipo === "INTER") return pivot.totalInterPorFecha[col.fecha] || 0;
+      if (col.tipo === "INTSAL") return pivot.totalIntSalPorFecha[col.fecha] || 0;
+      if (col.tipo === "VTA") return pivot.totalVtaPorFecha[col.fecha] || 0;
+      if (col.tipo === "DEV") return pivot.totalDevPorFecha[col.fecha] || 0;
+      if (col.tipo === "MERMA") return pivot.totalMermaPorFecha[col.fecha] || 0;
+      return 0;
+    }
+
+    function pintarTabla(pivot) {
+      const {
+        columnas,
+        rows,
+        totalInvGeneral,
+        totalVtaGeneral,
+        totalNetoGeneral
+      } = pivot;
+
+      const grupos = [];
+      for (const col of columnas) {
+        const ultimo = grupos[grupos.length - 1];
+        if (ultimo && ultimo.tipo === col.tipo) {
+          ultimo.columnas.push(col);
+        } else {
+          grupos.push({ tipo: col.tipo, columnas: [col] });
+        }
+      }
+
+      const trTipos = document.createElement("tr");
+      trTipos.innerHTML = `
+        <th class="left sticky1" rowspan="2">Código</th>
+        <th class="left sticky2" rowspan="2">Descripción</th>
+        ${grupos.map(grupo => `
+          <th class="${claseColumna(grupo.tipo)} tipo-head" colspan="${grupo.columnas.length}">
+            ${escapeHtml(grupo.tipo)}
+          </th>
+        `).join("")}
+        <th class="neto-col" rowspan="2">TEÓRICO<br>NETO</th>
+      `;
+
+      const trFechas = document.createElement("tr");
+      trFechas.innerHTML = columnas.map(col => `
+        <th class="${claseColumna(col.tipo)}">
+          ${escapeHtml(col.fecha)}
+        </th>
+      `).join("");
+
+      thead.appendChild(trTipos);
+      thead.appendChild(trFechas);
+
+      const frag = document.createDocumentFragment();
+
+      for (const row of rows) {
+        const tr = document.createElement("tr");
+        tr.dataset.filtro = normalizarTexto(`${row.codigo || ""} ${row.descripcion || ""}`);
+
+        let html = `
+          <td class="left sticky1">${escapeHtml(row.codigo)}</td>
+          <td class="left sticky2">
+            ${escapeHtml(row.descripcion || "")}
+            ${
+              row.ultimoAjusteFecha
+                ? `<span class="tag ok" title="Apertura auditada ${escapeHtml(row.ultimoAjusteFecha)}">AJU</span>`
+                : ""
+            }
+            ${
+              row.totalVtaAlias > 0
+                ? `<span class="tag ok" title="Venta capturada con código equivalente: ${escapeHtml((row.aliasCodigos || []).join(", "))}">Alias VTA</span>`
+                : ""
+            }
+          </td>
+        `;
+
+        for (const col of columnas) {
+          const val = valorColumnaRow(row, col);
+          const clase = claseColumna(col.tipo);
+          const tieneValor = val !== undefined && val !== null && Number(val) !== 0;
+
+          const clasesAlerta = [
+            col.tipo === "AJU" && tieneValor ? "ajuste-parpadeo" : "",
+            col.tipo === "INI" && Number(val) < 0 ? "inventario-negativo" : ""
+          ].filter(Boolean).join(" ");
+
+          html += `
+            <td class="${clase} ${!tieneValor ? "num-zero" : ""} ${clasesAlerta}">
+              ${!tieneValor ? "" : fmtNum(val)}
+            </td>
+          `;
+        }
+
+        html += `
+          <td class="neto-col ${row.neto < 0 ? "inventario-negativo" : ""}">${fmtNum(row.neto)}</td>
+        `;
+
+        tr.innerHTML = html;
+        frag.appendChild(tr);
+      }
+
+      tbody.appendChild(frag);
+
+      tfoot.innerHTML = "";
+      aplicarFiltroTabla();
+      requestAnimationFrame(actualizarScrollHorizontalPivot);
+    }
+
+    function aplicarFiltroTabla() {
+      const q = normalizarTexto($("filtroDescripcion")?.value || "");
+      let visibles = 0;
+      tbody.querySelectorAll("tr").forEach(tr => {
+        const mostrar = !q || String(tr.dataset.filtro || "").includes(q);
+        tr.style.display = mostrar ? "" : "none";
+        if (mostrar) visibles++;
+      });
+      if (ultimaPivot && q) setStatus(`Filtro: ${visibles} artículo(s) encontrados.`, visibles ? "" : "error");
+      else if (ultimaPivot) setStatus("", "");
+    }
+
+
+    function setStatusConteo(msg, type = "") {
+      const el = $("statusConteo");
+      el.textContent = msg;
+      el.className = "status " + type;
+    }
+
+    function articulosConteoDisponibles() {
+      if (!ultimaPivot || !Array.isArray(ultimaPivot.rows)) return [];
+      return ultimaPivot.rows.map(row => ({
+        codigo: String(row.codigo || "").trim(),
+        descripcion: String(row.descripcion || "").trim(),
+        total: Number(row.neto || 0)
+      })).filter(x => x.codigo).sort((a,b) => a.descripcion.localeCompare(b.descripcion, "es"));
+    }
+
+    function pintarArticulosConteo() {
+      const filtro = String($("filtroConteo").value || "").trim().toLowerCase();
+      const modo = $("filtroSeleccionConteo").value;
+      const tbodyC = $("tbodyConteoArticulos");
+      const articulos = articulosConteoDisponibles().filter(a => {
+        const coincide = !filtro || a.codigo.toLowerCase().includes(filtro) || a.descripcion.toLowerCase().includes(filtro);
+        const sel = seleccionConteo.has(a.codigo);
+        return coincide && (modo === "todos" || (modo === "seleccionados" && sel) || (modo === "disponibles" && !sel));
+      });
+      tbodyC.innerHTML = articulos.map(a => `
+        <tr>
+          <td><input type="checkbox" class="chk-conteo" data-codigo="${escapeHtml(a.codigo)}" ${seleccionConteo.has(a.codigo) ? "checked" : ""}></td>
+          <td class="left">${escapeHtml(a.codigo)}</td>
+          <td class="left">${escapeHtml(a.descripcion)}</td>
+          <td>${fmtNum(a.total)}</td>
+        </tr>`).join("");
+      tbodyC.querySelectorAll(".chk-conteo").forEach(chk => chk.addEventListener("change", () => {
+        if (chk.checked) seleccionConteo.add(chk.dataset.codigo); else seleccionConteo.delete(chk.dataset.codigo);
+        actualizarResumenSeleccionConteo();
+      }));
+      actualizarResumenSeleccionConteo();
+    }
+
+    function actualizarResumenSeleccionConteo() {
+      $("resumenSeleccionConteo").textContent = `${seleccionConteo.size} artículo${seleccionConteo.size === 1 ? "" : "s"} seleccionado${seleccionConteo.size === 1 ? "" : "s"}`;
+    }
+
+    function limpiarFormularioListaConteo() {
+      listaConteoEditandoId = null;
+      $("nombreListaConteo").value = "";
+      $("descripcionListaConteo").value = "";
+      seleccionConteo.clear();
+      pintarArticulosConteo();
+      setStatusConteo("Nueva lista lista para capturar.", "ok");
+    }
+
+    async function cargarListasConteo() {
+      const { CONTEO_DIARIO_REF } = getRefsPorTienda();
+      const snap = await CONTEO_DIARIO_REF.orderBy("nombre").get();
+      listasConteoActuales = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      pintarListasConteoGuardadas();
+    }
+
+    function pintarListasConteoGuardadas() {
+      const box = $("listasConteoGuardadas");
+      if (!listasConteoActuales.length) {
+        box.innerHTML = '<div class="empty-listas">No hay listas configuradas.</div>';
+        return;
+      }
+      box.innerHTML = listasConteoActuales.map(lista => `
+        <div class="lista-card">
+          <h4>${escapeHtml(lista.nombre || "SIN NOMBRE")}</h4>
+          <div class="lista-meta">${(lista.articulos || []).length} artículos${lista.descripcion ? " · " + escapeHtml(lista.descripcion) : ""}</div>
+          <div class="lista-actions">
+            <button class="btn-lista-editar" data-id="${lista.id}">Editar</button>
+            <button class="btn-lista-pdf" data-id="${lista.id}">Generar PDF</button>
+            <button class="btn-lista-eliminar" data-id="${lista.id}">Eliminar</button>
+          </div>
+        </div>`).join("");
+      box.querySelectorAll(".btn-lista-editar").forEach(b => b.addEventListener("click", () => editarListaConteo(b.dataset.id)));
+      box.querySelectorAll(".btn-lista-pdf").forEach(b => b.addEventListener("click", () => generarPdfListaConteo(b.dataset.id)));
+      box.querySelectorAll(".btn-lista-eliminar").forEach(b => b.addEventListener("click", () => eliminarListaConteo(b.dataset.id)));
+    }
+
+    function editarListaConteo(id) {
+      const lista = listasConteoActuales.find(x => x.id === id);
+      if (!lista) return;
+      listaConteoEditandoId = id;
+      $("nombreListaConteo").value = lista.nombre || "";
+      $("descripcionListaConteo").value = lista.descripcion || "";
+      seleccionConteo = new Set((lista.articulos || []).map(a => String(a.codigo || "")));
+      pintarArticulosConteo();
+      setStatusConteo(`Editando ${lista.nombre || "lista"}.`, "ok");
+    }
+
+    async function guardarListaConteo() {
+      const nombre = String($("nombreListaConteo").value || "").trim();
+      const descripcion = String($("descripcionListaConteo").value || "").trim();
+      if (!nombre) throw new Error("Captura el nombre de la lista.");
+      if (!seleccionConteo.size) throw new Error("Selecciona al menos un artículo.");
+      const mapa = new Map(articulosConteoDisponibles().map(a => [a.codigo, a]));
+      const articulos = Array.from(seleccionConteo).map(codigo => {
+        const a = mapa.get(codigo) || { codigo, descripcion:"" };
+        return { codigo:a.codigo, descripcion:a.descripcion };
+      });
+      const { CONTEO_DIARIO_REF } = getRefsPorTienda();
+      const data = {
+        nombre, descripcion, activa:true, articulos,
+        fecha_actualizacion: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      if (listaConteoEditandoId) await CONTEO_DIARIO_REF.doc(listaConteoEditandoId).set(data, { merge:true });
+      else {
+        data.fecha_creacion = firebase.firestore.FieldValue.serverTimestamp();
+        await CONTEO_DIARIO_REF.add(data);
+      }
+      await cargarListasConteo();
+      limpiarFormularioListaConteo();
+      setStatusConteo(`Lista ${nombre} guardada correctamente.`, "ok");
+    }
+
+    async function eliminarListaConteo(id) {
+      const lista = listasConteoActuales.find(x => x.id === id);
+      if (!lista || !confirm(`¿Eliminar la lista ${lista.nombre}?`)) return;
+      const { CONTEO_DIARIO_REF } = getRefsPorTienda();
+      await CONTEO_DIARIO_REF.doc(id).delete();
+      if (listaConteoEditandoId === id) limpiarFormularioListaConteo();
+      await cargarListasConteo();
+      setStatusConteo("Lista eliminada.", "ok");
+    }
+
+    function generarPdfListaConteo(id) {
+      const lista = listasConteoActuales.find(x => x.id === id);
+      if (!lista) return;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit:"mm", format:"letter" });
+      const pageW = doc.internal.pageSize.getWidth();
+      doc.setFont("helvetica", "bold"); doc.setFontSize(15);
+      doc.text("PROVEEDORA ALLENDE 2", pageW/2, 16, { align:"center" });
+      doc.setFontSize(13); doc.text("LISTA DE CONTEO DIARIO", pageW/2, 23, { align:"center" });
+      doc.setFontSize(10); doc.setFont("helvetica", "normal");
+      doc.text(`Lista: ${lista.nombre || ""}`, 14, 34);
+      doc.text("Fecha de conteo: ____ / ____ / ______", 14, 42);
+      doc.text("Hora de inicio: __________", 14, 49);
+      doc.text("Hora de término: __________", 108, 49);
+      doc.text("Auditor responsable: ______________________________", 14, 56);
+      const body = (lista.articulos || []).map(a => [a.codigo || "", a.descripcion || "", ""]);
+      doc.autoTable({
+        startY:63,
+        head:[["Código", "Descripción", "Conteo"]], body,
+        theme:"grid", styles:{ fontSize:9, cellPadding:2.2, valign:"middle" },
+        headStyles:{ fillColor:[0,65,106], textColor:255, halign:"center" },
+        columnStyles:{ 0:{cellWidth:38}, 1:{cellWidth:120}, 2:{cellWidth:35, minCellHeight:9} },
+        margin:{ left:14, right:14, bottom:42 }
+      });
+      let y = doc.lastAutoTable.finalY + 10;
+      if (y > 220) { doc.addPage(); y = 20; }
+      doc.setFont("helvetica", "bold"); doc.text("OBSERVACIONES GENERALES", 14, y);
+      doc.setFont("helvetica", "normal");
+      for (let i=1;i<=3;i++) doc.line(14, y + i*9, pageW-14, y + i*9);
+      y += 42;
+      doc.text("Nombre y firma del encargado de sucursal:", 14, y);
+      doc.line(14, y+14, 105, y+14);
+      doc.save(`${String(lista.nombre || "conteo").replace(/[^a-z0-9_-]+/gi,"_")}.pdf`);
+    }
+
+    function excelCellStyle(tipo, bold = false) {
+      const fills = {
+        AJU: "EDE9FE",
+        INV: "DBEAFE",
+        TRANS: "FEF3C7",
+        INTER: "BBF7D0",
+        INTSAL: "FDBA74",
+        VTA: "FEE2E2",
+        DEV: "FECACA",
+        MERMA: "FCA5A5",
+        NETO: "ECFCCB",
+        TOTAL: "F8FAFC",
+        HEAD: "D9EAF7"
+      };
+
+      return {
+        font: { bold, color: { rgb: "0F172A" } },
+        fill: { patternType: "solid", fgColor: { rgb: fills[tipo] || "FFFFFF" } },
+        border: {
+          top: { style: "thin", color: { rgb: "CBD5E1" } },
+          bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+          left: { style: "thin", color: { rgb: "CBD5E1" } },
+          right: { style: "thin", color: { rgb: "CBD5E1" } }
+        },
+        alignment: { vertical: "center" }
+      };
+    }
+
+    function exportarExcel() {
+      if (!ultimaPivot) {
+        alert("Primero carga la información.");
+        return;
+      }
+
+      if (typeof XLSX === "undefined") {
+        alert("No se pudo cargar la librería de Excel. Revisa conexión a internet.");
+        return;
+      }
+
+      const {
+        columnas,
+        rows,
+        totalAjuGeneral,
+        totalInvGeneral,
+        totalVtaGeneral,
+        totalDevGeneral,
+        totalMermaGeneral,
+        totalNetoGeneral
+      } = ultimaPivot;
+
+      const header = [
+        "codigo",
+        "descripcion",
+        ...columnas.map(c => `${c.fecha}_${c.tipo}`),
+        "teorico_neto"
+      ];
+
+      const data = [header];
+
+      for (const row of rows) {
+        data.push([
+          row.codigo,
+          row.descripcion || "",
+          ...columnas.map(col => valorColumnaRow(row, col) || ""),
+          row.neto || 0
+        ]);
+      }
+
+      data.push([
+        "TOTAL",
+        "Suma por fecha",
+        ...columnas.map(col => Number(valorColumnaTotal(ultimaPivot, col) || 0)),
+        totalNetoGeneral || 0
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+
+      ws["!cols"] = [
+        { wch: 16 },
+        { wch: 42 },
+        ...columnas.map(() => ({ wch: 16 })),
+        { wch: 16 }
+      ];
+
+      const range = XLSX.utils.decode_range(ws["!ref"]);
+      const totalRowIndex = data.length - 1;
+
+      for (let R = range.s.r; R <= range.e.r; R++) {
+        for (let C = range.s.c; C <= range.e.c; C++) {
+          const addr = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[addr]) continue;
+
+          let tipo = "";
+          let bold = false;
+
+          if (R === 0) {
+            tipo = "HEAD";
+            bold = true;
+          } else if (R === totalRowIndex) {
+            tipo = "TOTAL";
+            bold = true;
+          } else if (C >= 2 && C < 2 + columnas.length) {
+            tipo = columnas[C - 2].tipo;
+          } else if (C === header.length - 1) {
+            tipo = "NETO";
+            bold = true;
+          } else if (C >= header.length - 6) {
+            tipo = "TOTAL";
+          }
+
+          let style = excelCellStyle(tipo, bold);
+
+
+          ws[addr].s = style;
+          if (C >= 2) ws[addr].z = "#,##0.##";
+        }
+      }
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Inventario_vs_Ventas");
+
+      XLSX.writeFile(
+        wb,
+        `inventario_semanal_${getTiendaActual().replace(/\s+/g, "_")}_${$("semanaInput").value || "semana"}_${Date.now()}.xlsx`
+      );
+    }
+
+
+    $("btnAbrirConteo").addEventListener("click", async () => {
+      cerrarMenuPrincipal();
+      if (!ultimaPivot) await cargarTodo();
+      mostrarVista("conteo");
+      pintarArticulosConteo();
+      try { await cargarListasConteo(); setStatusConteo("Módulo listo.", "ok"); }
+      catch (err) { console.error(err); setStatusConteo("Error cargando listas: " + err.message, "error"); }
+    });
+    $("btnVolverDesdeConteo").addEventListener("click", () => mostrarVista("reporte"));
+    $("filtroConteo").addEventListener("input", pintarArticulosConteo);
+    $("filtroSeleccionConteo").addEventListener("change", pintarArticulosConteo);
+    $("btnLimpiarSeleccionConteo").addEventListener("click", () => { seleccionConteo.clear(); pintarArticulosConteo(); });
+    $("btnSeleccionarVisibles").addEventListener("click", () => {
+      $("tbodyConteoArticulos").querySelectorAll(".chk-conteo").forEach(chk => seleccionConteo.add(chk.dataset.codigo));
+      pintarArticulosConteo();
+    });
+    $("btnNuevaListaConteo").addEventListener("click", limpiarFormularioListaConteo);
+    $("btnGuardarListaConteo").addEventListener("click", async () => {
+      try { await guardarListaConteo(); } catch (err) { console.error(err); setStatusConteo(err.message, "error"); }
+    });
+
+
+    function cerrarMenuPrincipal() {
+      $("menuPrincipal").classList.remove("open");
+    }
+
+    let filaAjusteSeleccionada = null;
+    let ajustesLote = [];
+
+    function obtenerFilaAjuste(valor) {
+      const texto = String(valor || "").trim();
+      if (!texto || !Array.isArray(ultimaPivot?.rows)) return null;
+      const codigoBuscado = normalizarCodigo(texto);
+      const textoBuscado = normalizarTexto(texto);
+      return ultimaPivot.rows.find(fila =>
+        normalizarCodigo(fila.codigo) === codigoBuscado ||
+        normalizarTexto(fila.descripcion || "") === textoBuscado ||
+        normalizarTexto(`${fila.codigo || ""} - ${fila.descripcion || ""}`) === textoBuscado
+      ) || null;
+    }
+
+    function seleccionarFilaAjuste(fila) {
+      if (!fila) return;
+      filaAjusteSeleccionada = fila;
+      $("ajusteCodigo").value = fila.codigo || "";
+      $("ajusteDescripcion").value = fila.descripcion || "";
+      $("ajusteExistenciaSistema").value = Number(fila.neto || 0);
+      $("resultadosAjuste").classList.remove("open");
+      $("resultadosAjuste").innerHTML = "";
+      actualizarPreviewAjuste();
+      $("ajusteConteoFisico").focus();
+    }
+
+    function pintarResultadosAjuste() {
+      const cont = $("resultadosAjuste");
+      const q = normalizarTexto($("ajusteCodigo").value);
+      filaAjusteSeleccionada = null;
+      $("ajusteDescripcion").value = "";
+      $("ajusteExistenciaSistema").value = "";
+      cont.innerHTML = "";
+      if (!q || !Array.isArray(ultimaPivot?.rows)) { cont.classList.remove("open"); actualizarPreviewAjuste(); return; }
+      const encontrados = ultimaPivot.rows.filter(f => {
+        const codigo = normalizarTexto(f.codigo || "");
+        const desc = normalizarTexto(f.descripcion || "");
+        return codigo.includes(q) || desc.includes(q);
+      }).slice(0, 30);
+      if (!encontrados.length) {
+        cont.innerHTML = '<div class="ajuste-opcion"><span>No se encontraron artículos.</span></div>';
+        cont.classList.add("open");
+        actualizarPreviewAjuste();
+        return;
+      }
+      encontrados.forEach(fila => {
+        const div = document.createElement("div");
+        div.className = "ajuste-opcion";
+        div.innerHTML = `<strong>${fila.codigo || "SIN CÓDIGO"}</strong><span>${fila.descripcion || "Sin descripción"} · Existencia: ${fmtNum(Number(fila.neto || 0))}</span>`;
+        div.addEventListener("mousedown", e => { e.preventDefault(); seleccionarFilaAjuste(fila); });
+        cont.appendChild(div);
+      });
+      cont.classList.add("open");
+      actualizarPreviewAjuste();
+    }
+
+    function refrescarDatosAjuste() {
+      const fila = obtenerFilaAjuste($("ajusteCodigo").value);
+      if (fila) seleccionarFilaAjuste(fila);
+    }
+
+    function actualizarPreviewAjuste() {
+      const sistemaTxt = $("ajusteExistenciaSistema").value;
+      const sistema = sistemaTxt === "" ? null : Number(sistemaTxt);
+      const fisicoTxt = $("ajusteConteoFisico").value;
+      const fisico = fisicoTxt === "" ? null : Number(fisicoTxt);
+      if (sistema === null || !Number.isFinite(sistema)) {
+        $("ajustePreview").textContent = "Selecciona un artículo para calcular el ajuste.";
+        return;
+      }
+      const diferencia = fisico === null || !Number.isFinite(fisico) ? 0 : fisico - sistema;
+      $("ajustePreview").textContent = `Diferencia del ajuste: ${fmtNum(diferencia)} (${fmtNum(sistema)} → ${fisico === null ? "pendiente" : fmtNum(fisico)})`;
+    }
+
+    function abrirModalAjuste() {
+      cerrarMenuPrincipal();
+      const hoy = new Date();
+      const isoHoy = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
+      $("ajusteFecha").value = isoHoy < "2026-04-02" ? "2026-04-02" : isoHoy;
+      $("ajusteHora").value = `${String(hoy.getHours()).padStart(2,"0")}:${String(hoy.getMinutes()).padStart(2,"0")}`;
+      filaAjusteSeleccionada = null;
+      ajustesLote = [];
+      pintarAjustesLote();
+      $("ajusteCodigo").value = "";
+      $("ajusteDescripcion").value = "";
+      $("ajusteExistenciaSistema").value = "";
+      $("ajusteConteoFisico").value = "";
+      $("ajusteNotas").value = "";
+      $("resultadosAjuste").innerHTML = "";
+      $("resultadosAjuste").classList.remove("open");
+      $("statusAjuste").style.display = "none";
+      $("modalAjuste").classList.add("open");
+      $("ajusteCodigo").focus();
+      actualizarPreviewAjuste();
+    }
+
+    function cerrarModalAjuste() {
+      $("modalAjuste").classList.remove("open");
+      $("resultadosAjuste").classList.remove("open");
+    }
+
+    function leerAjusteFormulario() {
+      const fecha = $("ajusteFecha").value;
+      const hora = $("ajusteHora").value || "00:00";
+      const codigo = $("ajusteCodigo").value.trim();
+      const descripcion = $("ajusteDescripcion").value.trim();
+      const sistemaTxt = $("ajusteExistenciaSistema").value;
+      const sistema = Number(sistemaTxt);
+      const fisico = Number($("ajusteConteoFisico").value);
+      const notas = $("ajusteNotas").value.trim();
+      if (!fecha || fecha < "2026-04-02") throw new Error("La fecha debe ser igual o posterior al 2 de abril de 2026.");
+      if (!filaAjusteSeleccionada || !codigo || !descripcion || sistemaTxt === "") throw new Error("Selecciona un artículo de la lista de resultados.");
+      if (!Number.isFinite(fisico)) throw new Error("Captura un conteo físico válido.");
+      return { fecha, hora, fechaHora:`${fecha}T${hora}:00`, codigo, descripcion, sistema, fisico, diferencia:fisico-sistema, notas };
+    }
+
+    function limpiarCapturaAjuste() {
+      filaAjusteSeleccionada = null;
+      $("ajusteCodigo").value = "";
+      $("ajusteDescripcion").value = "";
+      $("ajusteExistenciaSistema").value = "";
+      $("ajusteConteoFisico").value = "";
+      $("ajusteNotas").value = "";
+      $("resultadosAjuste").innerHTML = "";
+      $("resultadosAjuste").classList.remove("open");
+      actualizarPreviewAjuste();
+      $("ajusteCodigo").focus();
+    }
+
+    function pintarAjustesLote() {
+      const tbodyLote = $("tbodyAjustesLote");
+      $("contadorAjustesLote").textContent = `${ajustesLote.length} artículo${ajustesLote.length === 1 ? "" : "s"}`;
+      $("btnGuardarAjuste").textContent = `Guardar lote (${ajustesLote.length})`;
+      $("btnGuardarAjuste").disabled = ajustesLote.length === 0;
+      if (!ajustesLote.length) {
+        tbodyLote.innerHTML = '<tr><td colspan="6">Todavía no hay ajustes agregados.</td></tr>';
+        return;
+      }
+      tbodyLote.innerHTML = ajustesLote.map((a,i) => `<tr>
+        <td>${escapeHtml(a.codigo)}</td><td>${escapeHtml(a.descripcion)}</td>
+        <td class="num">${fmtNum(a.sistema)}</td><td class="num">${fmtNum(a.fisico)}</td>
+        <td class="num">${fmtNum(a.diferencia)}</td>
+        <td><button type="button" class="btn-quitar-ajuste" data-i="${i}">×</button></td>
+      </tr>`).join("");
+      tbodyLote.querySelectorAll(".btn-quitar-ajuste").forEach(btn => btn.addEventListener("click", () => {
+        ajustesLote.splice(Number(btn.dataset.i), 1); pintarAjustesLote();
+      }));
+    }
+
+    function agregarAjusteAlLote() {
+      const status = $("statusAjuste");
+      status.style.display = "block";
+      try {
+        const ajuste = leerAjusteFormulario();
+        const repetido = ajustesLote.findIndex(a => normalizarCodigo(a.codigo) === normalizarCodigo(ajuste.codigo));
+        if (repetido >= 0) ajustesLote[repetido] = ajuste; else ajustesLote.push(ajuste);
+        pintarAjustesLote();
+        status.textContent = repetido >= 0 ? "Artículo actualizado dentro del lote." : "Artículo agregado al lote.";
+        status.className = "status ok";
+        limpiarCapturaAjuste();
+      } catch (err) {
+        status.textContent = err.message;
+        status.className = "status error";
+      }
+    }
+
+    async function guardarAjusteInventario() {
+      const status = $("statusAjuste");
+      status.style.display = "block";
+      if (!ajustesLote.length) { status.textContent = "Agrega al menos un artículo al lote."; status.className = "status error"; return; }
+      const { AJUSTES_REF, TIENDA } = getRefsPorTienda();
+      $("btnGuardarAjuste").disabled = true;
+      $("btnAgregarAjusteLote").disabled = true;
+      status.textContent = `Guardando ${ajustesLote.length} ajustes en una sola operación...`;
+      status.className = "status";
+      try {
+        const loteGuardado = ajustesLote.map(a => ({ ...a }));
+        const ahora = new Date();
+        const pad = n => String(n).padStart(2, "0");
+        const folioLote = `AJU-ALL2-${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}-${pad(ahora.getHours())}${pad(ahora.getMinutes())}${pad(ahora.getSeconds())}`;
+
+        for (let inicio=0; inicio<loteGuardado.length; inicio+=450) {
+          const batch = firebase.firestore().batch();
+          loteGuardado.slice(inicio, inicio+450).forEach(a => {
+            const ref = AJUSTES_REF.doc();
+            batch.set(ref, {
+              codigo:a.codigo, descripcion:a.descripcion, fecha_ajuste:a.fecha, hora_ajuste:a.hora,
+              fecha_hora:a.fechaHora, conteo_fisico:a.fisico, existencia_sistema:a.sistema,
+              ajuste:a.diferencia, tipo:"MANUAL_LOTE", motivo:a.notas, notas:a.notas,
+              sucursal:TIENDA, usuario:"APP_LISTA_ALLENDE2", lote:true, lote_folio:folioLote,
+              creadoEn:firebase.firestore.FieldValue.serverTimestamp()
+            });
+          });
+          await batch.commit();
+        }
+
+        let telegramOk = true;
+        let telegramError = "";
+        try {
+          await enviarLoteAjustesTelegram({ tienda: TIENDA, folio: folioLote, ajustes: loteGuardado });
+        } catch (tgErr) {
+          telegramOk = false;
+          telegramError = tgErr?.message || String(tgErr);
+          console.error("Error notificando ajuste por Telegram:", tgErr);
+        }
+
+        await borrarCacheTienda(TIENDA);
+        const total = loteGuardado.length;
+        ajustesLote = [];
+        pintarAjustesLote();
+        status.textContent = telegramOk
+          ? `${total} ajustes guardados y notificados por Telegram. Recalculando...`
+          : `${total} ajustes guardados, pero falló Telegram: ${telegramError}`;
+        status.className = telegramOk ? "status ok" : "status error";
+        await cargarTodo();
+        cerrarModalAjuste();
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Error guardando el lote: " + err.message;
+        status.className = "status error";
+      } finally {
+        $("btnAgregarAjusteLote").disabled = false;
+        pintarAjustesLote();
+      }
+    }
+
+    function actualizarScrollHorizontalPivot() {
+      const wrap = $("tableWrapPrincipal");
+      const bar = $("pivotScrollHorizontal");
+      const inner = $("pivotScrollHorizontalInner");
+      if (!wrap || !bar || !inner || !$("viewReporte").classList.contains("active")) return;
+
+      inner.style.width = `${Math.max(wrap.scrollWidth, wrap.clientWidth)}px`;
+      bar.style.display = wrap.scrollWidth > wrap.clientWidth + 2 ? "block" : "none";
+      if (Math.abs(bar.scrollLeft - wrap.scrollLeft) > 1) bar.scrollLeft = wrap.scrollLeft;
+    }
+
+    let sincronizandoScroll = false;
+    $("tableWrapPrincipal").addEventListener("scroll", () => {
+      if (sincronizandoScroll) return;
+      sincronizandoScroll = true;
+      $("pivotScrollHorizontal").scrollLeft = $("tableWrapPrincipal").scrollLeft;
+      requestAnimationFrame(() => { sincronizandoScroll = false; });
+    });
+    $("pivotScrollHorizontal").addEventListener("scroll", () => {
+      if (sincronizandoScroll) return;
+      sincronizandoScroll = true;
+      $("tableWrapPrincipal").scrollLeft = $("pivotScrollHorizontal").scrollLeft;
+      requestAnimationFrame(() => { sincronizandoScroll = false; });
+    });
+    window.addEventListener("resize", actualizarScrollHorizontalPivot);
+
+    $("btnMenuPrincipal").addEventListener("click", (e) => {
+      e.stopPropagation();
+      $("menuPrincipal").classList.toggle("open");
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".topbar-menu")) cerrarMenuPrincipal();
+    });
+    $("menuPrincipal").addEventListener("click", (e) => e.stopPropagation());
+    $("btnAbrirAjuste").addEventListener("click", abrirModalAjuste);
+    $("btnCerrarAjuste").addEventListener("click", cerrarModalAjuste);
+    $("btnCancelarAjuste").addEventListener("click", cerrarModalAjuste);
+    $("modalAjuste").addEventListener("click", (e) => { if (e.target === $("modalAjuste")) cerrarModalAjuste(); });
+    $("ajusteCodigo").addEventListener("input", pintarResultadosAjuste);
+    $("ajusteCodigo").addEventListener("change", refrescarDatosAjuste);
+    $("ajusteCodigo").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); refrescarDatosAjuste(); }
+      if (e.key === "Escape") $("resultadosAjuste").classList.remove("open");
+    });
+    $("ajusteCodigo").addEventListener("blur", () => setTimeout(() => $("resultadosAjuste").classList.remove("open"), 150));
+    $("ajusteConteoFisico").addEventListener("input", actualizarPreviewAjuste);
+    $("btnAgregarAjusteLote").addEventListener("click", agregarAjusteAlLote);
+    $("btnGuardarAjuste").addEventListener("click", guardarAjusteInventario);
+    $("filtroDescripcion").addEventListener("input", aplicarFiltroTabla);
+
+    $("btnAbrirConfig").addEventListener("click", async () => {
+      cerrarMenuPrincipal();
+      actualizarTitulosTienda();
+      mostrarVista("config");
+      await cargarEquivalencias();
+
+      if (!opcionesCodigos.length) {
+        try {
+          setStatusConfig("Cargando opciones de códigos para selección...", "");
+          const equivalentesCatalogoData = await cargarEquivalentesCatalogo();
+          const [inventariosData, ventasData, transferenciasData, devolucionesData, intercambiosData, intercambiosSalidaData, mermasData] = await Promise.all([
+            cargarInventarios(),
+            cargarVentas(),
+            cargarTransferencias(),
+            cargarDevoluciones(),
+            cargarIntercambios(),
+            cargarIntercambiosSalida(),
+            cargarMermas()
+          ]);
+
+          const catalogo = new Map();
+          [
+            equivalentesCatalogoData.catalogo,
+            inventariosData.catalogo,
+            ventasData.catalogo,
+            transferenciasData.catalogo,
+            devolucionesData.catalogo,
+            intercambiosData.catalogo,
+            intercambiosSalidaData.catalogo,
+            mermasData.catalogo
+          ].forEach(mapita => {
+            mapita.forEach((descripcion, codigo) => {
+              if (codigo && !catalogo.has(codigo)) {
+                catalogo.set(codigo, descripcion || "");
+              }
+            });
+          });
+
+          opcionesCodigos = Array.from(catalogo.entries()).map(([codigo, descripcion]) => ({
+            codigo,
+            descripcion
+          }));
+
+          refrescarDatalistsOpciones();
+          setStatusConfig("Configuración lista.", "ok");
+        } catch (err) {
+          console.error(err);
+          setStatusConfig("No se pudieron cargar sugerencias de códigos: " + err.message, "warn");
+        }
+      }
+    });
+
+    $("btnVolverReporte").addEventListener("click", () => {
+      actualizarTitulosTienda();
+      mostrarVista("reporte");
+    });
+
+    $("btnNuevo").addEventListener("click", limpiarFormularioConfig);
+    $("btnGuardar").addEventListener("click", guardarRegla);
+    $("btnEliminar").addEventListener("click", eliminarReglaFormulario);
+    $("btnRecargarConfig").addEventListener("click", cargarEquivalencias);
+
+    $("semanaInput").addEventListener("change", () => {
+      actualizarRangoVisible();
+      cargarTodo();
+    });
+
+    $("btnCargar").addEventListener("click", () => { cerrarMenuPrincipal(); cargarTodo(); });
+
+    $("btnActualizarFirebase").addEventListener("click", async () => {
+      cerrarMenuPrincipal();
+      mostrarLoading("Actualizando datos...", "Borrando caché local y descargando Firebase...");
+
+      try {
+        await borrarCacheTienda(getTiendaActual());
+        await cargarTodo();
+      } catch (err) {
+        console.error(err);
+        setStatus("Error actualizando datos: " + err.message, "error");
+      } finally {
+        ocultarLoading();
+      }
+    });
+
+    $("btnExportar").addEventListener("click", () => { cerrarMenuPrincipal(); exportarExcel(); });
+
+    $("codigoVenta").addEventListener("change", () => {
+      cargarDescripcionAutomatica("codigoVenta", "descripcionVenta");
+    });
+
+    $("codigoOrigen").addEventListener("change", () => {
+      cargarDescripcionAutomatica("codigoOrigen", "descripcionOrigen");
+    });
+
+    window.addEventListener("load", async () => {
+      actualizarTitulosTienda();
+      setSemanaInputDesdeFecha(new Date());
+      configurarLimiteSemana();
+      actualizarRangoVisible();
+      limpiarFormularioConfig();
+      await cargarTodo();
+    });
+  </script>
+</body>
+</html>

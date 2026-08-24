@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PROVSOFT | Solicitud de Devolución ALLENDE 1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<div id="loader" class="loader">
+  <div class="loader-card">
+    <div class="loader-logo">PROVSOFT</div>
+    <div class="loader-spinner" aria-hidden="true"></div>
+    <h2 id="loaderTitulo">Preparando Devoluciones ALLENDE 1</h2>
+    <p id="loaderTexto">Verificando catálogo local...</p>
+    <div class="loader-progress"><span id="loaderProgress"></span></div>
+    <p id="loaderDetalle" class="loader-detalle">La aplicación se abrirá cuando esté completamente lista.</p>
+    <button id="btnReintentarInicio" class="loader-reintentar" type="button" style="display:none">Reintentar</button>
+  </div>
+</div>
+
+<header class="topbar">
+  <div>
+    <h1>Solicitud de Devolución ALLENDE 1</h1>
+    <p>Comprobante de devolución Allende 1 con devolución a MATRIZ</p>
+  </div>
+  <div class="estado" id="estadoConexion">Verificando...</div>
+</header>
+
+<main class="app">
+  <section class="wizard wizard-3">
+    <div class="step active" data-step="1">1. Datos</div>
+    <div class="step" data-step="2">2. Captura POS</div>
+    <div class="step" data-step="3">3. Finalizar</div>
+  </section>
+
+  <section class="panel paso activo" id="paso1">
+    <div class="panel-head">
+      <div>
+        <h2>Datos del solicitante</h2>
+        <p class="subtexto">Identifica quién levanta la devolución antes de capturar productos.</p>
+      </div>
+      <span class="badge-tienda">ALLENDE 1 → MATRIZ</span>
+    </div>
+
+    <div class="datos-grid">
+      <div>
+        <label>Tienda que reporta la devolución</label>
+        <input id="tienda" value="ALLENDE 1" readonly>
+      </div>
+      <div>
+        <label>Folio generado</label>
+        <input id="folio" readonly>
+      </div>
+      <div class="campo-ancho">
+        <label>Nombre del encargado que solicita</label>
+        <input id="encargado" placeholder="Nombre del encargado" autocomplete="name">
+      </div>
+    </div>
+
+    <div class="acciones">
+      <button onclick="guardarBorrador()">Guardar borrador</button>
+      <button class="principal" onclick="irPaso(2)">Entrar a captura</button>
+    </div>
+  </section>
+
+  <section class="panel paso panel-pos" id="paso2">
+    <div class="pos-head">
+      <div>
+        <h2>Captura de productos</h2>
+        <p class="subtexto">Busca arriba y administra directamente el carrito de devolución.</p>
+      </div>
+      <div id="posTotales" class="pos-totales"></div>
+    </div>
+
+    <div class="pos-buscador-wrap">
+      <label for="buscarProducto">Buscar producto</label>
+      <input id="buscarProducto" class="pos-buscador" placeholder="Código, descripción, marca o departamento..." autocomplete="off">
+      <div id="resultados" class="resultados resultados-pos"></div>
+    </div>
+
+    <div class="carrito-head">
+      <div>
+        <h3>Carrito de devolución</h3>
+        <span id="carritoConteo" class="carrito-conteo">0 partidas</span>
+      </div>
+      <span class="hint-pos">Modificar o eliminar sobre cada partida</span>
+    </div>
+    <div id="carrito" class="carrito carrito-pos"></div>
+
+    <div class="acciones acciones-pos">
+      <button onclick="irPaso(1)">Atrás</button>
+      <button onclick="guardarBorrador()">Guardar borrador</button>
+      <button class="principal" onclick="irPaso(3)">Finalizar captura</button>
+    </div>
+  </section>
+
+  <section class="panel paso" id="paso3">
+    <div class="panel-head">
+      <div>
+        <h2>Finalizar solicitud</h2>
+        <p class="subtexto">Revisa la operación. La firma se solicitará justo antes de guardar.</p>
+      </div>
+      <span class="badge-tienda">PENDIENTE DE REVISIÓN</span>
+    </div>
+
+    <div id="resumenFinal" class="resumen-final"></div>
+
+    <label>Notas adicionales</label>
+    <textarea id="notas" placeholder="Notas finales de la devolución..."></textarea>
+
+    <div class="alerta">
+      La solicitud se guardará en <strong>/TIENDAS/ALLENDE 1/DEVOLUCIONES/{folio}</strong>.
+      Si no hay internet, quedará pendiente en este equipo y se sincronizará automáticamente al recuperar conexión.
+    </div>
+
+    <div class="acciones">
+      <button onclick="irPaso(2)">Regresar a captura</button>
+      <button onclick="guardarBorrador()">Guardar borrador</button>
+      <button class="principal peligro" onclick="abrirFirmaFinal()">Firmar y guardar</button>
+    </div>
+  </section>
+</main>
+
+<div id="modalProducto" class="modal oculto">
+  <div class="modal-card modal-producto-card">
+    <div class="modal-head">
+      <div>
+        <span class="modal-kicker" id="modalModo">Agregar partida</span>
+        <h2 id="modalTitulo">Producto</h2>
+        <p id="modalCodigo"></p>
+      </div>
+      <button class="btn-cerrar" type="button" onclick="cerrarModal()">×</button>
+    </div>
+
+    <div class="modal-grid">
+      <div>
+        <label>Cantidad</label>
+        <input type="number" id="modalCantidad" min="0.01" step="0.01">
+      </div>
+      <div>
+        <label>Motivo</label>
+        <select id="modalMotivo">
+          <option value="PRODUCTO_PARADO">Producto parado</option>
+          <option value="BAJA_ROTACION">Baja rotación</option>
+          <option value="EXCESO_INVENTARIO">Exceso de inventario</option>
+          <option value="CAMBIO_PRESENTACION">Cambio de presentación</option>
+          <option value="ERROR_SURTIDO">Error de surtido</option>
+          <option value="REUBICACION">Reubicación a otra tienda</option>
+          <option value="OTRO">Otro</option>
+        </select>
+      </div>
+      <div class="campo-ancho">
+        <label>Comentario</label>
+        <textarea id="modalComentario" placeholder="Comentario del producto..."></textarea>
+      </div>
+    </div>
+
+    <div class="acciones">
+      <button onclick="cerrarModal()">Cancelar</button>
+      <button class="principal" id="btnGuardarProducto" onclick="agregarProducto()">Agregar a devolución</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalFirma" class="modal oculto modal-firma">
+  <div class="modal-card firma-card">
+    <div class="modal-head">
+      <div>
+        <span class="modal-kicker">Confirmación final</span>
+        <h2>Firma del solicitante</h2>
+        <p>Firma antes de guardar la solicitud de devolución.</p>
+      </div>
+      <button class="btn-cerrar" type="button" onclick="cerrarFirmaFinal()">×</button>
+    </div>
+
+    <div class="firma-datos" id="firmaDatos"></div>
+    <canvas id="firmaCanvas" width="900" height="300"></canvas>
+    <div class="firma-linea">Firma del encargado</div>
+
+    <div class="acciones firma-acciones">
+      <button onclick="limpiarFirma()">Limpiar firma</button>
+      <button onclick="cerrarFirmaFinal()">Cancelar</button>
+      <button class="principal peligro" onclick="confirmarFirmaYGuardar()">Confirmar firma y guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

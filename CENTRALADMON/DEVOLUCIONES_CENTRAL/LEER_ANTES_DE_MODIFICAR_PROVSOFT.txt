@@ -1,0 +1,58 @@
+PROVSOFT - REGLAS DE INTEGRACION CENTRAL
+========================================
+
+IMPORTANTE PARA FUTURAS MODIFICACIONES
+
+1. Las aplicaciones DEVOLUCIONES CENTRAL y MERMAS CENTRAL son procesos INDEPENDIENTES.
+   - No mezclar folios, documentos, carritos, pendientes ni logica operativa entre apps.
+
+2. EXCEPCION INTENCIONAL: EL CATALOGO DE PRODUCTOS SE COMPARTE.
+   Ambas aplicaciones deben usar exactamente:
+
+   IndexedDB:
+     provsoft_catalogo_productos_central
+
+   Store:
+     productos
+
+   Marca de fecha en localStorage:
+     provsoft_catalogo_productos_central_fecha
+
+3. Objetivo del catalogo compartido:
+   - La primera app CENTRAL que se abra en el dia descarga /productos activos desde Firebase.
+   - La segunda app CENTRAL reutiliza el mismo catalogo local y NO debe volver a descargarlo si la fecha es de hoy.
+   - El filtro del catalogo sigue siendo activo == true.
+
+4. Regla para futuras apps CENTRAL:
+   Si una nueva app usa el mismo catalogo /productos, debe reutilizar este mismo IndexedDB y la misma clave de fecha, salvo instruccion expresa del usuario.
+
+5. CENTRAL ES LA BASE INICIAL DE ESTA REGLA.
+   Las variantes de otras sucursales deben revisarse por separado antes de compartir cache, para evitar mezclar origenes o configuraciones diferentes.
+
+6. NO CAMBIAR ESTA CONVENCION sin indicacion expresa del usuario.
+
+Actualizado: 2026-08-25
+
+REGLA NUEVA - SINCRONIZACION INCREMENTAL DEL CATALOGO CENTRAL
+Fecha: 2026-08-25
+
+1. El catalogo CENTRAL se comparte entre las apps mediante IndexedDB:
+   provsoft_catalogo_productos_central
+
+2. La primera vez que no exista catalogo/checkpoint:
+   - Descargar todos los documentos de /productos con activo == true.
+   - Guardarlos en IndexedDB.
+   - Guardar como checkpoint el mayor updatedAt recibido.
+
+3. En aperturas posteriores:
+   - NO descargar el catalogo completo.
+   - Consultar /productos donde updatedAt > ultimo checkpoint.
+   - Si activo == true, insertar/actualizar el producto local.
+   - Si activo == false, eliminarlo del catalogo local.
+   - Actualizar el checkpoint al mayor updatedAt recibido.
+
+4. updatedAt es un Timestamp de Firestore y es el campo oficial para detectar cambios.
+
+5. Devoluciones y Mermas siguen siendo procesos totalmente independientes. SOLO comparten el catalogo de productos y su metadata de sincronizacion.
+
+6. Si se modifica esta app en el futuro, conservar esta arquitectura salvo instruccion expresa del usuario.

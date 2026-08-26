@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MENÚ SUCURSALES PDD · Árbol de páginas</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--text:#12213a;--muted:#6d7890;--line:#cfd7e5;--branch:#bac6d8;--accent:#1769ff;--ok:#0d8f55;--hover:#f4f8ff}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:18px 22px}
+.head{max-width:1400px;margin:auto;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:20px;margin:0}.sub{font-size:12px;color:var(--muted);margin-top:4px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;font-weight:700;cursor:pointer;color:var(--text);text-decoration:none}
+button:hover,.btn:hover{border-color:#96a5ba}.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+main{max-width:1400px;margin:18px auto;padding:0 18px 40px}.toolbar{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:14px;box-shadow:0 3px 16px rgba(23,32,51,.05)}
+input{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:15px;outline:none}input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,94,255,.1)}
+.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;padding:0 6px}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 28px;box-shadow:0 3px 16px rgba(23,32,51,.05);overflow:auto}
+.treeRoot{min-width:680px}.tree ul{list-style:none;margin:0;padding-left:34px;position:relative}.tree ul::before{content:"";position:absolute;top:0;bottom:17px;left:15px;border-left:2px solid var(--branch)}
+.tree li{position:relative;margin:0;padding:2px 0 2px 24px}.tree li::before{content:"";position:absolute;left:-19px;top:22px;width:28px;border-top:2px solid var(--branch)}
+.tree li:last-child::after{content:"";position:absolute;left:-20px;top:24px;bottom:-5px;width:4px;background:var(--panel)}
+.nodeRow{min-height:42px;display:flex;align-items:center;gap:9px;border-radius:9px;padding:7px 10px;position:relative;z-index:1}.nodeRow:hover{background:var(--hover)}
+.folderDetails{margin:0}.folderDetails>summary{list-style:none;cursor:pointer}.folderDetails>summary::-webkit-details-marker{display:none}
+.chev{width:18px;height:18px;display:inline-grid;place-items:center;font-size:12px;color:#5f6f86;transition:transform .15s}.folderDetails[open]>summary .chev{transform:rotate(90deg)}
+.folderIcon{font-size:20px;line-height:1}.folderName{font-weight:800;font-size:15px;letter-spacing:.01em}.count{margin-left:auto;color:#526178;font-size:11px;font-weight:800;background:#eef2f7;border-radius:999px;padding:4px 8px}
+.fileRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}.fileMain{min-width:0}.fileName{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.filePath{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fileIcon{font-size:18px;line-height:1}.fileActions{display:flex;gap:6px}.mini{font-size:11px;padding:6px 9px}.empty{padding:40px;text-align:center;color:var(--muted)}
+.rootTitle{display:flex;align-items:center;gap:10px;font-weight:900;font-size:16px;padding:5px 4px 12px}.rootBadge{margin-left:auto;font-size:11px;background:#e9f1ff;color:#245aa6;padding:4px 8px;border-radius:999px}
+@media(max-width:650px){header{padding:14px}main{padding:0 10px 30px;margin-top:10px}.toolbar{grid-template-columns:1fr}.status{padding:0 2px}.actions{width:100%}.actions button,.actions .btn{flex:1;text-align:center}.tree{padding:12px 8px 20px}.treeRoot{min-width:600px}.fileActions{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <div><h1>🌳 MENUSUCURSALESPDD</h1><div class="sub">Árbol raíz de páginas HTML · herramienta de acceso y depuración</div></div>
+    <div class="actions">
+      <button onclick="setAll(true)">Expandir todo</button>
+      <button onclick="setAll(false)">Contraer</button>
+      <button class="primary" onclick="refreshTree()">↻ Actualizar árbol</button>
+    </div>
+  </div>
+</header>
+<main>
+  <section class="toolbar">
+    <input id="q" type="search" placeholder="Buscar sucursal, módulo o página..." autocomplete="off">
+    <div class="status"><span class="dot"></span><span id="status">Cargando árbol…</span></div>
+  </section>
+  <section id="tree" class="tree"><div class="empty">Cargando páginas…</div></section>
+</main>
+<script>
+const OWNER='licaptio';
+const REPO='SUCURSALESPDD';
+const BRANCH='main';
+const fallback=[
+      { path: 'ADMONPDD/capturagastofijo.html' },
+      { path: 'ADMONPDD/visor-tickets.html' },
+      { path: 'ALLENDE2/CARGAVENTASTECNOPRO/CARGAVTSALLENDE2.html' },
+      { path: 'ALLENDE2/CONTESTAALLENDE1.html' },
+      { path: 'ALLENDE2/DEVOLUCIONES_ALLENDE2/devolucionallende2.html' },
+      { path: 'ALLENDE2/INTERCAMBIOALLENDES2/intecambiosolicitud.html' },
+      { path: 'ALLENDE2/INTERCAMBIOCONTESTA/CONTESTAALLENDE1.html' },
+      { path: 'ALLENDE2/LISTAALLENDE2/index.html' },
+      { path: 'ALLENDE2/MERMAS_ALLENDE2_FINAL/MERMAS_ALLENDE2/mermaallende2.html' },
+      { path: 'ALLENDE2/SOLICITUDINVENTARIO.html' },
+      { path: 'ALLENDE2/altamerma.html' },
+      { path: 'ALLENDE2/contestaINVENTARIO.html' },
+      { path: 'ALLENDE2/devoluciomerca.html' },
+      { path: 'ALLENDE2/index.html' },
+      { path: 'ALLENDE2/listatransfer.html' },
+      { path: 'ALLENDE2/menuadmon.html' },
+      { path: 'ALLENDE2/solicitudmerca1.html' },
+      { path: 'ALLENDEONE/ARTICULOS_NUEVOS/index.html' },
+      { path: 'ALLENDEONE/CARGARPTVENTA.html' },
+      { path: 'ALLENDEONE/CARGAVENTASALLENDE1/CARGAVENTASALLENDE1/CARGAVTSALLENDE1.html' },
+      { path: 'ALLENDEONE/CATAINGE/index.html' },
+      { path: 'ALLENDEONE/CATALOGO.html' },
+      { path: 'ALLENDEONE/DEVOLUCIONMERCANCIAMATRIZ/DEVAMATRIZ.html' },
+      { path: 'ALLENDEONE/INTERCAMBIOALLENDES/intecambio.html' },
+      { path: 'ALLENDEONE/INTERCAMBIOCONTESTAALLENDE2/CONTESTAALLENDE2.html' },
+      { path: 'ALLENDEONE/LISTAALLENDE/index.html' },
+      { path: 'ALLENDEONE/MERMAS/mermaallende1.html' },
+      { path: 'ALLENDEONE/SOLINTERCAMBIO.html' },
+      { path: 'ALLENDEONE/SOLTRANAPP.html' },
+      { path: 'ALLENDEONE/VISORTICKETS.html' },
+      { path: 'ALLENDEONE/index.html' },
+      { path: 'ALLENDEONE/indexadmon.html' },
+      { path: 'ALLENDEONE/repotransfallende1.html' },
+      { path: 'BODEGAABARROTE/APLICACIONCONTEOFISICO/ABARROTES.html' },
+      { path: 'BODEGAABARROTE/INCIDENCIAS_ABARROTES_PDD/index.html' },
+      { path: 'BODEGAABARROTE/MONITORCONTEO/ABARROTES.html' },
+      { path: 'BODEGAABARROTE/MONITORCONTEO/MONITORCONTEO.html' },
+      { path: 'BODEGAABARROTE/SALIDA_ABARROTES_PDD_V4/index.html' },
+      { path: 'BODEGAABARROTE/TABLAMOVIEMIENTOSABARROTESPDD/INVENTARIOABARROTES.html' },
+      { path: 'BODEGAABARROTE/index.html' },
+      { path: 'BODEGAGRAL/indexasdasdsa32132.html' },
+      { path: 'BODEGAGRAL/menuinicio.html' },
+      { path: 'BODEGAGRAL/monitor_transferencias.html' },
+      { path: 'BODEGALIQUIDO/APPSALIDALIQ/index.html' },
+      { path: 'BODEGALIQUIDO/APPTABLALIQUIDOS/TABLALIQUIDO.html' },
+      { path: 'BODEGALIQUIDO/menuinicio.html' },
+      { path: 'BODEGAZAPATA/APPSALIDA2/index.html' },
+      { path: 'BODEGAZAPATA/APPTABLAZAP/TABLA.html' },
+      { path: 'BODEGAZAPATA/LISTADOCODIGOSALIDA.html' },
+      { path: 'BODEGAZAPATA/LISTAZAPATASALIDA.html' },
+      { path: 'BODEGAZAPATA/agregarprodzapata.html' },
+      { path: 'BODEGAZAPATA/menubodega41.html' },
+      { path: 'CATALOGOPROD/CATALOGOTECNOSUB.html' },
+      { path: 'CATALOGOPROD/index.html' },
+      { path: 'CENTRALADMON/CARGARPTVTScentral.html' },
+      { path: 'CENTRALADMON/CARGAVENTASCENTRAL_FINAL/CARGAVENTASCENTRAL/CARGAVTSCENTRAL.html' },
+      { path: 'CENTRALADMON/CATALOGOCENTRA.html' },
+      { path: 'CENTRALADMON/CONTESTAINV.html' },
+      { path: 'CENTRALADMON/CORRECCIONES-CENTRAL.html' },
+      { path: 'CENTRALADMON/DEVOLUCIONES_CENTRAL/devolucioncentral.html' },
+      { path: 'CENTRALADMON/LISTAINVETARIOCENTRAL/INVENTARIOCENTRAL.html' },
+      { path: 'CENTRALADMON/MERMAS_CENTRAL/mermacentral.html' },
+      { path: 'CENTRALADMON/SOLICITUDDECONTEOCENTRAL.html' },
+      { path: 'CENTRALADMON/index.html' },
+      { path: 'CENTRALADMON/listatransfer.html' },
+      { path: 'CENTRALADMON/menuinicioadmon.html' },
+      { path: 'CENTRALADMON/solicitudmerca1.html' },
+      { path: 'CIGARRO/APPEENTRADAS/index.html' },
+      { path: 'CIGARRO/APPSALCIG/agregarproductosCIG.html' },
+      { path: 'CIGARRO/APPSALCIG/index.html' },
+      { path: 'CIGARRO/REIMPRESION.html' },
+      { path: 'CIGARRO/TABLACIG/index.html' },
+      { path: 'CIGARRO/index.html' },
+      { path: 'CIGARRO/menuadmon.html' },
+      { path: 'CIGARRO/pantalla2.html' },
+      { path: 'CIGARRO/pantalla3.html' },
+      { path: 'CIGARRO/pantalla4.html' },
+      { path: 'CIGARRO/pantalla5.html' },
+      { path: 'CIGARRO/pantalla6.html' },
+      { path: 'MONITORTRANSFER/KADEXTRANSFERENCIAS/SALIDASTRANSFERENCIAS.html' },
+      { path: 'MONITORTRANSFER/index.html' },
+      { path: 'MONTEMORELOS/CARGAVENTASMONTEMORELOS/CARGAVTSMONTEMORELOS.html' },
+      { path: 'MONTEMORELOS/CARGAVTSMORELOS.html' },
+      { path: 'MONTEMORELOS/DEVOLUCIONES_MONTEMORELOS/devolucionmontemorelos.html' },
+      { path: 'MONTEMORELOS/INVENTARIOMONTEMORELOS/index.html' },
+      { path: 'MONTEMORELOS/INVENTARIOMONTEMORELOS/listadeinvetario.html' },
+      { path: 'MONTEMORELOS/MERMAS_MONTEMORELOS/mermamontemorelos.html' },
+      { path: 'MONTEMORELOS/index.html' },
+      { path: 'MONTEMORELOS/index_montemorelos.html' },
+      { path: 'MONTEMORELOS/listatransfer_montemorelos.html' },
+      { path: 'MONTEMORELOS/menuinicio.html' },
+      { path: 'MONTEMORELOS/solicitudmerca1.html' },
+      { path: 'OSITO/CARGAVENTASOSITO/CARGAVTSOSITO.html' },
+      { path: 'OSITO/CARGAVTSOSITO.html' },
+      { path: 'OSITO/DEVOLUCIONES_OSITO/devolucionosito.html' },
+      { path: 'OSITO/INVENTARIOELOSO/OSITOINVE.html' },
+      { path: 'OSITO/INVLISTOSITO.html' },
+      { path: 'OSITO/MERMAS_OSITO/mermaosito.html' },
+      { path: 'OSITO/devoluciomerca_osito.html' },
+      { path: 'OSITO/index.html' },
+      { path: 'OSITO/listatransfer_osito.html' },
+      { path: 'OSITO/menuoso.html' },
+      { path: 'OSITO/solicitudmerca1.html' },
+      { path: 'POSVTA4/ARTICULOSMAP.html' },
+      { path: 'POSVTA4/CATACOMIS.html' },
+      { path: 'POSVTA4/CORTEV4.html' },
+      { path: 'POSVTA4/DESMARCAR-TICKETS-VENTA.html' },
+      { path: 'POSVTA4/MAPAV4.html' },
+      { path: 'POSVTA4/MAPEOCATA.html' },
+      { path: 'POSVTA4/MONITORTICKETS.html' },
+      { path: 'POSVTA4/POSV4PASS.html' },
+      { path: 'POSVTA4/RECORTES.html' },
+      { path: 'POSVTA4/REPORTE-CORTE-V1.2.html' },
+      { path: 'POSVTA4/RETICKETS.html' },
+      { path: 'POSVTA4/corterutamovil.html' },
+      { path: 'POSVTA4/offline.html' },
+      { path: 'POSVTA4/ticketsresumen.html' },
+      { path: 'PROVILEON/CARGAVENTASPROVILEON/CARGAVTSPROVILEON.html' },
+      { path: 'PROVILEON/CARGAVTSPROVILEON.html' },
+      { path: 'PROVILEON/LISTAINVENTARIOPROVILEON/index.html' },
+      { path: 'PROVILEON/altamerma_provileon.html' },
+      { path: 'PROVILEON/devoluciomerca_provileon.html' },
+      { path: 'PROVILEON/index.html' },
+      { path: 'PROVILEON/listatransfer_provileon.html' },
+      { path: 'PROVILEON/menuprovileon.html' },
+      { path: 'PROVILEON/solicitudmerca1.html' },
+      { path: 'RIOVERDE/CARGAVENTASRIOVERDE/CARGAVTSRIOVERDE.html' },
+      { path: 'RIOVERDE/CARGAVTSRIOVERDE.html' },
+      { path: 'RIOVERDE/DEVOLUCIONES_RIOVERDE/devolucionrioverde.html' },
+      { path: 'RIOVERDE/LISTARIOVERDE/RIOVERDEINV.html' },
+      { path: 'RIOVERDE/altamerma_rioverde.html' },
+      { path: 'RIOVERDE/devoluciomerca_rioverde.html' },
+      { path: 'RIOVERDE/index.html' },
+      { path: 'RIOVERDE/listatransfer_rioverde.html' },
+      { path: 'RIOVERDE/menuinicio2.html' },
+      { path: 'RIOVERDE/solicitudmerca1.html' },
+      { path: 'RUTA1/APPCONTR1/index.html' },
+      { path: 'RUTA1/DESGLOCEDEPTOR1.html' },
+      { path: 'RUTA1/FACTURAGLORM1.html' },
+      { path: 'RUTA1/INVENTARIO RUTA_VENTA_1/TablaInventario.html' },
+      { path: 'RUTA1/RUTA1POSPDD/index.html' },
+      { path: 'RUTA1/VISORTICKET0626.html' },
+      { path: 'RUTA1/edoruta1.html' },
+      { path: 'RUTA1/menuprincipalr1pdd.html' },
+      { path: 'RUTA1/visor-tickets.html' },
+      { path: 'RUTA2/APPCONTR2/index.html' },
+      { path: 'RUTA2/CATACOMIS.html' },
+      { path: 'RUTA2/COMIS2R2.html' },
+      { path: 'RUTA2/GLOBALR2.html' },
+      { path: 'RUTA2/INVENTARIO_RUTA_VENTA_2/INVENTARIORUTA2.html' },
+      { path: 'RUTA2/ReporteGralVentasDeptoR2.html' },
+      { path: 'RUTA2/SOLICITUDINVENTARIO-R2.html' },
+      { path: 'RUTA2/edobrutoruta2.html' },
+      { path: 'RUTA2/indicemenur2asdsvarfhbwrtyn.html' },
+      { path: 'RUTA2/login.html' },
+      { path: 'RUTA2/tomadeinventariofisico.html' },
+      { path: 'index.html' },
+];
+let allPages=[];
+
+function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function pageUrl(path){return new URL(path, location.href).href}
+function buildTree(items){
+  const root={folders:{},files:[]};
+  for(const item of items){
+    const parts=item.path.split('/');
+    let node=root;
+    parts.slice(0,-1).forEach(part=>{node=node.folders[part]??=( {folders:{},files:[]} )});
+    node.files.push({name:parts.at(-1),path:item.path});
+  }
+  return root;
+}
+function countFiles(node){
+  return node.files.length+Object.values(node.folders).reduce((n,x)=>n+countFiles(x),0);
+}
+function folderHtml(name,node,depth=0,forceOpen=false){
+  const folders=Object.entries(node.folders).sort(([a],[b])=>a.localeCompare(b));
+  const files=[...node.files].sort((a,b)=>a.name.localeCompare(b.name));
+  const children=[
+    ...folders.map(([n,x])=>folderHtml(n,x,depth+1,forceOpen)),
+    ...files.map(fileHtml)
+  ].join('');
+  return `<li><details class="folderDetails" ${forceOpen||depth<1?'open':''}><summary class="nodeRow"><span class="chev">▶</span><span class="folderIcon">📁</span><span class="folderName">${esc(name)}</span><span class="count">${countFiles(node)}</span></summary><ul>${children}</ul></details></li>`;
+}
+function fileHtml(file){
+  const url=esc(pageUrl(file.path));
+  return `<li><div class="nodeRow fileRow"><div class="fileMain"><div class="fileName"><span class="fileIcon">📄</span> <a href="${url}" style="color:inherit;text-decoration:none">${esc(file.name)}</a></div><div class="filePath">${esc(file.path)}</div></div><div class="fileActions"><a class="btn mini" href="${url}">Abrir</a><a class="btn mini" href="${url}" target="_blank" rel="noopener">↗</a></div></div></li>`;
+}
+function render(filter=''){
+  const q=filter.trim().toLowerCase();
+  const items=q?allPages.filter(x=>x.path.toLowerCase().includes(q)):allPages;
+  const tree=document.getElementById('tree');
+  if(!items.length){tree.innerHTML='<div class="empty">No encontré páginas con ese texto.</div>';return}
+  const root=buildTree(items);
+  const content=[
+    ...Object.entries(root.folders).sort(([a],[b])=>a.localeCompare(b)).map(([name,node])=>folderHtml(name,node,0,!!q)),
+    ...root.files.sort((a,b)=>a.name.localeCompare(b.name)).map(fileHtml)
+  ].join('');
+  tree.innerHTML=`<div class="treeRoot"><div class="rootTitle">🏠 SUCURSALESPDD <span class="rootBadge">${items.length} HTML</span></div><ul>${content}</ul></div>`;
+}
+async function loadFromGitHub(){
+  const api=`https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`;
+  const r=await fetch(api,{cache:'no-store',headers:{'Accept':'application/vnd.github+json'}});
+  if(!r.ok) throw new Error('GitHub API '+r.status);
+  const data=await r.json();
+  if(!Array.isArray(data.tree)) throw new Error('Respuesta inválida');
+  return data.tree.filter(x=>x.type==='blob' && /\.html?$/i.test(x.path) && x.path!=='MENUSUCURSALESPDD.html').map(x=>({path:x.path}));
+}
+async function refreshTree(){
+  const status=document.getElementById('status');
+  status.textContent='Consultando repositorio…';
+  try{
+    const live=await loadFromGitHub();
+    allPages=live.length?live:fallback;
+    status.textContent=`${allPages.length} páginas · árbol actualizado desde GitHub`;
+  }catch(e){
+    allPages=fallback;
+    status.textContent=`${allPages.length} páginas · usando copia incluida en este archivo`;
+  }
+  render(document.getElementById('q').value);
+}
+function setAll(open){document.querySelectorAll('details').forEach(d=>d.open=open)}
+document.getElementById('q').addEventListener('input',e=>render(e.target.value));
+refreshTree();
+</script>
+</body>
+</html>

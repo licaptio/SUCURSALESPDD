@@ -1,0 +1,31 @@
+SALIDAS ZAPATA PC
+=================
+
+PRUEBA LOCAL EN WINDOWS
+
+1. Descomprime la carpeta completa.
+2. Da doble clic en LANZAR_APP.bat.
+3. Se abrira el navegador en:
+   http://localhost:8000
+4. Deja abierta la ventana negra mientras uses la app.
+5. Para detener el servidor, cierra esa ventana o presiona Ctrl + C.
+
+REQUISITO
+- Python 3 instalado en Windows.
+
+SERVIDOR MANUAL
+- Tambien puedes abrir CMD en esta carpeta y ejecutar:
+  py server.py
+  o:
+  python server.py
+
+RED LOCAL
+- server.py tambien muestra la direccion LAN de la PC para probar desde otro equipo de la misma red, si el firewall de Windows lo permite.
+
+APP
+- Consulta exclusivamente las salidas del Almacen Zapata.
+- Historial completo.
+- Orden mas reciente primero.
+- 30 salidas por pagina.
+- Busqueda por folio, destino, codigo o mercancia.
+- Clic en cada tarjeta para consultar el detalle completo.

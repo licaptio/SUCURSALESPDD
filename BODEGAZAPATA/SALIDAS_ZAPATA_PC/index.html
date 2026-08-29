@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Salidas · Almacén Zapata</title>
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-logo" src="./assets/logo-proveedora.jfif" alt="La Proveedora" />
+      <div>
+        <h1>Salidas de Almacén</h1>
+        <p>ALMACÉN ZAPATA · Historial completo</p>
+      </div>
+    </div>
+    <button id="btnRecargar" class="btn secondary" type="button">↻ Recargar</button>
+  </header>
+
+  <main class="shell">
+    <section class="toolbar">
+      <label class="search-box">
+        <span>Buscar</span>
+        <input id="buscador" type="search" autocomplete="off" placeholder="Destino, quien recibe, código o mercancía..." />
+      </label>
+      <div class="toolbar-note">30 salidas por página</div>
+    </section>
+
+    <section class="content-head">
+      <div>
+        <h2>Historial de salidas</h2>
+        <p id="estado">Cargando historial...</p>
+      </div>
+      <div id="rangoMostrado" class="range-pill">—</div>
+    </section>
+
+    <section id="listaSalidas" class="cards-grid" aria-live="polite"></section>
+
+    <div id="vacio" class="empty hidden">
+      <div class="empty-icon">⌕</div>
+      <h3>No hay resultados</h3>
+      <p>Prueba con otro folio, destino, código o descripción.</p>
+    </div>
+
+    <nav id="paginacion" class="pagination" aria-label="Paginación"></nav>
+  </main>
+
+  <dialog id="modalDetalle" class="detail-dialog">
+    <div class="dialog-wrap">
+      <header class="dialog-head">
+        <div>
+          <span class="eyebrow">DETALLE DE SALIDA</span>
+          <h2 id="detalleFolio">—</h2>
+        </div>
+        <div class="dialog-actions">
+          <button id="btnImprimir" class="btn print-btn" type="button">🖨 Imprimir salida</button>
+          <button id="btnCerrar" class="icon-btn" type="button" aria-label="Cerrar">×</button>
+        </div>
+      </header>
+
+      <div class="detail-meta">
+        <div><span>Destino</span><strong id="detalleDestino">—</strong></div>
+        <div><span>Fecha</span><strong id="detalleFecha">—</strong></div>
+        <div><span>Hora</span><strong id="detalleHora">—</strong></div>
+        <div><span>Entrega</span><strong id="detalleEntrega">—</strong></div>
+        <div><span>Recibe</span><strong id="detalleRecibe">—</strong></div>
+        <div><span>Folio cincho</span><strong id="detalleCincho">—</strong></div>
+      </div>
+
+      <section class="merch-section">
+        <div class="section-title-row">
+          <div>
+            <span class="eyebrow">MERCANCÍA</span>
+            <h3>Partidas de la salida</h3>
+          </div>
+          <div id="detallePartidas" class="count-badge">0 partidas</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Código</th>
+                <th>Mercancía</th>
+                <th class="num">Cantidad</th>
+              </tr>
+            </thead>
+            <tbody id="detalleArticulos"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <script type="module" src="./assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+SOLTRANAPP POS · PROVSOFT
+
+PRUEBA RÁPIDA EN WINDOWS
+1. Doble clic en INICIAR_SOLTRANAPP.exe.
+2. El ejecutable abre EJECUTAR_APP.bat, que inicia server.py.
+3. Se abrirá la aplicación en el navegador en http://127.0.0.1:8766/
+
+ALTERNATIVAS
+- Doble clic en EJECUTAR_APP.bat.
+- Desde consola: python server.py
+
+REQUISITO
+- Python 3 instalado en Windows (comando py o python).
+
+ESTRUCTURA
+- index.html
+- assets/styles.css
+- assets/app.js
+- assets/config.js        (conexión Firebase separada)
+- assets/logo.jfif        (logo local incluido)
+- server.py
+- EJECUTAR_APP.bat
+- INICIAR_SOLTRANAPP.exe
+
+NOTA
+La interfaz y el focus fueron adaptados al patrón POS del ejemplo SALIDA_ABARROTES_PDD_V4: captura por scanner/teclado, Enter para avanzar y retorno de focus a captura después de agregar.
+
+
+AJUSTE FULL BROWSER:
+- Sin transform: scale().
+- El layout usa 100vw/100dvh y media queries.
+- Se adapta al zoom real de Chrome porque responde al viewport CSS disponible.
+
+AJUSTE 100% CHROME: ya no se oculta Flujo rápido por altura; el layout se compacta manteniendo todos los bloques visibles.
+
+
+FOLIO POR SUCURSAL:
+Formato: 4 primeras letras de la sucursal + AAAAMMDD-HHMMSSmmm.
+Ejemplo RIO VERDE: RIOV-20260827-082512347

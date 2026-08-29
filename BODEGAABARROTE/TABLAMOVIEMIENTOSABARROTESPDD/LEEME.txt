@@ -1,0 +1,35 @@
+PROVSOFT - TABLA MOVIMIENTOS ABARROTES PDD
+
+INICIO RECOMENDADO EN WINDOWS
+1. Ejecuta PROVSOFT_ABARROTES_SERVER.exe
+   o haz doble clic en INICIAR_INVENTARIO_ABARROTES.bat.
+2. Se abrirá INVENTARIOABARROTES.html en el navegador.
+3. Para detener el servidor, cierra la ventana negra del ejecutable.
+
+SINCRONIZACIÓN DE AJUSTES
+- Ajuste de entrada: al guardar se aplica inmediatamente en memoria y descuenta en la tabla.
+- Ajuste físico de inventario: al guardar se aplica inmediatamente en memoria y recalcula la tabla.
+- No se hace una recarga completa de Firestore después de cada ajuste.
+- Se mantienen escuchas onSnapshot únicamente para AJUSTE_ENTRADA y AJUINV de la semana visible.
+- onSnapshot no consulta por intervalos: recibe cambios cuando Firestore notifica una modificación.
+- Para AJUINV remoto sólo se descargan las PARTIDAS del ajuste que cambió.
+- Al cambiar de semana se reconfiguran las escuchas al nuevo rango visible.
+
+RUTAS
+Ajuste inventario:
+/almacenes/abarrotespdd/ajustealinventario/{FOLIO}
+/almacenes/abarrotespdd/ajustealinventario/{FOLIO}/PARTIDAS/{CODIGO}
+
+Ajuste de entrada:
+/almacenes/abarrotespdd/ajustes_entrada/{FOLIO}
+
+MEJORA MODAL ENLACE DE CATALOGO (29/08/2026)
+- Concepto de factura, codigo/cantidad y buscador permanecen fijos.
+- Solo la lista de productos tiene desplazamiento vertical.
+- El encabezado Primera/Segunda opcion queda sticky dentro de resultados.
+- El modal aprovecha casi toda la altura disponible del navegador.
+
+AJUSTE DISTRIBUCION MODAL ENLACE (29/08/2026)
+- Producto seleccionado y cantidad quedan en columna izquierda.
+- Conversión/factor queda en columna derecha independiente.
+- En pantalla angosta o zoom alto se apila automáticamente para no cortar controles.

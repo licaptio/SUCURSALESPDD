@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reporte de Ventas por Producto - PDD</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231f2937'/%3E%3Ctext x='32' y='41' text-anchor='middle' font-size='28' fill='white'%3EP%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./assets/styles.css?v=3.0">
+</head>
+<body>
+<main class="app">
+  <div class="header">
+    <div><h1>Ventas por producto</h1><p class="subtitle">Consolidado por sucursal y rango de fechas.</p></div>
+    <div class="badge">PDD · V3 sin índice compuesto</div>
+  </div>
+
+  <section class="panel">
+    <div class="grid">
+      <div class="product-field">
+        <label for="buscarProducto">Producto / código de barras</label>
+        <div class="product-row">
+          <input id="buscarProducto" autocomplete="off" placeholder="Escribe código, descripción o marca">
+          <button id="btnActualizar" class="secondary" type="button">Actualizar catálogo</button>
+        </div>
+        <div id="suggestions" class="suggestions"></div>
+        <div id="catalogInfo" class="small" style="margin-top:7px">Revisando catálogo local...</div>
+      </div>
+      <div><label for="fechaIni">Desde</label><input id="fechaIni" type="date"></div>
+      <div><label for="fechaFin">Hasta</label><input id="fechaFin" type="date"></div>
+      <div class="action"><button id="btnReporte" class="primary" type="button">Generar reporte</button></div>
+    </div>
+
+    <div id="selected" class="selected">
+      <div><div id="selectedName" class="name"></div><div id="selectedMeta" class="meta"></div></div>
+      <button id="btnQuitar" class="secondary" type="button">Cambiar producto</button>
+    </div>
+    <div id="status" class="status" aria-live="polite">Inicializando...</div>
+  </section>
+
+  <section id="resultados" hidden>
+    <div class="cards">
+      <div class="card"><div class="k">Código</div><div id="kCodigo" class="v">-</div></div>
+      <div class="card"><div class="k">Piezas vendidas</div><div id="kCantidad" class="v">0</div></div>
+      <div class="card"><div class="k">Venta total</div><div id="kVenta" class="v">$0.00</div></div>
+      <div class="card"><div class="k">Partidas encontradas</div><div id="kPartidas" class="v">0</div></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Sucursal</th><th>Piezas</th><th>Venta acumulada</th><th>Partidas</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div id="queryInfo" class="footer-note"></div>
+  </section>
+</main>
+<script type="module" src="./assets/app.js?v=3.0"></script>
+</body>
+</html>

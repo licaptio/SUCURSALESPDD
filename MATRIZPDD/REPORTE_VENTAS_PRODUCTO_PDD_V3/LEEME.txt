@@ -1,0 +1,16 @@
+REPORTE DE VENTAS POR PRODUCTO PDD - V3
+
+1. Ejecuta INICIAR_REPORTE.bat.
+2. Busca y selecciona un producto.
+3. Selecciona fecha inicial y final.
+4. Pulsa Generar reporte.
+
+IMPORTANTE V3:
+- NO usa RunAggregationQuery.
+- NO combina Codigo + Fecha en Firestore.
+- Consulta únicamente Codigo == producto dentro de cada sucursal.
+- El rango de fechas se filtra en el navegador.
+- Por eso no requiere el índice compuesto Codigo + Fecha.
+- Los resultados del mismo producto quedan en memoria durante la sesión para no volver a leerlos al cambiar sólo el rango.
+
+Si la pantalla superior no dice “PDD · V3 sin índice compuesto”, estás abriendo una versión anterior.

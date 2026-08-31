@@ -1,0 +1,22 @@
+SALIDA ABARROTES PDD - FIREBASE HOSTING NUEVO
+
+1) Descomprime esta carpeta completa.
+2) Doble clic en 01_CREAR_HOSTING_NUEVO.bat
+3) Si Firebase pide login, inicia sesion con la cuenta que administra inventariopv-643f1.
+4) El script crea una URL nueva *.web.app, publica la app y la abre automaticamente.
+5) Prueba en Android que aparezca SALIDA PDD · V27 y que CONTINUAR bloquee la pantalla.
+
+PARA FUTURAS ACTUALIZACIONES:
+- Reemplaza los archivos dentro de la carpeta public/ por la nueva version.
+- Doble clic en 02_ACTUALIZAR_HOSTING.bat
+- No necesitas crear otro Hosting cada vez.
+
+ELIMINAR EL HOSTING VIEJO:
+- Solo cuando el nuevo ya este comprobado.
+- Ejecuta 99_ELIMINAR_HOSTING_VIEJO.bat
+- Te pide el SITE ID viejo y una confirmacion escrita.
+
+IMPORTANTE:
+- El Hosting nuevo sigue conectado al mismo Firebase/Firestore del proyecto inventariopv-643f1.
+- No crea ni elimina colecciones de Firestore.
+- Los archivos principales se publican con no-cache/no-store para reducir problemas de versiones antiguas.

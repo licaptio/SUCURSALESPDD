@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#c51224" />
+  <title>La Proveedora | Repostería</title>
+  <link rel="icon" href="assets/logo-proveedora.jpg" />
+  <link rel="stylesheet" href="assets/styles-base.css" />
+  <link rel="stylesheet" href="assets/styles-desktop.css" media="(min-width: 769px)" />
+  <link rel="stylesheet" href="assets/styles-mobile.css" media="(max-width: 768px)" />
+</head>
+<body>
+  <header class="topbar">
+    <button class="logo-button" id="homeButton" type="button" aria-label="Inicio">
+      <img src="assets/logo-proveedora.jpg" alt="La Proveedora" class="brand-logo" />
+    </button>
+
+    <div class="search-shell">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+      <input id="searchInput" autocomplete="off" placeholder="Buscar por producto, código, marca o equivalente" />
+      <button id="clearSearch" class="clear-search" type="button" aria-label="Limpiar búsqueda">×</button>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="reloadButton" class="ghost-button" type="button">Actualizar</button>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section id="statusPanel" class="status-panel hidden" aria-live="polite"></section>
+
+    <section id="categoryView" class="view-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CATÁLOGO</p>
+          <h1>Repostería</h1>
+          <p class="section-copy">Selecciona una subcategoría para ver sus productos.</p>
+        </div>
+        <span id="categoryCount" class="count-pill"></span>
+      </div>
+      <div id="categoryGrid" class="category-grid"></div>
+    </section>
+
+    <section id="productView" class="view-section hidden">
+      <div class="breadcrumb-row">
+        <button id="backButton" class="back-button" type="button">← Repostería</button>
+        <span class="breadcrumb-sep">›</span>
+        <strong id="currentCategoryLabel"></strong>
+      </div>
+
+      <div class="section-heading products-heading">
+        <div>
+          <p class="eyebrow">REPOSTERÍA</p>
+          <h1 id="productHeading">Productos</h1>
+        </div>
+        <span id="productCount" class="count-pill"></span>
+      </div>
+
+      <div id="productGrid" class="product-grid"></div>
+      <div id="emptyProducts" class="empty-state hidden">No se encontraron productos.</div>
+    </section>
+  </main>
+
+  <div id="productModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalConcept">
+    <div class="modal-card">
+      <button id="modalClose" class="modal-close" type="button" aria-label="Cerrar">×</button>
+      <button id="modalPrev" class="modal-nav modal-prev" type="button" aria-label="Producto anterior">‹</button>
+      <button id="modalNext" class="modal-nav modal-next" type="button" aria-label="Producto siguiente">›</button>
+
+      <div class="modal-gallery">
+        <div class="modal-main-image-wrap">
+          <img id="modalImage" class="modal-image" alt="" />
+          <div id="modalImageFallback" class="image-fallback hidden">SIN FOTO</div>
+        </div>
+        <div id="modalThumbs" class="modal-thumbs"></div>
+      </div>
+
+      <div class="modal-info">
+        <p id="modalCategory" class="eyebrow"></p>
+        <h2 id="modalConcept"></h2>
+        <div id="modalPrice" class="modal-price"></div>
+        <div id="modalPriceTiers" class="price-tiers"></div>
+
+        <dl class="product-details">
+          <div><dt>Marca</dt><dd id="modalBrand">—</dd></div>
+          <div><dt>Departamento</dt><dd id="modalDepartment">—</dd></div>
+          <div><dt>Sección</dt><dd>REPOSTERÍA</dd></div>
+          <div><dt>Subsección</dt><dd id="modalSubcategory">—</dd></div>
+          <div><dt>Código</dt><dd id="modalCode">—</dd></div>
+          <div><dt>IVA</dt><dd id="modalIva">—</dd></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+VERSIÓN V12
+- Botón “Descargar catálogo offline” en el menú.
+- Guarda productos activos, catálogo operativo/inventario, empleados, configuración y usuario en IndexedDB.
+- Si no hay internet, Entrada/Salida abre sin quedarse esperando Firebase y usa el catálogo descargado.
+- Si intentan guardar una Entrada o Salida sin internet, NO se bloquea ni borra lo capturado; avisa y permite reintentar al recuperar conexión.
+- Service Worker V12 con caché del shell y módulos externos usados por la PWA.
+- Se desactiva el pull-to-refresh/overscroll vertical accidental en Android/PWA.
+- Indicador EN LÍNEA / SIN INTERNET en Salidas.
+
+IMPORTANTE: para trabajar offline por primera vez, abrir con internet y usar Menú > Descargar catálogo offline.
+
+VERSIÓN V11
+Corrección: modal de instalación visible sobre el selector Entrada/Salida y navegación no bloqueante en Android/Motorola.
+
+SALIDA ABARROTES PDD - MOBILE V4
+
+Flujo:
+1. Login de usuario PDD activo.
+2. Selección inicial de quien recibe y destino.
+3. Construcción del catálogo únicamente desde PARTIDAS de todos los usuarios del inventario físico configurado.
+4. Pantalla de captura limpia: buscador + últimas 2 partidas + finalizar.
+5. Menú de tres puntos: carrito, escáner por cámara, configuración y cerrar sesión.
+6. Al finalizar se muestra revisión completa del carrito, entrega, recibe y destino.
+7. Firma única de quien recibe y guardado de salida.
+
+Configuración:
+/almacenes/abarrotespdd/configuracion/salidas
+
+Usuarios:
+/CLIENTES/PDD031204KL5/USUARIOS
+
+Inventario por defecto:
+/almacenes/abarrotespdd/inventariofisico/INV-ABARROTESPDD-170826/USUARIOS/{usuarioId}/PARTIDAS
+
+NOTA CÁMARA:
+El escáner usa BarcodeDetector del navegador. Funciona mejor en Chrome actualizado y servido desde localhost/HTTPS. El navegador solicitará permiso de cámara.
+
+
+TELEGRAM
+--------
+Editar assets/telegram-config.js y colocar botToken y chatId. Cambiar enabled a true.
+Cada partida agregada envía un aviso resumido. Al cerrar la salida se genera/descarga un PDF y se envía una copia del PDF por Telegram.
+La falla de Telegram no bloquea la captura ni el guardado de la salida.
+
+
+VERSIÓN V7
+----------
+- Corregido REGRESAR AL CARRITO desde la pantalla de firma.
+- El carrito permite MODIFICAR CANTIDAD sin eliminar y volver a capturar.
+- Si una cantidad supera el inventario inicial, muestra advertencia y pide confirmación.
+
+VERSION V4 - MODAL DE CAPTURA Y SINCRONIZACION
+- Consulta /productos/{codigo} al abrir cada artículo.
+- Muestra precioPublico actual del catálogo.
+- Lee y muestra cantidadPorCaja existente.
+- Si cantidadPorCaja cambia, actualiza únicamente ese campo en /productos/{codigo}.
+- Calculadora integrada con botón para pasar el resultado a cantidad.
+- Edición/eliminación sincronizada entre visor principal, carrito y revisión previa a firma.
+
+
+V7: Fecha de captura obligatoria al inicio de cada salida. Se guarda en fechaCaptura y fechaCapturaTxt, separada de la fecha/hora real de registro.
+
+CAMBIOS ENTRADAS FOTO BODEGA
+- Acceso fijo con documento de usuario: juan-021939 (sin pantalla de contraseña).
+- Pantalla inicial bloqueante para elegir Registrar nueva entrada / Registrar nueva salida.
+- Salidas conservan su flujo existente.
+- Entradas: 1 o varias fotos agrupadas por un mismo ID.
+- Celular: input de cámara con capture=environment; PC: selector de una o varias imágenes.
+- Fotos optimizadas a JPEG, máximo 1800 px en el lado mayor, calidad 84%.
+- Storage: fotobodega/abarrotespdd/{AAAA}/{MM}/{ID_ENTRADA}/foto_XX.jpg
+- Firestore: /almacenes/abarrotespdd/entradas/fotobodega/registros/{ID_ENTRADA}
+- Metadatos: usuario, usuarioId, nombreUsuario, fecha/hora local, timestamp servidor y arreglo de fotos.
+
+
+=== FIREBASE PARA FOTOS ===
+Esta versión NO requiere Firebase Authentication anónima.
+Usa directamente las reglas existentes de Firestore y Storage.
+Durante las pruebas actuales, ambas reglas están abiertas con allow read, write: if true;.
+Si una entrada falla, la pantalla mostrará también el código y mensaje real devuelto por Firebase para diagnosticar el punto exacto.
+
+
+V13 - PROTECCIÓN DE CATÁLOGOS AL INICIO
+- La aplicación NO descarga catálogos automáticamente.
+- Al abrir, verifica que existan completos en IndexedDB.
+- Si están listos, entra de inmediato incluso sin internet.
+- Si faltan, bloquea Entrada/Salida y muestra el botón DESCARGAR CATÁLOGOS PARA USO OFFLINE.
+- La descarga solo empieza cuando el operador pulsa el botón.
+- Si no hay internet y faltan catálogos, la app no permite entrar.
+- Cuando ambos catálogos quedan completos, desbloquea el menú Entrada/Salida.
+- Desde el menú de Salida se conserva la opción de actualizar manualmente los catálogos.
+
+
+V15 - INSTALADOR PWA + PROTECCIÓN OFFLINE
+- Al abrir desde Chrome, primero muestra el paso de instalación PWA.
+- El operador puede INSTALAR PWA o CONTINUAR EN NAVEGADOR.
+- Si ya está instalada y se abre como PWA, ese paso se omite.
+- Después se verifican los catálogos offline obligatorios.
+- Si los catálogos existen, habilita Entrada/Salida incluso sin internet.
+- Si faltan, Entrada/Salida permanece bloqueado hasta una descarga manual completa.
+- Los botones Entrada/Salida ya no vuelven a disparar el instalador PWA.
+
+
+V15: corregido bloqueo con datos móviles. La app ya no usa navigator.onLine como condición para permitir descargas/operaciones; intenta la red real y acepta Wi-Fi o datos móviles.
+
+
+V16 - ARRANQUE ROBUSTO EN DATOS MOVILES
+- La pantalla inicial ya no depende de Firebase ni de CDN.
+- El arranque lee primero IndexedDB y permite abrir con catálogos locales.
+- Firebase/jsPDF se cargan sólo al descargar/guardar/consultar en línea.
+- Se eliminaron pruebas de navigator.onLine/Google como bloqueo.
+- El Service Worker no espera recursos externos.
+- La app no hace refresco automático al recuperar conexión.
+- Se agregó CSS crítico y watchdog para evitar pantalla blanca.

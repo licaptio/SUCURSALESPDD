@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>PROVSOFT · Enlace de facturas</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="toast" class="toast oculto"></div>
+  <div id="loading" class="loading oculto"><div class="spinner"></div><div id="loadingText">Cargando…</div></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <img src="assets/logo.jfif" alt="PROVSOFT" />
+      <div><b>Enlace móvil</b><small>Facturas · Almacén Líquidos</small></div>
+    </div>
+    <button id="btnRefrescar" class="iconbtn" aria-label="Refrescar">↻</button>
+  </header>
+
+  <main>
+    <section id="vistaFacturas" class="vista activa">
+      <div class="hero">
+        <div>
+          <span class="eyebrow">MODO PISO</span>
+          <h1>Facturas pendientes</h1>
+          <p>Abre una factura, localiza el artículo físicamente y enlázalo con cámara o búsqueda manual.</p>
+        </div>
+        <div id="contadorFacturas" class="bigcount">0</div>
+      </div>
+      <div class="toolbar">
+        <input id="buscarFactura" type="search" placeholder="Buscar proveedor, folio o UUID…" autocomplete="off" />
+      </div>
+      <div id="listaFacturas" class="cards"></div>
+    </section>
+
+    <section id="vistaFactura" class="vista">
+      <div class="sticky-head">
+        <button id="btnVolver" class="backbtn">← Facturas</button>
+        <div id="progresoFactura" class="progresspill">0 / 0</div>
+      </div>
+      <div id="cabeceraFactura" class="invoicehead"></div>
+      <div id="listaArticulos" class="articlecards"></div>
+      <div class="bottom-actions">
+        <button id="btnAutorizarEntrada" class="primary wide" disabled>✓ Autorizar entrada</button>
+      </div>
+    </section>
+
+    <section id="vistaEnlace" class="vista">
+      <div class="sticky-head">
+        <button id="btnVolverFactura" class="backbtn">← Factura</button>
+        <span class="eyebrow">ENLAZAR ARTÍCULO</span>
+      </div>
+      <div id="conceptoActual" class="concept-card"></div>
+
+      <div class="scan-actions">
+        <button id="btnCamara" class="camera-btn">📷 Escanear código</button>
+        <button id="btnBuscarCodigoFactura" class="secondary">Usar código de factura</button>
+      </div>
+
+      <div class="searchbox">
+        <input id="buscarProducto" type="search" placeholder="Código, descripción, marca…" inputmode="search" autocomplete="off" />
+        <button id="btnLimpiarBusqueda" class="iconbtn">×</button>
+      </div>
+
+      <div id="productoElegido" class="selected-product oculto"></div>
+      <div id="conversionBox" class="conversion oculto">
+        <label>Cantidad factura<input id="cantidadFactura" type="number" readonly /></label>
+        <label>Cantidad que entra<input id="cantidadEntrada" type="number" step="any" min="0" /></label>
+        <label>Factor equivalencia<input id="factorConversion" type="number" step="any" min="0" /></label>
+        <button id="btnGuardarEnlace" class="primary wide">Guardar equivalencia</button>
+      </div>
+
+      <div id="listaProductos" class="product-list"></div>
+    </section>
+  </main>
+
+  <div id="scannerModal" class="scanner-modal oculto">
+    <div class="scanner-sheet">
+      <div class="scanner-title"><b>Escanear código</b><button id="btnCerrarScanner" class="iconbtn">×</button></div>
+      <video id="scannerVideo" playsinline muted></video>
+      <div class="scanner-guide"></div>
+      <p id="scannerStatus">Apunta la cámara al código de barras.</p>
+      <button id="btnCambiarCamara" class="secondary wide">Cambiar cámara</button>
+    </div>
+  </div>
+
+  <script type="module" src="mobile.js"></script>
+</body>
+</html>

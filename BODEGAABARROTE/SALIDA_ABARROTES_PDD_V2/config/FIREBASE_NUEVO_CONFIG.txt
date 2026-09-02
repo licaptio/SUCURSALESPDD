@@ -1,0 +1,11 @@
+# PROVSOFT - FIREBASE NUEVO
+# Pega SOLO la configuracion del SDK Web de Firebase.
+# Este archivo puede quedar respaldado en Git junto con el proyecto.
+# NO pongas aqui service-account JSON, claves privadas ni contrasenas.
+
+APIKEY=
+AUTHDOMAIN=
+PROJECTID=
+STORAGEBUCKET=
+MESSAGINGSENDERID=
+APPID=

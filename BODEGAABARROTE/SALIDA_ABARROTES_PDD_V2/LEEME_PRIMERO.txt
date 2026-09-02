@@ -1,0 +1,3 @@
+PARA SUBIR A FIREBASE ABRE LA CARPETA FIREBASE_DEPLOY.
+Ahi esta TODO lo necesario para configurar, vincular y publicar.
+Empieza con FIREBASE_DEPLOY\LEEME_FIREBASE.txt

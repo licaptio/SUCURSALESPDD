@@ -1,0 +1,1695 @@
+const APP_BUILD_VERSION='V31';
+console.info('[SALIDA PDD] versión cargada:',APP_BUILD_VERSION);
+import {TELEGRAM} from './telegram-config.js';
+import {ACTIVE_FIREBASE,FIREBASE_PROFILES,getActiveFirebaseConfig} from './firebase-connections.js?v=31';
+
+// V26: bloqueo inmediato al CONTINUAR + PDF térmico real 80 mm + sincronización de salidas + actualización automática de catálogos cada 24 horas. El arranque ya NO depende de Firebase/CDN. Todo lo remoto se carga
+// únicamente cuando una operación realmente necesita internet. Así la interfaz
+// y los catálogos locales pueden abrir incluso si la red móvil deja una petición colgada.
+let db=null,storage=null,jsPDF=null;
+let collection,getDocs,doc,getDoc,setDoc,serverTimestamp,collectionGroup,query,where; // catálogo V30: sin listener masivo
+let storageRef,uploadBytes,getDownloadURL;
+let onlineStackPromise=null;
+const FIREBASE_CONFIG=getActiveFirebaseConfig();
+console.info('[FIREBASE] perfil activo:',ACTIVE_FIREBASE,'proyecto:',FIREBASE_CONFIG.projectId);
+window.__FIREBASE_PROFILES={active:ACTIVE_FIREBASE,profiles:FIREBASE_PROFILES};
+function withTimeout(p,ms,msg='La conexión tardó demasiado'){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)),ms))])}
+async function ensureOnlineStack(timeoutMs=12000){
+  if(db&&storage&&collection&&jsPDF)return true;
+  if(!onlineStackPromise){
+    onlineStackPromise=(async()=>{
+      const [appMod,fs,st,pdf]=await withTimeout(Promise.all([
+        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js'),
+        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js'),
+        import('https://cdn.jsdelivr.net/npm/jspdf@2.5.2/+esm')
+      ]),timeoutMs,'No se pudieron cargar los servicios en línea.');
+      const firebaseApp=appMod.getApps().length?appMod.getApp():appMod.initializeApp(FIREBASE_CONFIG);
+      db=fs.getFirestore(firebaseApp);storage=st.getStorage(firebaseApp);jsPDF=pdf.jsPDF;
+      ({collection,getDocs,doc,getDoc,setDoc,serverTimestamp,collectionGroup,query,where}=fs);
+      storageRef=st.ref;uploadBytes=st.uploadBytes;getDownloadURL=st.getDownloadURL;
+      return true;
+    })().catch(e=>{onlineStackPromise=null;throw e});
+  }
+  return withTimeout(onlineStackPromise,timeoutMs,'Los servicios en línea no respondieron a tiempo.');
+}
+
+const $=id=>document.getElementById(id), modal=$('modal'), card=$('modalCard');
+const diag=(m,x)=>{try{window.__diag?.(m,x)}catch{}};
+diag('APP.JS','MÓDULO CARGADO');
+window.__V16_APP_STARTED=true;
+const R={
+  users:['CLIENTES','PDD031204KL5','USUARIOS'],
+  empleados:['CLIENTES','PDD031204KL5','EMPLEADOS'],
+  cfg:['almacenes','abarrotespdd','configuracion','salidas'],
+  invBase:['almacenes','abarrotespdd','inventariofisico'],
+  salidas:['almacenes','abarrotespdd','salidas'],
+  // Productos externos que ya tuvieron movimiento y desde entonces forman parte
+  // del buscador operativo normal de esta app.
+  catalogoOperativo:['almacenes','abarrotespdd','catalogo_operativo'],
+  catalogoBloqueados:['almacenes','abarrotespdd','catalogo_bloqueados'],
+  // Catálogo maestro. Si tu ruta definitiva cambia, sólo modifica esta línea.
+  productos:['productos'],
+  entradasFoto:['almacenes','abarrotespdd','entradas','fotobodega','registros']
+};
+const S={
+  user:null,recibe:'',recibeEmpleado:null,destino:'',fechaCaptura:'',
+  config:{receptores:[],destinos:[],inventarioId:'INV-ABARROTESPDD-170826'},
+  empleados:[],catalog:[],byCode:new Map(),cart:[],last:[],productInfo:new Map(),
+  masterProducts:[],masterByCode:new Map(),inventoryReady:false,masterReady:false,offlineCatalogAt:null,blockedCodes:new Set(),catalogLastDeltaAt:0
+};
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const norm=s=>String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9. ]/g,' ').replace(/\s+/g,' ').trim();
+const words=s=>norm(s).split(' ').filter(Boolean);
+let cameraStream=null,cameraTimer=null;
+
+// ===== V12 OFFLINE =====
+const OFFLINE_DB='abarrotes-pdd-offline-v12',OFFLINE_STORE='cache';
+const CATALOG_AUTO_REFRESH_MS=24*60*60*1000;
+const CATALOG_DELTA_CHECK_MS=10*60*1000;
+let catalogDeltaTimer=null;
+let catalogAutoRefreshPromise=null;
+function offlineDb(){
+  return new Promise((resolve,reject)=>{
+    const r=indexedDB.open(OFFLINE_DB,1);
+    r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(OFFLINE_STORE))db.createObjectStore(OFFLINE_STORE)};
+    r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);
+  });
+}
+async function cachePut(key,value){
+  try{const db=await offlineDb();await new Promise((resolve,reject)=>{const tx=db.transaction(OFFLINE_STORE,'readwrite');tx.objectStore(OFFLINE_STORE).put({value,updatedAt:Date.now()},key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close();return true}catch(e){console.warn('[OFFLINE] No se pudo guardar',key,e);return false}
+}
+async function cacheGet(key){
+  try{const db=await offlineDb();const out=await new Promise((resolve,reject)=>{const tx=db.transaction(OFFLINE_STORE,'readonly');const r=tx.objectStore(OFFLINE_STORE).get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)});db.close();return out}catch(e){console.warn('[OFFLINE] No se pudo leer',key,e);return null}
+}
+function cacheAgeText(ms){if(!ms)return 'sin fecha';const d=new Date(ms);return d.toLocaleDateString('es-MX')+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}
+function setConnectionBadge(){
+  const b=$('offlineBadge');if(!b)return;
+  b.textContent=navigator.onLine?'● EN LÍNEA':'● SIN INTERNET';
+  b.classList.toggle('offline',!navigator.onLine);
+}
+window.addEventListener('online',()=>{setConnectionBadge();toast('Conexión recuperada');setTimeout(()=>autoRefreshCatalogIfDue('online'),1200)});
+window.addEventListener('offline',()=>{setConnectionBadge();toast('Sin internet: usando datos guardados')});
+
+// V15: navigator.onLine NO se usa como bloqueo. En algunos Motorola con datos
+// móviles puede reportar un estado incorrecto. Las operaciones de red se intentan
+// directamente y sólo se consideran fallidas cuando Firebase/fetch realmente falla.
+async function hasUsableInternet(timeoutMs=5000){
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),timeoutMs);
+  try{
+    await fetch('https://www.google.com/generate_204?provsoft='+Date.now(),{method:'GET',mode:'no-cors',cache:'no-store',signal:ctrl.signal});
+    return true;
+  }catch(e){return false}
+  finally{clearTimeout(timer)}
+}
+
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;localStorage.setItem('abarrotesPddInstalled','1')});
+if('serviceWorker' in navigator)window.addEventListener('load',async()=>{
+  try{const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});await reg.update()}catch(e){console.warn('[PWA] Service worker:',e)}
+});
+function isStandalonePwa(){return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true||localStorage.getItem('abarrotesPddInstalled')==='1'}
+function waitForInstallPrompt(ms=1200){
+  if(deferredInstallPrompt)return Promise.resolve(true);
+  return new Promise(resolve=>{
+    const started=Date.now();
+    const t=setInterval(()=>{
+      if(deferredInstallPrompt||Date.now()-started>=ms){clearInterval(t);resolve(!!deferredInstallPrompt)}
+    },100);
+  });
+}
+async function startupPwaInstallStep(){
+  if(isStandalonePwa())return true;
+  const installBtn=$('pwaInstallBtn'),continueBtn=$('pwaContinueBtn');
+  setBootStatus('INSTALACIÓN PWA');
+  $('bootHint').textContent='Instala la aplicación en este equipo o continúa en el navegador. Después verificaremos los catálogos offline.';
+  installBtn.classList.remove('hidden');
+  continueBtn.classList.remove('hidden');
+  await waitForInstallPrompt(1200);
+  return await new Promise(resolve=>{
+    let done=false;
+    const finish=()=>{if(done)return;done=true;installBtn.classList.add('hidden');continueBtn.classList.add('hidden');resolve(true)};
+    continueBtn.onclick=()=>{sessionStorage.setItem('pwaInstallSkipped','1');finish()};
+    installBtn.onclick=async()=>{
+      const p=deferredInstallPrompt;
+      if(!p){
+        alert('Chrome todavía no habilita el instalador automático. Puedes usar el menú de Chrome → Instalar aplicación / Agregar a pantalla principal, o continuar en el navegador.');
+        return;
+      }
+      installBtn.disabled=true;
+      try{
+        p.prompt();
+        const choice=await p.userChoice;
+        deferredInstallPrompt=null;
+        if(choice?.outcome==='accepted')localStorage.setItem('abarrotesPddInstalled','1');
+      }catch(e){console.warn('[PWA] Instalación:',e)}
+      finally{installBtn.disabled=false;finish()}
+    };
+  });
+}
+
+
+function stopCamera(){
+  if(cameraTimer){clearInterval(cameraTimer);cameraTimer=null}
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null}
+}
+function open(html,mode=''){stopCamera();card.innerHTML=html;modal.classList.toggle('signature-modal',mode==='signature-modal');modal.classList.remove('hidden')}
+function close(){stopCamera();modal.classList.add('hidden');modal.classList.remove('signature-modal');card.innerHTML=''}
+function toast(t){const x=document.createElement('div');x.textContent=t;x.className='toast';document.body.appendChild(x);setTimeout(()=>x.remove(),1800)}
+
+function telegramReady(){return TELEGRAM?.enabled===true&&String(TELEGRAM.botToken||'').trim()&&String(TELEGRAM.chatId||'').trim()}
+async function telegramMessage(text){
+  if(!telegramReady())return;
+  try{
+    await fetch(`https://api.telegram.org/bot${TELEGRAM.botToken}/sendMessage`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:TELEGRAM.chatId,text:String(text)})
+    });
+  }catch(e){console.warn('[TELEGRAM] No se pudo enviar mensaje:',e)}
+}
+async function telegramPdf(blob,filename,caption=''){
+  if(!telegramReady())return;
+  try{
+    const fd=new FormData();fd.append('chat_id',TELEGRAM.chatId);fd.append('document',blob,filename);if(caption)fd.append('caption',caption);
+    await fetch(`https://api.telegram.org/bot${TELEGRAM.botToken}/sendDocument`,{method:'POST',body:fd});
+  }catch(e){console.warn('[TELEGRAM] No se pudo enviar PDF:',e)}
+}
+function makePdf(salida){
+  // V26: PDF TERMICO REAL. El MediaBox del PDF se crea a 80 mm de ancho.
+  // NO es carta/A4 con contenido angosto: la pagina fisica es 80 mm x alto dinamico.
+  const pageW=80;
+  const marginL=3.2, marginR=3.2;
+  const contentW=pageW-marginL-marginR;
+  const lineH=3.9;
+  const countLines=(txt,size=34)=>Math.max(1,Math.ceil(String(txt||'').length/size));
+  let pageH=53;
+  for(const x of salida.partidas||[]){
+    pageH += 10 + countLines(`${x.renglon}. ${x.descripcion}`,31)*lineH;
+  }
+  pageH += 27;
+  // Las termicas trabajan mejor con un alto razonable; para tickets muy largos jsPDF puede crecer.
+  pageH=Math.max(90,Math.min(900,Math.ceil(pageH)));
+
+  const pdf=new jsPDF({
+    orientation:'portrait',
+    unit:'mm',
+    format:[pageW,pageH],
+    compress:true,
+    putOnlyUsedFonts:true,
+    precision:4
+  });
+  // Asegura explícitamente el tamaño de la primera página en 80 mm.
+  try{pdf.internal.pageSize.width=pageW;pdf.internal.pageSize.height=pageH}catch{}
+
+  let y=5.5;
+  const center=pageW/2;
+  const sep=()=>{pdf.setDrawColor(90);pdf.setLineWidth(.22);pdf.line(marginL,y,pageW-marginR,y);y+=3};
+  const textLines=(txt,fontSize=8.7,bold=false)=>{
+    pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(fontSize);
+    const lines=pdf.splitTextToSize(String(txt||''),contentW);
+    pdf.text(lines,marginL,y);y+=lines.length*(fontSize<=8.5?3.7:4.1);
+  };
+
+  pdf.setTextColor(0);pdf.setFont('helvetica','bold');pdf.setFontSize(12.5);
+  pdf.text('SALIDA ABARROTES PDD',center,y,{align:'center'});y+=4.8;
+  pdf.setFontSize(9);pdf.text('PROVSOFT',center,y,{align:'center'});y+=3.5;sep();
+
+  textLines(`FOLIO: ${salida.folio}`,8.3,true);
+  textLines(`FECHA: ${salida.fechaCapturaTxt||salida.fechaCaptura||''}  ${salida.horaLocal||''}`,8.3,false);
+  textLines(`DESTINO: ${salida.destino||''}`,8.7,true);
+  textLines(`ENTREGA: ${salida.entrega?.nombre||salida.entrega?.usuario||''}`,8.7,false);
+  textLines(`RECIBE: ${salida.recibe||''}`,8.7,false);
+  y+=.5;sep();
+
+  pdf.setFont('helvetica','bold');pdf.setFontSize(9.2);pdf.text('DETALLE',marginL,y);y+=3.8;sep();
+  for(const x of salida.partidas||[]){
+    textLines(`${x.renglon}. ${x.descripcion}`,8.8,true);
+    pdf.setFont('helvetica','normal');pdf.setFontSize(7.7);
+    pdf.text(`COD: ${x.codigo}`,marginL,y);y+=3.4;
+    const cajas=x.cajasSalieron!=null&&x.cantidadPorCaja!=null?`${x.cajasSalieron} cj x ${x.cantidadPorCaja} = `:'';
+    pdf.setFont('helvetica','bold');pdf.setFontSize(9.4);
+    pdf.text(`${cajas}${x.cantidad} PZAS`,marginL,y);y+=4.2;
+    pdf.setDrawColor(185);pdf.setLineWidth(.12);pdf.line(marginL,y,pageW-marginR,y);y+=2.5;
+  }
+
+  sep();
+  pdf.setFont('helvetica','bold');pdf.setFontSize(10.3);
+  pdf.text(`PARTIDAS: ${salida.totalPartidas}`,marginL,y);y+=4.6;
+  pdf.text(`UNIDADES: ${salida.totalUnidades}`,marginL,y);y+=4.6;sep();
+  textLines(`ENTREGA: ${salida.entrega?.nombre||salida.entrega?.usuario||''}`,8.8,true);
+  textLines(`RECIBE: ${salida.recibe||''}`,8.8,true);
+  y+=1;
+  pdf.setFont('helvetica','bold');pdf.setFontSize(8.4);pdf.text('*** SALIDA REGISTRADA ***',center,y,{align:'center'});
+  return pdf.output('blob');
+}
+
+function downloadBlob(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500)}
+
+
+// ===== V17 RAWBT + COLA DE SINCRONIZACION DE SALIDAS =====
+// La salida se conserva primero en almacenamiento local sincrono. Asi, RawBT puede
+// abrirse de inmediato y Firebase se sincroniza por separado cuando la app tiene red.
+const SALIDAS_PENDING_KEY='abarrotesPddSalidasPendientesV17';
+let syncingPendingSalidas=false;
+function pendingSalidasRead(){
+  try{const a=JSON.parse(localStorage.getItem(SALIDAS_PENDING_KEY)||'[]');return Array.isArray(a)?a:[]}catch{return[]}
+}
+function pendingSalidasWrite(a){
+  try{localStorage.setItem(SALIDAS_PENDING_KEY,JSON.stringify(a));return true}catch(e){console.error('[SALIDAS PENDIENTES] No se pudo guardar localmente:',e);return false}
+}
+function queueSalidaLocal(salida){
+  const a=pendingSalidasRead().filter(x=>x?.folio!==salida.folio);
+  a.push(salida);
+  return pendingSalidasWrite(a);
+}
+function removePendingSalida(folio){
+  pendingSalidasWrite(pendingSalidasRead().filter(x=>x?.folio!==folio));
+}
+function asciiTicket(s){
+  return String(s??'').replace(/Ñ/g,'N').replace(/ñ/g,'n').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x20-\x7E\n]/g,' ');
+}
+function fitTicket(s,n=32){s=asciiTicket(s).replace(/\s+/g,' ').trim();return s.length<=n?s:s.slice(0,Math.max(1,n-1))+'~'}
+function ticketLines(s,n=32){
+  s=asciiTicket(s).replace(/\s+/g,' ').trim();if(!s)return[''];
+  const out=[];while(s.length>n){let cut=s.lastIndexOf(' ',n);if(cut<10)cut=n;out.push(s.slice(0,cut).trim());s=s.slice(cut).trim()}out.push(s);return out;
+}
+function buildRawBtBytes(salida){
+  const bytes=[];const push=(...a)=>bytes.push(...a);const text=t=>{for(const ch of asciiTicket(t))push(ch.charCodeAt(0)&255)};
+  const lf=(t='')=>{text(t);push(10)};
+  push(27,64);                    // ESC @ inicializar
+  push(27,97,1);                  // centrado
+  push(27,69,1);                  // negritas
+  lf('SALIDA ABARROTES PDD');
+  push(27,69,0);lf('PROVSOFT');lf('--------------------------------');
+  push(27,97,0);                  // izquierda
+  lf(`FOLIO: ${salida.folio}`);
+  lf(`FECHA: ${salida.fechaCapturaTxt||salida.fechaCaptura}`);
+  lf(`HORA: ${salida.horaLocal||''}`);
+  lf(`DESTINO: ${fitTicket(salida.destino)}`);
+  push(27,69,1);lf(`ENTREGA: ${fitTicket(salida.entrega?.nombre||salida.entrega?.usuario||'')}`);lf(`RECIBE: ${fitTicket(salida.recibe||'')}`);push(27,69,0);
+  lf('--------------------------------');
+  lf('PARTIDAS');lf('--------------------------------');
+  for(const x of salida.partidas||[]){
+    ticketLines(`${x.renglon}. ${x.descripcion}`,32).forEach(lf);
+    lf(`COD: ${fitTicket(x.codigo,27)}`);
+    const cajas=x.cajasSalieron!=null&&x.cantidadPorCaja!=null?`${x.cajasSalieron} cj x ${x.cantidadPorCaja}`:'';
+    lf(`${cajas?cajas+' = ':''}${x.cantidad} PZAS`);
+    lf('');
+  }
+  lf('--------------------------------');
+  push(27,69,1);lf(`PARTIDAS: ${salida.totalPartidas}`);lf(`UNIDADES: ${salida.totalUnidades}`);push(27,69,0);
+  lf('--------------------------------');
+  lf(`ENTREGA: ${fitTicket(salida.entrega?.nombre||salida.entrega?.usuario||'')}`);
+  lf('');
+  lf(`RECIBE: ${fitTicket(salida.recibe||'')}`);
+  lf('');lf('');lf('');
+  push(29,86,66,0);               // corte parcial (si la impresora lo soporta)
+  return new Uint8Array(bytes);
+}
+function uint8ToBase64(u8){
+  let bin='';const step=0x8000;for(let i=0;i<u8.length;i+=step)bin+=String.fromCharCode(...u8.subarray(i,i+step));return btoa(bin)
+}
+function openPdfWindowNow(){
+  // Se abre DENTRO del toque de FINALIZAR para que Android/Chrome no lo bloquee.
+  // El PDF real se coloca después, cuando jsPDF ya terminó de cargar/generar.
+  const w=window.open('about:blank','_blank');
+  if(w){
+    try{
+      w.document.open();
+      w.document.write('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preparando comprobante</title><style>body{font-family:system-ui;padding:24px;text-align:center}small{color:#666}</style></head><body><h3>Preparando comprobante PDF…</h3><small>Enseguida podrás usar Imprimir desde el visor.</small></body></html>');
+      w.document.close();
+    }catch{}
+  }
+  return w;
+}
+async function openSalidaPdfForPrint(salida,pdfWindow){
+  try{
+    const blob=makePdf(salida);
+    const url=URL.createObjectURL(blob);
+    if(pdfWindow && !pdfWindow.closed){
+      pdfWindow.location.replace(url);
+    }else{
+      // Respaldo si el navegador cerró/bloqueó la ventana preparada.
+      window.open(url,'_blank');
+    }
+    setTimeout(()=>URL.revokeObjectURL(url),5*60*1000);
+    return true;
+  }catch(e){
+    console.error('[PDF IMPRESION]',e);
+    if(pdfWindow && !pdfWindow.closed){
+      try{
+        pdfWindow.document.open();
+        pdfWindow.document.write('<!doctype html><html><body style="font-family:system-ui;padding:24px"><h3>No se pudo generar el PDF.</h3><p>La salida quedó guardada localmente y seguirá intentando sincronizarse.</p></body></html>');
+        pdfWindow.document.close();
+      }catch{}
+    }
+    return false;
+  }
+}
+async function syncPendingSalidas(){
+  if(syncingPendingSalidas)return;const pendientes=pendingSalidasRead();if(!pendientes.length)return;
+  syncingPendingSalidas=true;
+  try{
+    await ensureOnlineStack(15000);
+    for(const salidaLocal of pendingSalidasRead()){
+      try{
+        const salidaFire={...salidaLocal,creadoEn:serverTimestamp()};
+        await setDoc(doc(db,...R.salidas,salidaLocal.folio),salidaFire);
+        removePendingSalida(salidaLocal.folio); // Firestore ya confirmo; auxiliares no bloquean la salida.
+        // V30: el catálogo ya viene directamente de /productos activo=true; no se escribe catalogo_operativo.
+        try{
+          const pdfBlob=makePdf(salidaLocal),pdfName=`${salidaLocal.folio}.pdf`;
+          const msg=`Salida registrada\n${salidaLocal.folio}\nFecha de captura: ${salidaLocal.fechaCapturaTxt||salidaLocal.fechaCaptura}\nEntrega: ${salidaLocal.entrega?.nombre||salidaLocal.entrega?.usuario||''}\nRecibe: ${salidaLocal.recibe}\nDestino: ${salidaLocal.destino}\n${salidaLocal.totalPartidas} partidas | ${salidaLocal.totalUnidades} unidades`;
+          Promise.allSettled([telegramMessage(msg),telegramPdf(pdfBlob,pdfName,`Salida ${salidaLocal.folio}`)]).catch(()=>{});
+        }catch(e){console.warn('[PDF/TELEGRAM]',e)}
+        console.info('[SALIDA SINCRONIZADA]',salidaLocal.folio);
+      }catch(e){console.warn('[SALIDA PENDIENTE] Se reintentara:',salidaLocal.folio,e);break}
+    }
+  }catch(e){console.warn('[SYNC SALIDAS] Firebase no disponible; se conserva la cola local.',e)}
+  finally{syncingPendingSalidas=false}
+}
+window.addEventListener('online',()=>syncPendingSalidas());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncPendingSalidas()});
+
+
+
+const FIXED_USER_DOC='juan-021939';
+const ENTRY={photos:[],busy:false};
+const isMobileDevice=()=>/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||matchMedia('(pointer:coarse)').matches;
+
+async function loadFixedUser(){
+  await ensureOnlineStack();
+  try{
+    const snap=await getDoc(doc(db,...R.users,FIXED_USER_DOC));
+    if(!snap.exists())throw new Error(`No existe el usuario fijo ${FIXED_USER_DOC}`);
+    const u=snap.data();
+    if(u.activo===false)throw new Error('El usuario JUAN está inactivo.');
+    S.user={id:snap.id,...u};
+    await cachePut('fixedUser',S.user);
+  }catch(e){
+    console.warn('[USUARIO FIJO] Sin red/lectura; usando respaldo local.',e);
+    const c=await cacheGet('fixedUser');
+    S.user=c?.value||{id:FIXED_USER_DOC,usuario:'JUAN',nombre:'JUAN PEREZ',rol:'OPERADOR'};
+  }
+  const name=S.user.nombre||S.user.usuario||'JUAN';
+  $('sesionTxt').textContent=name;
+  $('entryUserTxt').textContent=name;
+  $('modeUser').textContent=`Usuario: ${name}`;
+}
+
+function showModeGate(){
+  diag('PANTALLA','MENÚ ENTRADA/SALIDA');
+  close();
+  $('menu').classList.add('hidden');
+  $('app').classList.add('hidden');
+  $('entryApp').classList.add('hidden');
+  $('modeGate').classList.remove('hidden');
+}
+
+async function enterSalida(){
+  diag('ENTRAR SALIDA','inicio');
+  $('modeGate').classList.add('hidden');
+  showLoad('Preparando catálogo para salidas...');
+  try{
+    if(!S.masterReady||!S.inventoryReady)await Promise.all([loadActiveProducts(),loadInventory({boot:true})]);
+    hideLoad();$('app').classList.remove('hidden');
+    await askCaptureDate();
+  }catch(e){console.error(e);hideLoad();alert('No fue posible preparar el módulo de salidas.');showModeGate()}
+}
+
+function resetEntry(){
+  ENTRY.photos.forEach(x=>{try{URL.revokeObjectURL(x.preview)}catch{}});
+  ENTRY.photos=[];ENTRY.busy=false;
+  if($('entryPhotoInput'))$('entryPhotoInput').value='';
+  renderEntryPhotos();
+  if($('entryStatus')){$('entryStatus').textContent='';$('entryStatus').classList.remove('error')}
+}
+
+function enterEntrada(){
+  diag('ENTRAR ENTRADA','inicio');
+  $('modeGate').classList.add('hidden');$('app').classList.add('hidden');$('entryApp').classList.remove('hidden');
+  resetEntry();
+  const mobile=isMobileDevice(),input=$('entryPhotoInput');
+  if(mobile){input.setAttribute('capture','environment');input.removeAttribute('multiple');$('entryPhotoBtn').textContent='📷 TOMAR FOTO';$('entryHelp').textContent='Toma una foto ahora. Puedes agregar más antes de guardar la entrada.'}
+  else{input.removeAttribute('capture');input.setAttribute('multiple','');$('entryPhotoBtn').textContent='🖼️ SELECCIONAR FOTO(S)';$('entryHelp').textContent='Selecciona una o varias fotografías. Todas quedarán agrupadas en una sola entrada.'}
+}
+
+async function compressEntryImage(file){
+  // Compatibilidad Android/Motorola: algunos WebView/Chrome no exponen createImageBitmap
+  // correctamente para fotos tomadas desde <input capture>.
+  let source,width,height,cleanup=()=>{};
+  if(typeof createImageBitmap==='function'){
+    try{
+      const bitmap=await createImageBitmap(file);source=bitmap;width=bitmap.width;height=bitmap.height;cleanup=()=>bitmap.close?.();
+    }catch(e){console.warn('[FOTO] createImageBitmap no disponible para esta imagen, usando fallback.',e)}
+  }
+  if(!source){
+    const url=URL.createObjectURL(file);
+    try{
+      const img=await new Promise((resolve,reject)=>{const x=new Image();x.onload=()=>resolve(x);x.onerror=()=>reject(new Error('No se pudo leer la fotografía.'));x.src=url});
+      source=img;width=img.naturalWidth||img.width;height=img.naturalHeight||img.height;
+    }finally{cleanup=()=>URL.revokeObjectURL(url)}
+  }
+  try{
+    const maxSide=1800,scale=Math.min(1,maxSide/Math.max(width,height));
+    const w=Math.max(1,Math.round(width*scale)),h=Math.max(1,Math.round(height*scale));
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d',{alpha:false});ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(source,0,0,w,h);
+    return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('No se pudo comprimir la imagen.')),'image/jpeg',.84));
+  }finally{cleanup()}
+}
+
+async function addEntryFiles(files){
+  if(ENTRY.busy)return;
+  const list=[...files].filter(f=>String(f.type||'').startsWith('image/'));
+  if(!list.length)return alert('Selecciona o toma una fotografía válida.');
+  ENTRY.busy=true;$('entryPhotoBtn').disabled=true;$('entryStatus').textContent='Optimizando fotografía...';
+  try{
+    for(const f of list){
+      const blob=await compressEntryImage(f),preview=URL.createObjectURL(blob);
+      ENTRY.photos.push({blob,preview,originalName:f.name||'foto.jpg'});
+    }
+    renderEntryPhotos();$('entryStatus').textContent=`${ENTRY.photos.length} foto(s) lista(s) para guardar.`;
+  }catch(e){console.error(e);$('entryStatus').textContent='No se pudo procesar la fotografía.';$('entryStatus').classList.add('error')}
+  finally{ENTRY.busy=false;$('entryPhotoBtn').disabled=false;$('entryPhotoInput').value=''}
+}
+
+function renderEntryPhotos(){
+  const box=$('entryPhotos');if(!box)return;
+  if(!ENTRY.photos.length){box.innerHTML='<div class="empty">Aún no hay fotografías</div>';$('entrySave').disabled=true;return}
+  box.innerHTML=ENTRY.photos.map((x,i)=>`<article class="entry-photo"><img src="${x.preview}" alt="Foto ${i+1} de la entrada"><footer><b>Foto ${i+1}</b><button type="button" data-entry-remove="${i}">QUITAR</button></footer></article>`).join('');
+  box.querySelectorAll('[data-entry-remove]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.entryRemove),[x]=ENTRY.photos.splice(i,1);if(x)URL.revokeObjectURL(x.preview);renderEntryPhotos();$('entryStatus').textContent=ENTRY.photos.length?`${ENTRY.photos.length} foto(s) lista(s) para guardar.`:''});
+  $('entrySave').disabled=false;
+}
+
+function localParts(d){return {y:d.getFullYear(),m:String(d.getMonth()+1).padStart(2,'0'),day:String(d.getDate()).padStart(2,'0'),hh:String(d.getHours()).padStart(2,'0'),mm:String(d.getMinutes()).padStart(2,'0'),ss:String(d.getSeconds()).padStart(2,'0')}}
+async function saveEntry(){
+  await ensureOnlineStack();
+  diag('GUARDAR ENTRADA',`fotos=${ENTRY.photos.length} busy=${ENTRY.busy}`);
+  if(ENTRY.busy||!ENTRY.photos.length)return;
+  ENTRY.busy=true;$('entrySave').disabled=true;$('entryPhotoBtn').disabled=true;$('entryCancel').disabled=true;$('entryBack').disabled=true;
+  const now=new Date(),t=localParts(now),stamp=`${t.y}${t.m}${t.day}_${t.hh}${t.mm}${t.ss}`,safeUser=String(S.user?.usuario||'JUAN').replace(/[^A-Z0-9_-]/gi,'').toUpperCase()||'JUAN';
+  const entryId=`ENT-${stamp}-${safeUser}`;
+  $('entryStatus').classList.remove('error');$('entryStatus').textContent=`Subiendo ${ENTRY.photos.length} foto(s)...`;
+  const uploaded=[];
+  try{
+    for(let i=0;i<ENTRY.photos.length;i++){
+      $('entryStatus').textContent=`Subiendo foto ${i+1} de ${ENTRY.photos.length}...`;
+      const path=`fotobodega/abarrotespdd/${t.y}/${t.m}/${entryId}/foto_${String(i+1).padStart(2,'0')}.jpg`;
+      const r=storageRef(storage,path);
+      await uploadBytes(r,ENTRY.photos[i].blob,{contentType:'image/jpeg',customMetadata:{entradaId:entryId,usuario:safeUser}});
+      const url=await getDownloadURL(r);
+      uploaded.push({numero:i+1,storagePath:path,url,tamanoBytes:ENTRY.photos[i].blob.size});
+    }
+    await setDoc(doc(db,...R.entradasFoto,entryId),{
+      entradaId:entryId,usuario:S.user?.usuario||'JUAN',usuarioId:S.user?.id||FIXED_USER_DOC,nombreUsuario:S.user?.nombre||'',
+      fechaLocal:`${t.y}-${t.m}-${t.day}`,horaLocal:`${t.hh}:${t.mm}:${t.ss}`,fechaHoraLocal:`${t.y}-${t.m}-${t.day}T${t.hh}:${t.mm}:${t.ss}`,
+      creadoEn:serverTimestamp(),cantidadFotos:uploaded.length,fotos:uploaded,tipo:'FOTO_BODEGA'
+    });
+    alert(`Entrada registrada correctamente\n${uploaded.length} foto(s) guardada(s)`);resetEntry();showModeGate();
+  }catch(e){
+    console.error('[ENTRADA FOTO]',e);
+    const code=String(e?.code||'');
+    let msg='No se pudo completar la entrada. Revisa conexión/permisos e intenta nuevamente.';
+    if(code.includes('storage/unauthorized'))msg='Storage rechazó la subida por permisos.';
+    else if(code.includes('permission-denied'))msg='Firestore rechazó el registro por permisos.';
+    else if(code.includes('storage/unknown'))msg='Firebase Storage devolvió un error desconocido.';
+    else if(code.includes('storage/retry-limit-exceeded'))msg='La subida tardó demasiado. Revisa la conexión e intenta nuevamente.';
+    else if(code.includes('storage/canceled'))msg='La subida fue cancelada.';
+    const detail=[code,e?.message].filter(Boolean).join(' — ');
+    if(detail)msg+=`\n${detail}`;
+    $('entryStatus').textContent=msg;$('entryStatus').classList.add('error');
+  }finally{ENTRY.busy=false;$('entryPhotoBtn').disabled=false;$('entryCancel').disabled=false;$('entryBack').disabled=false;$('entrySave').disabled=!ENTRY.photos.length}
+}
+
+async function loadConfig(){
+  await ensureOnlineStack();
+  try{const snap=await getDoc(doc(db,...R.cfg));if(snap.exists()){S.config={...S.config,...snap.data()};await cachePut('config',S.config)}}
+  catch(e){console.warn('No se pudo leer configuración en línea:',e);const c=await cacheGet('config');if(c?.value)S.config={...S.config,...c.value}}
+}
+async function saveConfig(){
+  await ensureOnlineStack();await setDoc(doc(db,...R.cfg),{...S.config,actualizadoEn:serverTimestamp()},{merge:true})}
+
+async function login(){
+  open(`<h2>Iniciar sesión</h2><p>Usuario autorizado de PDD.</p><label>Usuario</label><input id="u" class="field" autocomplete="username"><label>Contraseña</label><input id="p" class="field" type="password" inputmode="numeric" autocomplete="current-password"><button id="go" class="primary" style="margin-top:14px">ENTRAR</button>`);
+  $('go').onclick=async()=>{
+    const u=norm($('u').value),p=$('p').value.trim();if(!u||!p)return alert('Captura usuario y contraseña.');$('go').disabled=true;
+    try{
+      const snap=await getDocs(collection(db,...R.users));
+      const d=snap.docs.find(x=>{const a=x.data();return a.activo===true&&norm(a.usuario)===u&&String(a.password??'')===p});
+      if(!d){alert('Usuario o contraseña incorrectos, o usuario inactivo.');$('go').disabled=false;return}
+      S.user={id:d.id,...d.data()};sessionStorage.setItem('salidaPddUser',JSON.stringify(S.user));
+      $('sesionTxt').textContent=S.user.nombre||S.user.usuario;close();await askCaptureDate();
+    }catch(e){console.error(e);alert('No fue posible validar el usuario.');$('go').disabled=false}
+  }
+}
+
+async function askCaptureDate(){
+  const hoy=new Date();
+  const localHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  open(`<h2>Fecha de captura</h2><p>Selecciona la fecha que corresponde a esta salida.</p><label>Fecha de captura</label><input id="captureDate" class="field modal-main-input" type="date" value="${esc(S.fechaCaptura||localHoy)}"><button id="dateNext" class="primary" style="margin-top:14px">CONTINUAR</button>`);
+  const continuar=()=>{
+    const v=$('captureDate').value;
+    if(!v)return alert('Selecciona la fecha de captura.');
+    S.fechaCaptura=v;
+    close();
+    askReceiver();
+  };
+  $('dateNext').onclick=continuar;
+  $('captureDate').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();continuar()}});
+  setTimeout(()=>$('captureDate')?.focus(),100);
+}
+
+const RECEIVER_BRANCHES=new Set(['ALMACEN','ADMINISTRACION','MANTENIMIENTO','LOGISTICA','RUTAS']);
+
+async function loadEmployees(){
+  await ensureOnlineStack();
+  try{
+    const snap=await getDocs(query(collection(db,...R.empleados),where('activo','==',true)));
+    S.empleados=snap.docs
+      .map(d=>({id:d.id,...d.data()}))
+      .filter(e=>RECEIVER_BRANCHES.has(norm(e.sucursal)))
+      .sort((a,b)=>String(a.nombre||'').localeCompare(String(b.nombre||''),'es'));
+    await cachePut('employees',S.empleados);
+    return S.empleados;
+  }catch(e){
+    console.warn('[EMPLEADOS] Sin red; intentando respaldo local:',e);
+    const c=await cacheGet('employees');
+    S.empleados=Array.isArray(c?.value)?c.value:[];
+    if(S.empleados.length)return S.empleados;
+    throw e;
+  }
+}
+
+function receiverMatches(text){
+  const q=words(text);
+  if(!q.length)return S.empleados.slice(0,40);
+  return S.empleados.filter(e=>{
+    const hay=norm(`${e.nombre||''} ${e.empleadoId||''} ${e.sucursal||''}`);
+    return q.every(w=>hay.includes(w));
+  }).slice(0,40);
+}
+
+function renderReceiverSuggestions(text=''){
+  const box=$('employeeSuggestions');if(!box)return;
+  const list=receiverMatches(text);
+  if(!list.length){box.innerHTML='<div class="noresult">No hay empleados coincidentes.</div>';return}
+  box.innerHTML=list.map((e,i)=>`<button type="button" class="employee-suggestion" data-idx="${i}"><b>${esc(e.nombre||'SIN NOMBRE')}</b><small>${esc(e.empleadoId||e.id||'')} · ${esc(e.sucursal||'')}</small></button>`).join('');
+  [...box.querySelectorAll('.employee-suggestion')].forEach((btn,i)=>{
+    btn.onclick=()=>{
+      const e=list[i];
+      S.recibe=String(e.nombre||'').trim();
+      S.recibeEmpleado={id:e.id,empleadoId:e.empleadoId||e.id||'',nombre:S.recibe,sucursal:e.sucursal||''};
+      $('employeeSearch').value=S.recibe;
+      $('employeeSelected').innerHTML=`<b>Seleccionado:</b> ${esc(S.recibe)}<small>${esc(S.recibeEmpleado.empleadoId)} · ${esc(S.recibeEmpleado.sucursal)}</small>`;
+      $('employeeSelected').classList.remove('hidden');
+      box.innerHTML='';
+      $('receiverNext').disabled=false;
+    };
+  });
+}
+
+async function askReceiver(){
+  open(`<h2>¿Quién recibe la mercancía?</h2><p>Busca por nombre, apellidos o número de empleado.</p><input id="employeeSearch" class="field" autocomplete="off" placeholder="Ej. GERARDO, RIOS QUEZADA..."><div id="employeeSelected" class="employee-selected hidden"></div><div id="employeeSuggestions" class="employee-suggestions"><div class="noresult">Cargando empleados...</div></div><button id="receiverNext" class="primary" style="margin-top:14px" disabled>CONTINUAR</button>`);
+  S.recibe='';S.recibeEmpleado=null;
+  try{
+    await loadEmployees();
+    if(!S.empleados.length){$('employeeSuggestions').innerHTML='<div class="noresult">No hay empleados activos en las sucursales autorizadas.</div>';return}
+    renderReceiverSuggestions('');
+    const input=$('employeeSearch');
+    input.addEventListener('input',()=>{S.recibe='';S.recibeEmpleado=null;$('receiverNext').disabled=true;$('employeeSelected').classList.add('hidden');renderReceiverSuggestions(input.value)});
+    $('receiverNext').onclick=()=>{if(!S.recibeEmpleado)return alert('Selecciona una persona del catálogo de empleados.');askDestination()};
+    setTimeout(()=>input?.focus(),100);
+  }catch(e){
+    $('employeeSuggestions').innerHTML='<div class="noresult">No fue posible consultar /CLIENTES/PDD031204KL5/EMPLEADOS/.</div>';
+  }
+}
+function askDestination(){
+  const list=S.config.destinos||[];
+  if(!list.length){return configRequired('destinos')}
+  open(`<h2>¿Hacia dónde va?</h2><select id="dest" class="field"><option value="">Selecciona...</option>${list.map(x=>`<option>${esc(x)}</option>`).join('')}</select><button id="next" class="primary" style="margin-top:14px">CARGAR INVENTARIO</button>`);
+  $('next').onclick=async()=>{
+    const v=$('dest').value;if(!v)return alert('Selecciona el destino.');
+    S.destino=v;close();
+    if(!S.inventoryReady)await loadInventory();
+    else {$('scanInput').focus();toast('Datos listos para capturar')}
+  }
+}
+async function configRequired(kind){
+  const isRec=kind==='receptores';
+  open(`<h2>Configuración inicial</h2><p>No hay ${isRec?'personas que reciben':'destinos'} configurados. Captura el primero para continuar.</p><label>${isRec?'Nombre de quien recibe':'Destino'}</label><input id="firstCfg" class="field" autocomplete="off"><button id="saveFirst" class="primary" style="margin-top:14px">GUARDAR Y CONTINUAR</button>`);
+  $('saveFirst').onclick=async()=>{
+    const v=$('firstCfg').value.trim(); if(!v)return alert('Captura el dato.');
+    $('saveFirst').disabled=true;
+    try{
+      S.config[kind]=[...new Set([...(S.config[kind]||[]),v])];await saveConfig();close();
+      if(isRec) await askReceiver(); else askDestination();
+    }catch(e){console.error(e);alert('No se pudo guardar la configuración.');$('saveFirst').disabled=false}
+  };
+  setTimeout(()=>$('firstCfg')?.focus(),100)
+}
+
+function addInventoryPart(map,d){
+  if(d.eliminado===true)return false;
+  const code=String(d.codigo||d.productoId||d.codigoOriginal||'').trim();
+  if(!code)return false;
+  const desc=String(d.descripcion||'SIN DESCRIPCIÓN').trim();
+  const prev=map.get(code)||{codigo:code,descripcion:desc,inventarioInicial:0,partidas:0};
+  prev.inventarioInicial+=Number(d.cantidad||0);prev.partidas++;
+  if((!prev.descripcion||prev.descripcion==='SIN DESCRIPCIÓN')&&desc)prev.descripcion=desc;
+  map.set(code,prev);return true;
+}
+
+async function mergeOperationalCatalog(map){
+  await ensureOnlineStack();
+  try{
+    const snap=await getDocs(collection(db,...R.catalogoOperativo));
+    let added=0;
+    snap.forEach(d=>{
+      const x=d.data()||{};
+      if(x.activo===false)return;
+      const code=String(x.codigo||x.codigoBarra||d.id||'').trim();
+      if(!code)return;
+      const aliases=Array.isArray(x.codigosEquivalentes)?x.codigosEquivalentes.map(v=>String(v).trim()).filter(Boolean):[];
+      const existing=map.get(code);
+      if(existing){
+        existing.codigosEquivalentes=[...new Set([...(existing.codigosEquivalentes||[]),...aliases])];
+        return;
+      }
+      map.set(code,{
+        codigo:code,
+        descripcion:String(x.descripcion||x.concepto||'SIN DESCRIPCIÓN').trim(),
+        inventarioInicial:0,
+        partidas:0,
+        fueraInventario:true,
+        catalogoOperativo:true,
+        codigosEquivalentes:aliases,
+        cantidadPorCaja:x.cantidadPorCaja??null,
+        precioPublico:x.precioPublico??null
+      });
+      added++;
+    });
+    console.info('[CATÁLOGO OPERATIVO]',added,'productos externos incorporados al buscador normal');
+    return added;
+  }catch(e){
+    console.warn('[CATÁLOGO OPERATIVO] No se pudo cargar:',e);
+    return 0;
+  }
+}
+
+function rebuildCatalogIndex(){
+  S.byCode.clear();
+  for(const p of S.catalog){
+    S.byCode.set(String(p.codigo),p);
+    (p.codigosEquivalentes||[]).forEach(c=>S.byCode.set(String(c),p));
+  }
+}
+
+function addToOperationalSearch(item){
+  const code=String(item.codigo||'').trim();
+  if(!code)return;
+  let p=S.catalog.find(x=>String(x.codigo)===code);
+  if(!p){
+    const master=S.masterByCode.get(code);
+    p={
+      codigo:code,
+      descripcion:String(item.descripcion||master?.descripcion||'SIN DESCRIPCIÓN'),
+      inventarioInicial:0,
+      partidas:0,
+      fueraInventario:true,
+      catalogoOperativo:true,
+      codigosEquivalentes:[...(master?.codigosEquivalentes||[])],
+      cantidadPorCaja:item.cantidadPorCaja??master?.cantidadPorCaja??null,
+      precioPublico:item.precioPublico??master?.precioPublico??null
+    };
+    S.catalog.push(p);
+    S.catalog.sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));
+  }
+  rebuildCatalogIndex();
+}
+
+async function promoteMovedProducts(partidas){
+  await ensureOnlineStack();
+  const nuevos=(partidas||[]).filter(x=>x.fueraInventario===true||x.catalogoOperativo===true);
+  if(!nuevos.length)return;
+  for(const x of nuevos)addToOperationalSearch(x);
+  const writes=nuevos.map(async x=>{
+    const code=String(x.codigo||'').trim();
+    if(!code)return;
+    const master=S.masterByCode.get(code);
+    await setDoc(doc(db,...R.catalogoOperativo,code),{
+      codigo:code,
+      codigoBarra:code,
+      descripcion:String(x.descripcion||master?.descripcion||'SIN DESCRIPCIÓN'),
+      concepto:String(master?.concepto||x.descripcion||''),
+      codigosEquivalentes:[...(master?.codigosEquivalentes||[])],
+      cantidadPorCaja:x.cantidadPorCaja??master?.cantidadPorCaja??null,
+      precioPublico:x.precioPublico??master?.precioPublico??null,
+      activo:true,
+      origen:'MOVIMIENTO_OPERATIVO',
+      ultimoMovimiento:'SALIDA',
+      actualizadoEn:serverTimestamp()
+    },{merge:true});
+  });
+  const rs=await Promise.allSettled(writes);
+  const failed=rs.filter(r=>r.status==='rejected');
+  if(failed.length)console.warn('[CATÁLOGO OPERATIVO] Algunos productos no pudieron persistirse:',failed);
+}
+
+async function loadInventory(options={}){
+  // V30: ya NO se construye el catálogo leyendo inventario físico ni movimientos.
+  // El único catálogo operativo es /productos con activo=true, previamente cacheado.
+  const boot=options.boot===true;
+  if(!S.masterReady||!S.masterProducts.length){
+    const ok=await loadActiveProducts();
+    if(!ok)return false;
+  }
+  S.catalog=S.masterProducts.filter(p=>!S.blockedCodes.has(String(p.codigo))).map(p=>({...p}));
+  rebuildCatalogIndex();
+  S.inventoryReady=S.catalog.length>0;
+  await cachePut('inventoryCatalog',{inventarioId:'PRODUCTOS_ACTIVOS',catalog:S.catalog});
+  if(!boot){
+    showLoad('Abriendo catálogo local...');
+    $('loadingText').textContent=`Catálogo listo (${S.catalog.length.toLocaleString('es-MX')} productos activos).`;
+    setTimeout(()=>{hideLoad();$('scanInput').focus()},250);
+  }
+  return S.inventoryReady;
+}
+
+async function loadBlockedCodes(){
+  const cached=await cacheGet('blockedCodes');
+  const local=Array.isArray(cached?.value)?cached.value:[];
+  S.blockedCodes=new Set(local.map(v=>String(v).trim()).filter(Boolean));
+  try{
+    await ensureOnlineStack();
+    const snap=await getDocs(collection(db,...R.catalogoBloqueados));
+    const all=new Set(S.blockedCodes);
+    snap.forEach(d=>{const x=d.data()||{}; if(x.activo!==false)all.add(String(x.codigo||d.id).trim())});
+    S.blockedCodes=all;
+    await cachePut('blockedCodes',[...all]);
+  }catch(e){console.info('[BLOQUEOS] Usando lista local.',e?.message||e)}
+  return S.blockedCodes;
+}
+
+function applyMasterAsCatalog(){
+  S.catalog=S.masterProducts.filter(p=>!S.blockedCodes.has(String(p.codigo))).map(p=>({...p}));
+  rebuildCatalogIndex();
+  S.inventoryReady=S.catalog.length>0;
+}
+
+async function persistCurrentCatalog(){
+  await cachePut('masterProducts',S.masterProducts);
+  applyMasterAsCatalog();
+  await cachePut('inventoryCatalog',{inventarioId:'PRODUCTOS_ACTIVOS',catalog:S.catalog});
+}
+
+async function blockCatalogCode(code,motivo='DEPURACION'){
+  code=String(code||'').trim();
+  if(!code)throw new Error('Código vacío.');
+  S.blockedCodes.add(code);
+  await cachePut('blockedCodes',[...S.blockedCodes]);
+  S.masterProducts=S.masterProducts.filter(p=>String(p.codigo)!==code && !(p.codigosEquivalentes||[]).includes(code));
+  // No borramos el maestro remoto: sólo se bloquea en esta app hasta la depuración definitiva.
+  applyMasterAsCatalog();
+  await cachePut('masterProducts',S.masterProducts);
+  await cachePut('inventoryCatalog',{inventarioId:'PRODUCTOS_ACTIVOS',catalog:S.catalog});
+  try{
+    await ensureOnlineStack();
+    await setDoc(doc(db,...R.catalogoBloqueados,code),{
+      codigo:code,motivo:String(motivo||'DEPURACION').trim(),activo:true,
+      origen:'SALIDA_ABARROTES_PDD',creadoPor:S.user?.usuario||S.user?.nombre||'APP',actualizadoEn:serverTimestamp()
+    },{merge:true});
+  }catch(e){console.warn('[BLOQUEOS] Bloqueo local guardado; Firebase pendiente:',e)}
+  return true;
+}
+
+function blockedCodesModal(){
+  const rows=[...S.blockedCodes].sort().slice(-80).reverse();
+  open(`<h2>Depurar catálogo</h2>
+    <p class="catalog-extra-note">Captura códigos que ya no deben aparecer en esta app. Se bloquean de inmediato y quedan registrados para depurar después el catálogo maestro.</p>
+    <label>Código a bloquear</label><input id="blockCode" class="field" inputmode="text" autocomplete="off" placeholder="Escanea o escribe el código">
+    <label>Motivo</label><input id="blockReason" class="field" autocomplete="off" value="DEPURACION" placeholder="Motivo">
+    <button id="saveBlockCode" class="primary" style="margin-top:12px">BLOQUEAR CÓDIGO</button>
+    <div class="match-hint" style="margin-top:14px">Bloqueados locales: ${S.blockedCodes.size.toLocaleString('es-MX')}</div>
+    <div class="results">${rows.length?rows.map(c=>`<div class="result"><b>${esc(c)}</b><small>BLOQUEADO EN LA APP</small></div>`).join(''):'<div class="noresult">Todavía no hay códigos bloqueados.</div>'}</div>
+    <button id="closeBlockCodes" class="secondary">Cerrar</button>`);
+  $('closeBlockCodes').onclick=close;
+  $('saveBlockCode').onclick=async()=>{
+    const code=$('blockCode').value.trim(),motivo=$('blockReason').value.trim();
+    if(!code)return alert('Captura un código.');
+    $('saveBlockCode').disabled=true;
+    try{await blockCatalogCode(code,motivo);toast(`Código ${code} bloqueado`);blockedCodesModal()}catch(e){alert(e.message||'No se pudo bloquear.');$('saveBlockCode').disabled=false}
+  };
+  setTimeout(()=>$('blockCode')?.focus(),100);
+}
+
+async function syncCatalogDelta(){
+  // Sin onSnapshot masivo: sólo pregunta por documentos modificados desde la última sincronización.
+  // Para que un alta nueva o un cambio false→true llegue inmediatamente, el documento de /productos
+  // debe actualizar el campo actualizadoEn. Si no lo hace, la descarga completa diaria sigue siendo respaldo.
+  const meta=await cacheGet('offlineMeta');
+  const since=Number(meta?.value?.deltaAt||meta?.value?.updatedAt||0);
+  if(!since)return {updated:0};
+  try{
+    await ensureOnlineStack();
+    const snap=await getDocs(query(collection(db,...R.productos),where('actualizadoEn','>',new Date(since))));
+    if(snap.empty)return {updated:0};
+    const map=new Map(S.masterProducts.map(p=>[String(p.codigo),p]));
+    let changed=0;
+    snap.forEach(d=>{
+      const x=d.data()||{};
+      const codigo=String(x.codigoBarra||x.codigo||d.id||'').trim(); if(!codigo)return;
+      if(x.activo!==true){ if(map.delete(codigo))changed++; return; }
+      const p={codigo,codigoBarra:codigo,descripcion:String(x.concepto||x.descripcion||'SIN DESCRIPCIÓN').trim(),concepto:String(x.concepto||x.descripcion||'SIN DESCRIPCIÓN').trim(),precioPublico:x.precioPublico??null,cantidadPorCaja:x.cantidadPorCaja??null,codigosEquivalentes:Array.isArray(x.codigosEquivalentes)?x.codigosEquivalentes.map(v=>String(v).trim()).filter(Boolean):[],activo:true,_raw:x};
+      map.set(codigo,p);changed++;
+    });
+    if(changed){S.masterProducts=[...map.values()].sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));S.masterByCode.clear();for(const p of S.masterProducts){S.masterByCode.set(p.codigo,p);(p.codigosEquivalentes||[]).forEach(c=>S.masterByCode.set(c,p));S.productInfo.set(p.codigo,p._raw||{})}S.masterReady=true;await persistCurrentCatalog();toast(`${changed} cambio(s) de catálogo aplicados`)}
+    const nextMeta={...(meta?.value||{}),deltaAt:Date.now()};await cachePut('offlineMeta',nextMeta);
+    return {updated:changed};
+  }catch(e){console.info('[CATÁLOGO DELTA] Sin cambios incrementales:',e?.message||e);return {updated:0,error:e}}
+}
+
+function startCatalogDeltaChecks(){
+  if(catalogDeltaTimer)clearInterval(catalogDeltaTimer);
+  setTimeout(()=>syncCatalogDelta(),2500);
+  catalogDeltaTimer=setInterval(()=>{if(!document.hidden)syncCatalogDelta()},CATALOG_DELTA_CHECK_MS);
+}
+
+async function loadActiveProducts(){
+  await ensureOnlineStack();
+  setBootStatus('Descargando catálogo de productos activos...');
+  try{
+    const snap=await getDocs(query(collection(db,...R.productos),where('activo','==',true)));
+    const list=[];
+    snap.forEach(d=>{
+      const x=d.data()||{};
+      const codigo=String(x.codigoBarra||d.id||'').trim();
+      if(!codigo)return;
+      const p={
+        codigo,
+        codigoBarra:codigo,
+        descripcion:String(x.concepto||x.descripcion||'SIN DESCRIPCIÓN').trim(),
+        concepto:String(x.concepto||x.descripcion||'SIN DESCRIPCIÓN').trim(),
+        precioPublico:x.precioPublico??null,
+        cantidadPorCaja:x.cantidadPorCaja??null,
+        codigosEquivalentes:Array.isArray(x.codigosEquivalentes)?x.codigosEquivalentes.map(v=>String(v).trim()).filter(Boolean):[],
+        activo:true,
+        _raw:x
+      };
+      list.push(p);
+    });
+    list.sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));
+    S.masterProducts=list;S.masterByCode.clear();
+    for(const p of list){
+      S.masterByCode.set(p.codigo,p);
+      p.codigosEquivalentes.forEach(c=>S.masterByCode.set(c,p));
+      S.productInfo.set(p.codigo,p._raw||{});
+    }
+    S.masterReady=true;
+    await cachePut('masterProducts',list);
+    applyMasterAsCatalog();
+    await cachePut('inventoryCatalog',{inventarioId:'PRODUCTOS_ACTIVOS',catalog:S.catalog});
+    setBootStatus(`${S.catalog.length.toLocaleString('es-MX')} productos activos cargados...`);
+    return true;
+  }catch(e){
+    console.warn('[PRODUCTOS] Sin red; intentando catálogo maestro offline:',e);
+    const c=await cacheGet('masterProducts');
+    const list=Array.isArray(c?.value)?c.value:[];
+    S.masterProducts=list;S.masterByCode.clear();
+    for(const p of list){S.masterByCode.set(p.codigo,p);(p.codigosEquivalentes||[]).forEach(code=>S.masterByCode.set(code,p));S.productInfo.set(p.codigo,p._raw||{})}
+    S.masterReady=list.length>0;if(c?.updatedAt)S.offlineCatalogAt=c.updatedAt;
+    if(S.masterReady){applyMasterAsCatalog();setBootStatus(`${S.catalog.length.toLocaleString('es-MX')} productos cargados desde respaldo offline.`);return true}
+    return false;
+  }
+}
+
+async function downloadOfflineCatalog(options={}){
+  const startup=options.startup===true;
+  $('menu').classList.add('hidden');
+  showLoad('Preparando catálogo de productos...');
+  try{await ensureOnlineStack(15000)}catch(e){
+    console.warn('[RED] Servicios en línea no disponibles:',e);
+    if(startup){setBootStatus('NO SE PUDO CONECTAR');$('bootHint').textContent='Los catálogos locales siguen protegidos. Reintenta con Wi‑Fi o datos móviles cuando haya respuesta.';$('catalogPrepareBtn').classList.remove('hidden');$('catalogRetryBtn').classList.remove('hidden');return false}
+    hideLoad();alert('No fue posible conectar con Firebase en este momento. Intenta nuevamente.');return false;
+  }
+  showLoad('Descargando productos activos para uso offline...');
+  $('catalogPrepareBtn')?.classList.add('hidden');$('catalogRetryBtn')?.classList.add('hidden');
+  try{
+    setBootStatus('1/3 Cargando bloqueos...');
+    await loadBlockedCodes();
+    setBootStatus('2/3 Descargando productos con activo = true...');
+    const a=await loadActiveProducts();
+    setBootStatus('3/3 Guardando configuración auxiliar...');
+    await Promise.allSettled([loadEmployees(),loadConfig(),loadFixedUser()]);
+    const meta={updatedAt:Date.now(),deltaAt:Date.now(),masterCount:S.masterProducts.length,inventoryCount:S.catalog.length,inventarioId:'PRODUCTOS_ACTIVOS'};
+    if(!(a&&meta.inventoryCount>0))throw new Error('La descarga quedó incompleta.');
+    await cachePut('offlineMeta',meta);
+    setBootStatus('Catálogo de productos listo para trabajar offline.');
+    $('bootHint').textContent=`${meta.inventoryCount.toLocaleString('es-MX')} productos activos · ${S.blockedCodes.size.toLocaleString('es-MX')} bloqueados`;
+    startCatalogDeltaChecks();
+    if(startup){await new Promise(r=>setTimeout(r,350));hideLoad();showModeGate()}
+    else{setTimeout(()=>hideLoad(),250);alert(`Catálogo offline actualizado correctamente.\n\nProductos activos disponibles: ${meta.inventoryCount.toLocaleString('es-MX')}\nCódigos bloqueados: ${S.blockedCodes.size.toLocaleString('es-MX')}`)}
+    return true;
+  }catch(e){
+    console.error('[OFFLINE DOWNLOAD]',e);
+    if(startup){setBootStatus('NO SE COMPLETÓ LA DESCARGA');$('bootHint').textContent='La aplicación permanecerá bloqueada hasta que ambos catálogos estén completos.';$('catalogPrepareBtn').classList.remove('hidden');$('catalogRetryBtn').classList.remove('hidden')}
+    else{hideLoad();alert('No se pudo completar la descarga offline. Revisa la conexión e intenta nuevamente.')}
+    return false;
+  }
+}
+
+
+
+async function autoRefreshCatalogIfDue(reason='startup'){
+  if(catalogAutoRefreshPromise)return catalogAutoRefreshPromise;
+  catalogAutoRefreshPromise=(async()=>{
+    const metaRec=await cacheGet('offlineMeta');
+    const last=Number(metaRec?.value?.updatedAt||metaRec?.updatedAt||0);
+    const age=last?Date.now()-last:Number.POSITIVE_INFINITY;
+    if(age<CATALOG_AUTO_REFRESH_MS){
+      console.info(`[CATÁLOGO AUTO] Vigente; no requiere actualización. Motivo=${reason}.`);
+      return {updated:false,due:false,last};
+    }
+    console.info(`[CATÁLOGO AUTO] Han pasado 24 h o no hay fecha; intentando actualización en segundo plano. Motivo=${reason}.`);
+    try{
+      await ensureOnlineStack(15000);
+      // Primero actualiza configuración para respetar el inventarioId vigente.
+      await Promise.allSettled([loadConfig(),loadFixedUser()]);
+      await loadBlockedCodes();
+      const masterOk=await loadActiveProducts();
+      await Promise.allSettled([loadEmployees()]);
+      const meta={updatedAt:Date.now(),deltaAt:Date.now(),masterCount:S.masterProducts.length,inventoryCount:S.catalog.length,inventarioId:'PRODUCTOS_ACTIVOS',automatico:true};
+      if(!(masterOk&&meta.inventoryCount>0))throw new Error('La actualización automática quedó incompleta.');
+      await cachePut('offlineMeta',meta);
+      S.offlineCatalogAt=meta.updatedAt;
+      console.info(`[CATÁLOGO AUTO] Actualizado: ${meta.inventoryCount} productos activos disponibles.`);
+      toast('Catálogo actualizado automáticamente');
+      return {updated:true,due:true,last:meta.updatedAt};
+    }catch(e){
+      console.warn('[CATÁLOGO AUTO] No se pudo actualizar; se conserva el catálogo offline actual:',e);
+      return {updated:false,due:true,error:e};
+    }
+  })().finally(()=>{catalogAutoRefreshPromise=null});
+  return catalogAutoRefreshPromise;
+}
+
+async function loadRequiredCatalogsFromCache(){
+  const [master,blocks,meta]=await Promise.all([cacheGet('masterProducts'),cacheGet('blockedCodes'),cacheGet('offlineMeta')]);
+  const masterList=Array.isArray(master?.value)?master.value:[];
+  S.blockedCodes=new Set((Array.isArray(blocks?.value)?blocks.value:[]).map(String));
+  if(!masterList.length)return {ready:false,masterCount:0,inventoryCount:0};
+  S.masterProducts=masterList;S.masterByCode.clear();
+  for(const p of masterList){S.masterByCode.set(p.codigo,p);(p.codigosEquivalentes||[]).forEach(code=>S.masterByCode.set(code,p));S.productInfo.set(p.codigo,p._raw||{})}
+  S.masterReady=true;applyMasterAsCatalog();
+  S.offlineCatalogAt=meta?.value?.updatedAt||master?.updatedAt||null;
+  return {ready:S.inventoryReady,masterCount:masterList.length,inventoryCount:S.catalog.length,updatedAt:S.offlineCatalogAt};
+}
+
+async function enforceStartupCatalogProtection(){
+  const state=await loadRequiredCatalogsFromCache();
+  if(state.ready){
+    setBootStatus('Catálogo offline verificado.');
+    $('bootHint').textContent=`${state.inventoryCount.toLocaleString('es-MX')} productos activos disponibles · ${S.blockedCodes.size.toLocaleString('es-MX')} bloqueados · ${navigator.onLine?'RED DETECTADA':'ESTADO DE RED NO CONFIRMADO'}`;
+    await new Promise(r=>setTimeout(r,350));hideLoad();showModeGate();return true;
+  }
+  setBootStatus('CATÁLOGOS REQUERIDOS');
+  $('bootHint').textContent='Este equipo aún no tiene el catálogo de productos. Con Wi‑Fi o datos móviles, pulsa DESCARGAR para prepararlo.';
+  $('catalogPrepareBtn').classList.remove('hidden');
+  $('catalogRetryBtn').classList.remove('hidden');
+  return false;
+}
+
+async function showOfflineInfo(){
+  const m=await cacheGet('offlineMeta'),master=await cacheGet('masterProducts'),blocks=await cacheGet('blockedCodes');
+  const mc=Array.isArray(master?.value)?master.value.length:0,bc=Array.isArray(blocks?.value)?blocks.value.length:0;
+  alert(`CATÁLOGO OFFLINE
+
+Productos descargados con activo=true: ${mc.toLocaleString('es-MX')}
+Códigos bloqueados en la app: ${bc.toLocaleString('es-MX')}
+Última descarga completa: ${cacheAgeText(m?.value?.updatedAt||m?.updatedAt)}
+Sincronización incremental: cada 10 minutos mientras la app está abierta.`);
+}
+
+function setBootStatus(t){const el=$('loadingText');if(el)el.textContent=t}
+function showLoad(t){$('loadingText').textContent=t;$('loading').classList.remove('hidden')}
+function hideLoad(){$('loading').classList.add('hidden')}
+
+// Distancia Damerau-Levenshtein simple para tolerar errores pequeños como EMPREADOR / EMPERADOR.
+function editDistance(a,b){
+  a=norm(a);b=norm(b);const m=a.length,n=b.length,d=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++)d[i][0]=i;for(let j=0;j<=n;j++)d[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){
+    const cost=a[i-1]===b[j-1]?0:1;
+    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+cost);
+    if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+cost);
+  }
+  return d[m][n]
+}
+function tokenMatches(token,productWords,full){
+  if(full.includes(token))return true;
+  if(token.length<5)return false;
+  return productWords.some(w=>Math.abs(w.length-token.length)<=1&&editDistance(token,w)<=1)
+}
+function searchProducts(text,limit=40){
+  const q=norm(text);if(!q)return[];
+  const toks=words(q);
+  return S.catalog
+    .map(p=>{
+      const aliases=(p.codigosEquivalentes||[]).join(' ');
+      const full=norm(`${p.descripcion} ${p.codigo} ${aliases}`), pw=words(p.descripcion);
+      if(!toks.every(t=>tokenMatches(t,pw,full)))return null;
+      let score=0;if(norm(p.codigo)===q)score+=1000;if(norm(p.descripcion)===q)score+=500;
+      if(norm(p.descripcion).startsWith(q))score+=150;
+      toks.forEach(t=>{if(pw.includes(t))score+=20;else if(full.includes(t))score+=10;else score+=3});
+      return{p,score};
+    })
+    .filter(Boolean).sort((a,b)=>b.score-a.score||a.p.descripcion.localeCompare(b.p.descripcion,'es')).slice(0,limit).map(x=>x.p)
+}
+function renderResults(container,rs){
+  container.innerHTML=rs.length?rs.map((p,i)=>`<div class="result" data-i="${i}"><b>${esc(p.descripcion)}</b><small>${esc(p.codigo)} · CATÁLOGO ACTIVO</small></div>`).join(''):'<div class="noresult">Sin coincidencias en productos activos</div>';
+  [...container.querySelectorAll('.result')].forEach((el,i)=>el.onclick=()=>{clearQuickResults();selectProduct(rs[i])})
+}
+function clearQuickResults(){const r=$('quickResults');if(r){r.classList.add('hidden');r.innerHTML=''}}
+function quickSearch(){
+  const text=$('scanInput').value.trim();
+  if(text.length<2){clearQuickResults();return}
+  if(!S.catalog.length){clearQuickResults();return}
+  const rs=searchProducts(text,20),box=$('quickResults');box.classList.remove('hidden');renderResults(box,rs)
+}
+function searchFromMain(){
+  const text=$('scanInput').value.trim();
+  if(!text)return searchModal('');
+  const exact=S.byCode.get(text);if(exact)return selectProduct(exact);
+  const rs=searchProducts(text,40);
+  if(rs.length===1)return selectProduct(rs[0]);
+  searchModal(text,rs)
+}
+
+async function getProductInfo(code){
+  await ensureOnlineStack();
+  code=String(code||'').trim();
+  if(!code)return{};
+  if(S.productInfo.has(code))return S.productInfo.get(code)||{};
+  try{
+    const snap=await getDoc(doc(db,...R.productos,code));
+    const data=snap.exists()?snap.data():{};
+    S.productInfo.set(code,data);
+    return data;
+  }catch(e){
+    console.warn(`[PRODUCTO] No se pudo consultar ${code}:`,e);
+    // Si hubo una falla de red, usamos la última lectura de esta sesión sólo
+    // como respaldo visual; no inventamos valores.
+    return S.productInfo.get(code)||{};
+  }
+}
+async function saveBoxQty(code,value){
+  await ensureOnlineStack();
+  const cantidadPorCaja=Number(value);
+  if(!(cantidadPorCaja>0))return;
+  const ref=doc(db,...R.productos,String(code));
+  // Se modifica únicamente el campo solicitado del catálogo maestro.
+  await setDoc(ref,{cantidadPorCaja},{merge:true});
+  const prev=S.productInfo.get(String(code))||{};
+  S.productInfo.set(String(code),{...prev,cantidadPorCaja});
+}
+function calcExpression(text){
+  const src=String(text||'').replace(/,/g,'.').replace(/\s+/g,'');
+  if(!src||!/^[0-9.+\-*/()]+$/.test(src))throw new Error('Expresión inválida');
+  const tokens=src.match(/\d*\.?\d+|[()+\-*/]/g);
+  if(!tokens||tokens.join('')!==src)throw new Error('Expresión inválida');
+  const out=[],ops=[],prec={'+':1,'-':1,'*':2,'/':2};
+  let prev='op';
+  for(let i=0;i<tokens.length;i++){
+    let t=tokens[i];
+    if(/^\d/.test(t)||t.startsWith('.')){out.push(Number(t));prev='num';continue}
+    if(t==='('){ops.push(t);prev='op';continue}
+    if(t===')'){while(ops.length&&ops.at(-1)!=='(')out.push(ops.pop());if(ops.pop()!=='(')throw new Error('Paréntesis inválidos');prev='num';continue}
+    if((t==='+'||t==='-')&&prev==='op')out.push(0);
+    while(ops.length&&ops.at(-1)!=='('&&prec[ops.at(-1)]>=prec[t])out.push(ops.pop());
+    ops.push(t);prev='op';
+  }
+  while(ops.length){const op=ops.pop();if(op==='(')throw new Error('Paréntesis inválidos');out.push(op)}
+  const st=[];
+  for(const t of out){
+    if(typeof t==='number'){st.push(t);continue}
+    const b=st.pop(),a=st.pop();if(a===undefined||b===undefined)throw new Error('Expresión inválida');
+    st.push(t==='+'?a+b:t==='-'?a-b:t==='*'?a*b:a/b);
+  }
+  if(st.length!==1||!Number.isFinite(st[0]))throw new Error('Resultado inválido');
+  return Math.round((st[0]+Number.EPSILON)*1000)/1000;
+}
+function bindCalculator(targetId){
+  const panel=$('calcPanel'),expr=$('calcExpr'),result=$('calcResult');
+  $('openCalc').onclick=()=>{panel.classList.toggle('hidden');if(!panel.classList.contains('hidden'))expr.focus()};
+  panel.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{expr.value+=b.dataset.k;expr.focus()});
+  $('calcClear').onclick=()=>{expr.value='';result.textContent='Resultado: —';expr.focus()};
+  $('calcBack').onclick=()=>{expr.value=expr.value.slice(0,-1);expr.focus()};
+  const run=()=>{try{const v=calcExpression(expr.value);result.textContent=`Resultado: ${v}`;return v}catch(e){result.textContent='Resultado: revisa el cálculo';return null}};
+  $('calcEqual').onclick=run;
+  $('calcRegister').onclick=()=>{const v=run();if(v!==null&&v>0){$(targetId).value=v;panel.classList.add('hidden');$(targetId).focus()}};
+  expr.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('calcRegister').click()}};
+}
+async function selectProduct(p){
+  const info=await getProductInfo(p.codigo);
+  const precio=Number(info.precioPublico);
+  const cajaCatalogo=Number(info.cantidadPorCaja);
+
+  // Paso 1: confirmar la cantidad por caja. El dato inicia bloqueado cuando
+  // ya existe en catálogo para evitar cambios accidentales.
+  const abrirModalCaja=(boxValue=cajaCatalogo)=>{
+    const cajaValida=Number.isFinite(Number(boxValue))&&Number(boxValue)>0;
+    open(`<h2>Confirmar cantidad por caja</h2>
+      <div class="product-capture-info compact-product-info">
+        <b>${esc(info.concepto||p.descripcion)}</b>
+        <small>${esc(p.codigo)} · ${p.fueraInventario?'FUERA DEL INVENTARIO INICIAL':'Inventario inicial: '+esc(p.inventarioInicial)}</small>
+        <div class="price-box"><span>Precio público actual</span><strong>${Number.isFinite(precio)?`$${precio.toFixed(2)}`:'NO REGISTRADO'}</strong></div>
+      </div>
+      <label>Piezas que trae cada caja</label>
+      <input id="boxQty" class="field modal-main-input" type="number" min="1" step="1" inputmode="numeric" value="${cajaValida?esc(Number(boxValue)):''}" placeholder="Ej. 12, 24, 36..." ${cajaValida?'disabled':''}>
+      <div id="boxHelp" class="box-help">${cajaValida?'Cantidad por caja registrada. Si es correcta, continúa.':'No hay una cantidad por caja válida; captúrala para continuar.'}</div>
+      <div class="modal-step">Paso 1 de 2 · Verificar empaque</div>
+      <div class="actions">
+        <button id="cancel" class="secondary">Cancelar</button>
+        ${cajaValida?'<button id="editBox" class="secondary">MODIFICAR CAJA</button>':''}
+        <button id="nextBoxes" class="primary">ESTÁ CORRECTO · SIGUIENTE</button>
+      </div>`);
+    $('cancel').onclick=close;
+    const input=$('boxQty');
+    const editBtn=$('editBox');
+    if(editBtn)editBtn.onclick=()=>{
+      input.disabled=false;
+      editBtn.disabled=true;
+      $('boxHelp').textContent='Corrige las piezas por caja y después continúa. El nuevo valor se guardará en el catálogo.';
+      setTimeout(()=>{input.focus();try{input.select()}catch(_){ }},0);
+    };
+    $('nextBoxes').onclick=async()=>{
+      const boxQty=Number(input.value);
+      if(!(boxQty>0))return alert('Captura una cantidad por caja mayor a cero.');
+      if(!Number.isInteger(boxQty))return alert('La cantidad por caja debe registrarse en piezas enteras.');
+      $('nextBoxes').disabled=true;
+      try{
+        if(boxQty!==cajaCatalogo)await saveBoxQty(p.codigo,boxQty);
+        abrirModalCajasSalida(boxQty);
+      }catch(e){
+        console.error(e);
+        alert('No se pudo guardar la cantidad por caja.');
+        $('nextBoxes').disabled=false;
+      }
+    };
+    input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('nextBoxes').click();}};
+    // Flujo de teclado: si la caja ya está registrada, el foco cae en SIGUIENTE
+    // para que Enter avance sin tocar el dato. MODIFICAR CAJA queda como acción manual.
+    if(cajaValida){
+      setTimeout(()=>$('nextBoxes')?.focus(),100);
+    }else{
+      setTimeout(()=>input.focus(),100);
+    }
+  };
+
+  // Paso 2: el usuario captura cajas; el sistema convierte automáticamente a piezas.
+  const abrirModalCajasSalida=(boxQty,boxesValue='')=>{
+    open(`<h2>Cajas que salieron</h2>
+      <div class="product-capture-info compact-product-info">
+        <b>${esc(info.concepto||p.descripcion)}</b>
+        <small>${esc(p.codigo)} · <strong>${esc(boxQty)} piezas por caja</strong></small>
+      </div>
+      <label>¿Cuántas cajas salieron?</label>
+      <input id="boxesOut" class="field modal-main-input" type="number" min="0.001" step="0.001" inputmode="decimal" value="${esc(boxesValue)}" placeholder="Ej. 1, 2, 2.5...">
+      <div class="box-help">El sistema registrará la salida en piezas: <strong id="piecesPreview">0 piezas</strong>.</div>
+      <div class="modal-step">Paso 2 de 2 · Registrar salida</div>
+      <div class="actions"><button id="backBox" class="secondary">REGRESAR</button><button id="add" class="primary">AGREGAR PARTIDA</button></div>`);
+    $('backBox').onclick=()=>abrirModalCaja(boxQty);
+    const boxesInput=$('boxesOut');
+    const updatePreview=()=>{
+      const boxes=Number(boxesInput.value);
+      const pieces=boxes>0?Math.round((boxes*boxQty+Number.EPSILON)*1000)/1000:0;
+      $('piecesPreview').textContent=`${pieces} piezas`;
+    };
+    boxesInput.oninput=updatePreview;
+    updatePreview();
+    $('add').onclick=()=>{
+      const boxes=Number(boxesInput.value);
+      if(!(boxes>0))return alert('Captura cuántas cajas salieron.');
+      const q=Math.round((boxes*boxQty+Number.EPSILON)*1000)/1000;
+      if(!(q>0))return alert('La salida calculada no es válida.');
+      const ex=S.cart.find(x=>x.codigo===p.codigo);
+      const totalPropuesto=(ex?Number(ex.cantidad||0):0)+q;
+      const inicial=Number(p.inventarioInicial||0);
+      if(!p.fueraInventario && inicial>=0 && totalPropuesto>inicial){
+        const ok=confirm(`La salida supera el inventario inicial.\n\nInicial: ${inicial}\nSalida acumulada: ${totalPropuesto} piezas\n\n¿Deseas continuar?`);
+        if(!ok)return;
+      }
+      if(ex){
+        ex.cantidad=totalPropuesto;
+        ex.cantidadPorCaja=boxQty;
+        ex.cajasSalieron=Math.round(((Number(ex.cajasSalieron)||0)+boxes+Number.EPSILON)*1000)/1000;
+        if(Number.isFinite(precio))ex.precioPublico=precio;
+      }else{
+        S.cart.push({...p,cantidad:q,cantidadPorCaja:boxQty,cajasSalieron:boxes,precioPublico:Number.isFinite(precio)?precio:null});
+      }
+      S.last=S.last.filter(x=>x.codigo!==p.codigo);
+      S.last.unshift({codigo:p.codigo,ts:Date.now()});
+      S.last=S.last.slice(0,20);
+      render();
+      close();
+      $('scanInput').value='';
+      clearQuickResults();
+      $('scanInput').focus();
+      toast(`Partida agregada: ${boxes} caja(s) = ${q} piezas`);
+    };
+    boxesInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('add').click();}};
+    setTimeout(()=>{boxesInput.focus();try{boxesInput.select()}catch(_){ }},100);
+  };
+
+  abrirModalCaja();
+}
+function recentCartItems(){
+  const items=[];
+  for(const r of S.last){const x=S.cart.find(c=>c.codigo===r.codigo);if(x&&!items.some(y=>y.codigo===x.codigo))items.push(x)}
+  return items.slice(0,2);
+}
+function orderedCartItems(){
+  const lastPos=new Map(S.last.map((r,i)=>[String(r.codigo),i]));
+  return S.cart
+    .map((x,index)=>({x,index,pos:lastPos.has(String(x.codigo))?lastPos.get(String(x.codigo)):Number.MAX_SAFE_INTEGER}))
+    .sort((a,b)=>a.pos-b.pos||b.index-a.index);
+}
+function render(){
+  $('cartCount').textContent=S.cart.length;
+  const last=recentCartItems();
+  $('lastItems').innerHTML=last.length?last.map(x=>`<div class="item"><b>${esc(x.descripcion)}</b><small>${esc(x.codigo)}</small><div class="qty">${x.cantidad}</div></div>`).join(''):'<div class="empty">Aún no hay partidas</div>';
+
+  const desktopList=$('desktopCartList');
+  const desktopTotals=$('desktopCartTotals');
+  if(desktopTotals){
+    const units=S.cart.reduce((a,x)=>a+Number(x.cantidad||0),0);
+    const boxes=S.cart.reduce((a,x)=>a+Number(x.cajasSalieron ?? (Number(x.cantidadPorCaja)>0 ? Number(x.cantidad)/Number(x.cantidadPorCaja) : 0)),0);
+    const boxesTxt=Math.round((boxes+Number.EPSILON)*1000)/1000;
+    desktopTotals.textContent=`${S.cart.length} partidas · ${boxesTxt} cajas · ${units} piezas`;
+  }
+  if(desktopList){
+    const ordered=orderedCartItems();
+    desktopList.innerHTML=ordered.length?ordered.map(({x,index},displayIndex)=>`<div class="desktop-cart-row">
+      <div class="desktop-cart-index">${displayIndex+1}</div>
+      <div class="desktop-cart-product"><b>${esc(x.descripcion)}</b></div>
+      <div class="desktop-cart-code">${esc(x.codigo)}</div>
+      <div class="desktop-cart-value"><span>Cajas salieron</span><b>${x.cajasSalieron??(Number(x.cantidadPorCaja)>0?Math.round((Number(x.cantidad)/Number(x.cantidadPorCaja)+Number.EPSILON)*1000)/1000:'—')}</b></div>
+      <div class="desktop-cart-value"><span>Pzas/caja</span><b>${x.cantidadPorCaja??'—'}</b></div>
+      <div class="desktop-cart-value desktop-cart-pieces"><span>Total piezas</span><b>${esc(x.cantidad)}</b><small>${x.cajasSalieron??(Number(x.cantidadPorCaja)>0?Math.round((Number(x.cantidad)/Number(x.cantidadPorCaja)+Number.EPSILON)*1000)/1000:'—')} × ${x.cantidadPorCaja??'—'} = ${esc(x.cantidad)}</small></div>
+      <div class="desktop-cart-actions"><button type="button" class="desktop-edit" data-desktop-edit="${index}">MODIFICAR</button><button type="button" class="desktop-delete" data-desktop-delete="${index}">ELIMINAR</button></div>
+    </div>`).join(''):'<div class="empty">Carrito vacío</div>';
+    desktopList.querySelectorAll('[data-desktop-edit]').forEach(b=>b.onclick=()=>editCartQuantity(Number(b.dataset.desktopEdit),'desktop'));
+    desktopList.querySelectorAll('[data-desktop-delete]').forEach(b=>b.onclick=()=>{
+      const i=Number(b.dataset.desktopDelete);
+      if(!confirm('¿Eliminar esta partida del carrito?'))return;
+      const removed=S.cart[i];
+      S.cart.splice(i,1);
+      if(removed)S.last=S.last.filter(x=>x.codigo!==removed.codigo);
+      render();
+      $('scanInput')?.focus();
+    });
+  }
+}
+function searchMasterProducts(text,limit=60){
+  const q=norm(text);if(!q)return[];
+  const toks=words(q);
+  return S.masterProducts.map(p=>{
+    const aliases=(p.codigosEquivalentes||[]).join(' ');
+    const full=norm(`${p.descripcion} ${p.codigo} ${aliases}`),pw=words(p.descripcion);
+    if(!toks.every(t=>tokenMatches(t,pw,full)))return null;
+    let score=0;if(norm(p.codigo)===q)score+=1400;
+    if((p.codigosEquivalentes||[]).some(c=>norm(c)===q))score+=1300;
+    if(norm(p.descripcion)===q)score+=600;if(norm(p.descripcion).startsWith(q))score+=180;
+    toks.forEach(t=>{if(pw.includes(t))score+=25;else if(full.includes(t))score+=12;else score+=3});
+    return{p,score};
+  }).filter(Boolean).sort((a,b)=>b.score-a.score||a.p.descripcion.localeCompare(b.p.descripcion,'es')).slice(0,limit).map(x=>x.p)
+}
+function addMasterProductModal(){
+  if(!S.masterReady||!S.masterProducts.length)return alert('El catálogo de productos activos no está disponible. Vuelve a abrir la app con conexión.');
+  open(`<h2>Ingresar producto del catálogo</h2>
+    <p class="catalog-extra-note">Busca directamente en el catálogo completo de productos activos.</p>
+    <input id="masterQ" class="field" autocomplete="off" placeholder="Código, descripción o código equivalente">
+    <div class="match-hint">Solo se muestran productos con activo = true.</div>
+    <div id="masterRes" class="results master-results"><div class="noresult">Escribe al menos 2 caracteres.</div></div>
+    <button id="masterClose" class="secondary">Cerrar</button>`);
+  $('masterClose').onclick=close;
+  const run=()=>{
+    const q=$('masterQ').value.trim(),box=$('masterRes');
+    if(q.length<2){box.innerHTML='<div class="noresult">Escribe al menos 2 caracteres.</div>';return}
+    const rs=searchMasterProducts(q,60);
+    box.innerHTML=rs.length?rs.map((p,i)=>`<div class="result master-result" data-i="${i}"><b>${esc(p.descripcion)}</b><small>${esc(p.codigo)} · $${Number(p.precioPublico||0).toFixed(2)} · ACTIVO</small></div>`).join(''):'<div class="noresult">Sin coincidencias en productos activos.</div>';
+    [...box.querySelectorAll('.result')].forEach((el,i)=>el.onclick=()=>{
+      const m=rs[i],inv=S.byCode.get(m.codigo);
+      const p=inv?{...inv}:{codigo:m.codigo,descripcion:m.descripcion,inventarioInicial:0,partidas:0,fueraInventario:true};
+      close();selectProduct(p);
+    });
+  };
+  $('masterQ').oninput=run;
+  $('masterQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const exact=S.masterByCode.get($('masterQ').value.trim());if(exact){const inv=S.byCode.get(exact.codigo);close();selectProduct(inv?{...inv}:{codigo:exact.codigo,descripcion:exact.descripcion,inventarioInicial:0,partidas:0,fueraInventario:true})}else run()}};
+  setTimeout(()=>$('masterQ')?.focus(),100)
+}
+function searchModal(initial='',initialResults=null){
+  open(`<h2>Buscar producto</h2><input id="q" class="field" placeholder="Ej. PASTA COLGATE / EMPERADOR VAINILLA" value="${esc(initial)}"><div class="match-hint">Las palabras pueden escribirse en cualquier orden.</div><div id="res" class="results"></div><button id="x" class="secondary">Cerrar</button>`);
+  $('x').onclick=close;
+  const run=()=>{const q=$('q').value.trim();const rs=q.length>=2?searchProducts(q,40):[];renderResults($('res'),rs)};
+  $('q').oninput=run;
+  if(initialResults){renderResults($('res'),initialResults)}else run();
+  setTimeout(()=>$('q').focus(),100)
+}
+function cartSummaryHtml(){
+  const units=S.cart.reduce((a,x)=>a+Number(x.cantidad||0),0);
+  const boxes=S.cart.reduce((a,x)=>a+Number(x.cajasSalieron ?? (Number(x.cantidadPorCaja)>0 ? Number(x.cantidad)/Number(x.cantidadPorCaja) : 0)),0);
+  const boxesTxt=Math.round((boxes+Number.EPSILON)*1000)/1000;
+  return `<div class="shipment-summary">
+    <div><small>Entrega</small><b>${esc(S.user?.nombre||S.user?.usuario||'-')}</b></div>
+    <div><small>Recibe</small><b>${esc(S.recibe||'-')}</b></div>
+    <div><small>Destino</small><b>${esc(S.destino||'-')}</b></div>
+  </div>
+  <div class="cart-totals"><span>${S.cart.length} partidas · ${boxesTxt} cajas</span><b>${units} piezas</b></div>`;
+}
+function cartRowsHtml(editable=true){
+  const ordered=orderedCartItems();
+  if(!ordered.length)return '<div class="empty">Carrito vacío</div>';
+  return `<div class="cart-list">${ordered.map(({x,index},displayIndex)=>`<div class="cart-row-mobile">
+    <div class="cart-index">${displayIndex+1}</div>
+    <div class="cart-product"><b>${esc(x.descripcion)}</b><small>${esc(x.codigo)}</small></div>
+    <div class="cart-qty">
+      <small>Cajas salieron</small><b>${x.cajasSalieron??(Number(x.cantidadPorCaja)>0?Math.round((Number(x.cantidad)/Number(x.cantidadPorCaja)+Number.EPSILON)*1000)/1000:'—')}</b>
+      <small>${x.cantidadPorCaja??'—'} pzas/caja</small>
+      <strong class="cart-pieces-total">= ${x.cantidad} piezas</strong>
+    </div>
+    ${editable?`<div class="cart-row-actions"><button class="cart-edit" data-edit="${index}" aria-label="Modificar cantidad">Editar</button><button class="cart-delete" data-delete="${index}" aria-label="Eliminar">×</button></div>`:''}
+  </div>`).join('')}</div>`;
+}
+function editCartQuantity(index,returnTo='cart'){
+  const item=S.cart[index];
+  if(!item)return;
+  const cajaActual=Number(item.cantidadPorCaja);
+  const cajasActuales=Number(item.cajasSalieron)>0?Number(item.cajasSalieron):(cajaActual>0?Math.round((Number(item.cantidad)/cajaActual+Number.EPSILON)*1000)/1000:'');
+  open(`<h2>Modificar partida</h2>
+    <div class="product-capture-info"><b>${esc(item.descripcion)}</b><small>${esc(item.codigo)} · Inventario inicial: ${item.inventarioInicial}</small></div>
+    <label>Cantidad por caja</label>
+    <input id="editBoxQty" class="field modal-main-input" type="number" min="1" step="1" inputmode="numeric" value="${cajaActual>0?esc(cajaActual):''}" ${cajaActual>0?'disabled':''}>
+    ${cajaActual>0?'<button id="editUnlockBox" class="secondary" style="margin-top:8px">MODIFICAR CAJA</button>':''}
+    <label style="margin-top:14px">Cajas que salieron</label>
+    <input id="editBoxesOut" class="field modal-main-input" type="number" min="0.001" step="0.001" inputmode="decimal" value="${esc(cajasActuales)}">
+    <div class="box-help">Salida calculada: <strong id="editPiecesPreview">${esc(item.cantidad)} piezas</strong>.</div>
+    <div class="actions"><button id="editCancel" class="secondary">Cancelar</button><button id="editSave" class="primary">GUARDAR CAMBIOS</button></div>`);
+  const goBack=()=>{if(returnTo==='review')reviewBeforeFinish();else if(returnTo==='cart')cartModal();else {close();$('scanInput')?.focus();}};
+  $('editCancel').onclick=goBack;
+  if($('editUnlockBox'))$('editUnlockBox').onclick=()=>{$('editBoxQty').disabled=false;$('editUnlockBox').disabled=true;$('editBoxQty').focus();$('editBoxQty').select();};
+  const update=()=>{
+    const bq=Number($('editBoxQty').value), boxes=Number($('editBoxesOut').value);
+    const pieces=bq>0&&boxes>0?Math.round((bq*boxes+Number.EPSILON)*1000)/1000:0;
+    $('editPiecesPreview').textContent=`${pieces} piezas`;
+  };
+  $('editBoxQty').oninput=update;$('editBoxesOut').oninput=update;
+  $('editSave').onclick=async()=>{
+    const boxQty=Number($('editBoxQty').value);
+    const boxes=Number($('editBoxesOut').value);
+    if(!(boxQty>0)||!Number.isInteger(boxQty))return alert('La cantidad por caja debe ser un número entero mayor a cero.');
+    if(!(boxes>0))return alert('Captura cuántas cajas salieron.');
+    const q=Math.round((boxQty*boxes+Number.EPSILON)*1000)/1000;
+    const inicial=Number(item.inventarioInicial||0);
+    if(inicial>=0 && q>inicial){
+      const ok=confirm(`La salida supera el inventario inicial.\n\nInicial: ${inicial}\nSalida: ${q} piezas\n\n¿Deseas continuar?`);
+      if(!ok)return;
+    }
+    $('editSave').disabled=true;
+    try{
+      if(boxQty!==Number(item.cantidadPorCaja))await saveBoxQty(item.codigo,boxQty);
+      item.cantidad=q;
+      item.cantidadPorCaja=boxQty;
+      item.cajasSalieron=boxes;
+      render();
+      goBack();
+      toast('Partida modificada');
+    }catch(e){
+      console.error(e);
+      alert('No se pudieron guardar los cambios.');
+      $('editSave').disabled=false;
+    }
+  };
+  $('editBoxesOut').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('editSave').click();}};
+  setTimeout(()=>$('editBoxesOut')?.focus(),100);
+}
+function bindCartActions(returnTo='cart'){
+  card.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editCartQuantity(Number(b.dataset.edit),returnTo));
+  card.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{
+    const i=Number(b.dataset.delete);
+    if(!confirm('¿Eliminar esta partida del carrito?'))return;
+    const removed=S.cart[i];S.cart.splice(i,1);if(removed)S.last=S.last.filter(x=>x.codigo!==removed.codigo);render();
+    if(returnTo==='review')reviewBeforeFinish();else cartModal();
+  });
+}
+
+function cartModal(){
+  open(`<h2>Carrito de salida</h2>${cartSummaryHtml()}${cartRowsHtml(true)}<button id="x" class="secondary sticky-modal-btn">Cerrar</button>`);
+  $('x').onclick=close;
+  bindCartActions('cart');
+}
+function reviewBeforeFinish(){
+  if(!S.user||!S.recibe||!S.destino)return alert('Faltan datos de la salida.');
+  if(!S.cart.length)return alert('El carrito está vacío.');
+  open(`<h2>Revisar salida</h2><p class="review-note">Confirma los datos y las partidas antes de firmar.</p>${cartSummaryHtml()}${cartRowsHtml(true)}<div class="final-actions"><button id="back" class="secondary">SEGUIR CAPTURANDO</button><button id="tosign" class="primary">CONTINUAR A FIRMA</button></div>`);
+  $('back').onclick=close;
+  $('tosign').onclick=signAndSave;
+  bindCartActions('review');
+}
+
+async function cameraScanner(){
+  if(!S.catalog.length)return alert('El catálogo todavía no está listo.');
+  if(!navigator.mediaDevices?.getUserMedia)return alert('Este dispositivo no permite acceso a cámara desde el navegador.');
+  if(!('BarcodeDetector' in window))return alert('El lector de códigos por cámara no está disponible en este navegador. Usa Chrome actualizado en el celular.');
+  open(`<h2>Escanear código</h2><p class="camera-help">Apunta la cámara al código de barras. La búsqueda se hará únicamente dentro del inventario inicial.</p><div class="camera-frame"><video id="cameraVideo" autoplay playsinline muted></video><div class="scan-line"></div></div><div id="cameraMsg" class="camera-msg">Buscando código...</div><button id="camClose" class="secondary">Cerrar cámara</button>`);
+  $('camClose').onclick=close;
+  try{
+    cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    const video=$('cameraVideo');video.srcObject=cameraStream;await video.play();
+    const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','codabar']});
+    let busy=false;
+    cameraTimer=setInterval(async()=>{
+  diag('BOOT','inicio');
+      if(busy||video.readyState<2)return;busy=true;
+      try{
+        const codes=await detector.detect(video);
+        if(codes.length){
+          const raw=String(codes[0].rawValue||'').trim();
+          if(raw){
+            stopCamera();
+            const p=S.byCode.get(raw)||S.byCode.get(raw.replace(/^0+/,''));
+            if(p){close();selectProduct(p)}
+            else{close();$('scanInput').value=raw;alert(`Código ${raw}
+
+No hay coincidencias en tu catálogo.`);$('scanInput').focus()}
+          }
+        }
+      }catch(e){}finally{busy=false}
+    },350);
+  }catch(e){console.error(e);stopCamera();$('cameraMsg').textContent='No se pudo abrir la cámara. Revisa el permiso de cámara.'}
+}
+
+function configModal(){const d=(S.config.destinos||[]).join('\n');open(`<h2>Configuración</h2><p>Se guarda en /almacenes/abarrotespdd/configuracion/salidas</p><p class="config-note"><b>Quién recibe:</b> se consulta automáticamente desde /CLIENTES/PDD031204KL5/EMPLEADOS/ y solo muestra empleados activos de ALMACEN, ADMINISTRACION, MANTENIMIENTO, LOGISTICA y RUTAS.</p><label>Destinos</label><textarea id="dests" class="field" rows="5" placeholder="Un destino por línea">${esc(d)}</textarea><label>Inventario inicial</label><input id="inv" class="field" value="${esc(S.config.inventarioId)}"><div class="actions"><button id="x" class="secondary">Cancelar</button><button id="save" class="primary">Guardar</button></div>`);$('x').onclick=close;$('save').onclick=async()=>{S.config.destinos=$('dests').value.split('\n').map(x=>x.trim()).filter(Boolean);S.config.inventarioId=$('inv').value.trim()||'INV-ABARROTESPDD-170826';await saveConfig();close();toast('Configuración guardada')}}
+let salidaProcesando=false;
+function bloquearGeneracionSalida(texto='GENERANDO SALIDA…'){
+  let b=document.getElementById('salidaProcessingBlocker');
+  if(!b){
+    b=document.createElement('div');
+    b.id='salidaProcessingBlocker';
+    b.setAttribute('role','alert');
+    b.setAttribute('aria-live','assertive');
+    b.innerHTML=`<div style="width:min(88vw,430px);background:#fff;border-radius:24px;padding:28px 22px;text-align:center;box-shadow:0 24px 90px rgba(0,0,0,.35);border:1px solid #f1caca">
+      <div style="width:54px;height:54px;border:6px solid #f2d3d3;border-top-color:#b91c1c;border-radius:50%;margin:0 auto 18px;animation:salidaSpin .8s linear infinite"></div>
+      <div id="salidaProcessingTitle" style="font-size:22px;font-weight:900;color:#991b1b">${texto}</div>
+      <div id="salidaProcessingSub" style="margin-top:9px;font-size:14px;color:#555;line-height:1.35">No vuelvas a presionar. Espera a que termine el proceso.</div>
+    </div>`;
+    Object.assign(b.style,{position:'fixed',inset:'0',zIndex:'2147483647',background:'rgba(255,255,255,.98)',display:'grid',placeItems:'center',padding:'18px',pointerEvents:'all',touchAction:'none',overscrollBehavior:'none'});
+    document.body.appendChild(b);
+    if(!document.getElementById('salidaProcessingStyle')){
+      const st=document.createElement('style');st.id='salidaProcessingStyle';st.textContent='@keyframes salidaSpin{to{transform:rotate(360deg)}} body.salida-bloqueada{overflow:hidden!important;touch-action:none!important}';document.head.appendChild(st);
+    }
+  }
+  document.body.classList.add('salida-bloqueada');
+  const t=document.getElementById('salidaProcessingTitle');if(t)t.textContent=texto;
+  // Fuerza layout inmediatamente para que Android pinte el bloqueo antes del trabajo pesado.
+  void b.offsetHeight;
+  return b;
+}
+function actualizarBloqueoSalida(texto,subtexto=''){
+  const t=document.getElementById('salidaProcessingTitle');if(t)t.textContent=texto;
+  const s=document.getElementById('salidaProcessingSub');if(s&&subtexto)s.textContent=subtexto;
+}
+function liberarBloqueoSalida(){
+  document.body.classList.remove('salida-bloqueada');
+  document.getElementById('salidaProcessingBlocker')?.remove();
+}
+async function pintarBloqueoSalida(){
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,40))));
+}
+
+function signAndSave(){
+  if(!S.user||!S.recibe||!S.destino||!S.cart.length)return alert('La salida no está completa.');
+
+  open(`<div class="signature-screen">
+    <div class="signature-head">
+      <div>
+        <h2>Firma de quien recibe</h2>
+        <p>Firma sobre la línea.</p>
+      </div>
+    </div>
+    <div class="signature-pad-wrap">
+      <canvas id="sig" class="sig sig-full"></canvas>
+      <div class="signature-line"></div>
+      <div class="signature-name">${esc(S.recibe)}</div>
+    </div>
+    <div class="signature-actions">
+      <button id="btnRegresarCarritoFirma" class="btn secondary">← REGRESAR AL CARRITO</button>
+<button id="clear" class="secondary">BORRAR FIRMA</button>
+      <button id="save" class="primary">CONTINUAR</button>
+    </div>
+  </div>`, 'signature-modal');
+
+  const c=$('sig'),ctx=c.getContext('2d');
+  let down=false,has=false,lastDpr=devicePixelRatio||1;
+  function resize(){
+    const r=c.getBoundingClientRect();
+    const old = has ? c.toDataURL('image/png') : null;
+    lastDpr=devicePixelRatio||1;
+    c.width=Math.max(1,Math.round(r.width*lastDpr));
+    c.height=Math.max(1,Math.round(r.height*lastDpr));
+    ctx.setTransform(lastDpr,0,0,lastDpr,0,0);
+    ctx.lineWidth=2.8;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111';
+    if(old){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,r.width,r.height);img.src=old}
+  }
+  resize();
+  const ro=new ResizeObserver(()=>resize());ro.observe(c);
+  const pos=e=>{const r=c.getBoundingClientRect(),t=e.touches?.[0]||e;return{x:t.clientX-r.left,y:t.clientY-r.top}};
+  const st=e=>{e.preventDefault();down=true;has=true;try{c.setPointerCapture?.(e.pointerId)}catch{}const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)};
+  const mv=e=>{if(!down)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke()};
+  const en=e=>{down=false;try{c.releasePointerCapture?.(e.pointerId)}catch{}};
+  c.onpointerdown=st;c.onpointermove=mv;c.onpointerup=en;c.onpointercancel=en;c.onpointerleave=en;
+
+  $('btnRegresarCarritoFirma').onclick=()=>{
+    ro.disconnect();
+    close();
+    cartModal();
+  };
+  $('clear').onclick=()=>{const r=c.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);has=false};
+  $('save').onclick=async()=>{
+    if(salidaProcesando)return;
+    if(!has)return alert('Falta la firma de quien recibe.');
+
+    // V26: PRIMERA ACCIÓN REAL = BLOQUEAR TODA LA APP.
+    // El guardado, PDF, Firebase y Telegram empiezan DESPUÉS de que Android ya pintó este bloqueo.
+    salidaProcesando=true;
+    bloquearGeneracionSalida('GENERANDO SALIDA…');
+    $('save').disabled=true;$('clear').disabled=true;$('btnRegresarCarritoFirma').disabled=true;
+    c.style.pointerEvents='none';down=false;
+    await pintarBloqueoSalida();
+
+    let pdfBlob=null;
+    try{
+      const now=new Date();
+      const usuarioFolio=String(S.user?.id||S.user?.usuario||'USR').replace(/[^a-zA-Z0-9]/g,'').slice(-6).toUpperCase()||'USR';
+      const folio=`SABPDD-${now.toISOString().slice(0,10).replaceAll('-','')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}${String(now.getMilliseconds()).padStart(3,'0')}-${usuarioFolio}-${crypto.randomUUID().slice(0,4).toUpperCase()}`;
+      const fechaCapturaTxt=(()=>{const [y,m,d]=S.fechaCaptura.split('-');return y&&m&&d?`${d}/${m}/${y}`:S.fechaCaptura})();
+      const firmaData=c.toDataURL('image/png');
+      const salida={folio,almacenId:'abarrotespdd',inventarioId:S.config.inventarioId,fechaCaptura:S.fechaCaptura,fechaCapturaTxt,entrega:{usuarioId:S.user.id,usuario:S.user.usuario||'',nombre:S.user.nombre||'',rol:S.user.rol||'',rutaId:S.user.rutaId||''},recibe:S.recibe,recibeEmpleado:S.recibeEmpleado?{...S.recibeEmpleado}:null,destino:S.destino,partidas:S.cart.map((x,i)=>({renglon:i+1,codigo:x.codigo,descripcion:x.descripcion,cantidad:x.cantidad,inventarioInicial:x.inventarioInicial,cantidadPorCaja:x.cantidadPorCaja??null,cajasSalieron:x.cajasSalieron??(Number(x.cantidadPorCaja)>0?Math.round((Number(x.cantidad)/Number(x.cantidadPorCaja)+Number.EPSILON)*1000)/1000:null),precioPublico:x.precioPublico??null,fueraInventario:x.fueraInventario===true})),totalPartidas:S.cart.length,totalUnidades:S.cart.reduce((a,x)=>a+Number(x.cantidad||0),0),firmaRecibe:firmaData,fechaLocal:now.toLocaleDateString('es-MX'),horaLocal:now.toLocaleTimeString('es-MX'),creadoEnLocal:now.toISOString()};
+
+      actualizarBloqueoSalida('PROTEGIENDO SALIDA…','Guardando una copia local antes de continuar.');
+      if(!queueSalidaLocal(salida))throw new Error('No fue posible proteger la salida en almacenamiento local.');
+      await pintarBloqueoSalida();
+
+      actualizarBloqueoSalida('GENERANDO PDF 80 MM…','Preparando comprobante térmico.');
+      // jsPDF forma parte del stack remoto. Si ya está cargado, esto es inmediato; si no, se carga ahora con el bloqueo visible.
+      await ensureOnlineStack(15000);
+      pdfBlob=makePdf(salida);
+      downloadBlob(pdfBlob,`${folio}_80MM.pdf`);
+      await pintarBloqueoSalida();
+
+      actualizarBloqueoSalida('GRABANDO SALIDA…','Sincronizando con Firebase. No cierres la aplicación.');
+      await syncPendingSalidas();
+      const siguePendiente=pendingSalidasRead().some(x=>x?.folio===folio);
+
+      actualizarBloqueoSalida('FINALIZANDO…','Terminando el comprobante y limpiando la captura.');
+      await pintarBloqueoSalida();
+      ro.disconnect();
+      close();
+      S.cart=[];S.last=[];render();S.recibe='';S.recibeEmpleado=null;S.destino='';S.fechaCaptura='';
+      liberarBloqueoSalida();
+      salidaProcesando=false;
+      showModeGate();
+      alert(siguePendiente
+        ? `Salida protegida localmente\n${folio}\nPDF térmico 80 mm generado\nFirebase pendiente de sincronizar`
+        : `Salida guardada correctamente\n${folio}\nPDF térmico 80 mm generado`);
+    }catch(e){
+      console.error(e);
+      liberarBloqueoSalida();
+      salidaProcesando=false;
+      c.style.pointerEvents='';
+      $('save').disabled=false;$('clear').disabled=false;$('btnRegresarCarritoFirma').disabled=false;
+      alert('No se pudo finalizar la salida. '+(e?.message||''));
+    }
+  };
+}
+
+$('menuBtn').onclick=()=>$('menu').classList.toggle('hidden');
+$('cartBtn').onclick=()=>{$('menu').classList.add('hidden');cartModal()};
+$('cameraBtn').onclick=()=>{$('menu').classList.add('hidden');cameraScanner()};
+$('extraProductBtn').onclick=()=>{$('menu').classList.add('hidden');addMasterProductModal()};
+$('offlineDownloadBtn').onclick=downloadOfflineCatalog;
+$('offlineInfoBtn').onclick=()=>{$('menu').classList.add('hidden');showOfflineInfo()};
+$('blockedCodesBtn').onclick=()=>{$('menu').classList.add('hidden');blockedCodesModal()};
+$('configBtn').onclick=()=>{$('menu').classList.add('hidden');configModal()};
+$('logoutBtn').textContent='↩ Menú Entrada / Salida';
+$('logoutBtn').onclick=()=>{S.cart=[];S.last=[];S.recibe='';S.recibeEmpleado=null;S.destino='';S.fechaCaptura='';render();showModeGate()};
+$('searchBtn').onclick=searchFromMain;$('finishBtn').onclick=reviewBeforeFinish;
+$('scanInput').addEventListener('input',quickSearch);
+$('scanInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();searchFromMain()}};
+
+document.addEventListener('click',e=>{if(!e.target.closest('.capture'))clearQuickResults()});
+
+$('modeEntrada').onclick=()=>{diag('BOTÓN ENTRADA','onclick');enterEntrada()};
+$('modeSalida').onclick=()=>{diag('BOTÓN SALIDA','onclick');enterSalida()};
+$('entryPhotoBtn').onclick=()=>{
+  diag('BOTÓN FOTO','onclick');
+  // Debe ejecutarse directamente dentro del gesto del usuario para Android/Chrome.
+  const input=$('entryPhotoInput');
+  try{diag('FOTO PICKER',typeof input.showPicker==='function'?'showPicker':'input.click');if(typeof input.showPicker==='function')input.showPicker();else input.click()}catch(e){diag('FOTO PICKER ERROR',e.message);console.warn('[FOTO] showPicker fallback',e);input.click()}
+};
+$('entryPhotoInput').addEventListener('change',e=>{diag('INPUT FOTO CHANGE',`archivos=${e.target.files?.length||0}`);addEntryFiles(e.target.files)});
+$('entrySave').onclick=()=>{diag('BOTÓN GUARDAR ENTRADA','onclick');saveEntry()};
+$('entryCancel').onclick=()=>{diag('BOTÓN CANCELAR ENTRADA','onclick');if(ENTRY.photos.length&&!confirm('¿Cancelar esta entrada? Las fotos capturadas no se guardarán.'))return;resetEntry();showModeGate()};
+$('entryBack').onclick=$('entryCancel').onclick;
+
+$('catalogPrepareBtn').onclick=()=>downloadOfflineCatalog({startup:true});
+$('catalogRetryBtn').onclick=async()=>{
+  $('catalogPrepareBtn').classList.add('hidden');$('catalogRetryBtn').classList.add('hidden');
+  setBootStatus('Revisando catálogos...');setConnectionBadge();
+  await enforceStartupCatalogProtection();
+};
+// V18: al recuperar red o volver a primer plano sólo se revisa la regla de 24 h; nunca cambia de pantalla.
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>autoRefreshCatalogIfDue('foreground'),700)});
+
+(async()=>{
+  $('app').classList.add('hidden');$('entryApp').classList.add('hidden');$('modeGate').classList.add('hidden');showLoad('Iniciando aplicación...');
+  try{
+    setConnectionBadge();
+    await startupPwaInstallStep();
+    setBootStatus('Verificando catálogos disponibles en este equipo...');
+    $('bootHint').textContent='Comprobando preparación para trabajar con o sin internet.';
+    // Arranque 100% local: no esperamos Firebase ni una prueba de red.
+    const [cfgCache,userCache]=await Promise.all([cacheGet('config'),cacheGet('fixedUser')]);
+    if(cfgCache?.value)S.config={...S.config,...cfgCache.value};
+    S.user=userCache?.value||{id:FIXED_USER_DOC,usuario:'JUAN',nombre:'JUAN PEREZ',rol:'OPERADOR'};
+    const name=S.user.nombre||S.user.usuario||'JUAN';
+    $('sesionTxt').textContent=name;$('entryUserTxt').textContent=name;$('modeUser').textContent=`Usuario: ${name}`;
+    diag('BOOT','estado local cargado');
+    const catalogsReady=await enforceStartupCatalogProtection();
+    if(catalogsReady){startCatalogDeltaChecks();setTimeout(()=>autoRefreshCatalogIfDue('startup'),900)}
+    if(pendingSalidasRead().length)setTimeout(()=>syncPendingSalidas(),500);
+  }catch(e){console.error(e);setBootStatus(e.message||'No fue posible iniciar la aplicación.');$('bootHint').textContent='Revisa la conexión y vuelve a intentarlo.';$('catalogRetryBtn').classList.remove('hidden')}
+})();

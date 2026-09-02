@@ -1,0 +1,22 @@
+PROVSOFT - ENTRADAS PARA CELULAR
+================================
+
+Esta carpeta contiene únicamente la aplicación móvil de Entradas.
+No incluye la tabla de inventario, salidas, pivotes ni ajustes físicos.
+
+PARA ABRIRLA EN EL CELULAR DENTRO DE LA MISMA RED
+1. Ejecuta INICIAR_ENTRADAS_CELULAR.bat en la computadora.
+2. La ventana negra mostrará una dirección http://192.168...
+3. Abre esa dirección en el navegador del celular.
+4. Computadora y celular deben estar conectados al mismo Wi-Fi.
+5. Mantén abierta la ventana negra durante el uso.
+
+También puedes publicar estos archivos en tu servidor y abrir directamente:
+ENTRADAS_CELULAR.html
+
+CATÁLOGO
+- Descarga solamente productos con activo == true.
+- La descarga completa se realiza una vez por día y se guarda en IndexedDB.
+- Cada búsqueda consulta primero IndexedDB.
+- Si no hay coincidencia local, consulta Firebase por código, ID o concepto
+  exacto y guarda el producto encontrado en IndexedDB.

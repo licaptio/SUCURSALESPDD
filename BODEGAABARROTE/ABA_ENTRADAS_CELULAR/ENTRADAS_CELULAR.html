@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071a31">
+  <title>Entradas de Abarrotes · PROVSOFT</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css?v=20260902">
+  <link rel="stylesheet" href="entradasCelular.css?v=20260902">
+</head>
+<body class="modo-entradas-celular">
+  <div id="loader" class="app-loader">
+    <div class="loader-box">
+      <img src="logo.jfif" class="loader-logo" alt="Logo empresa" onerror="this.style.display='none'">
+      <h2 class="loader-title">PROVEEDORA DE DULCES Y DESECHABLES</h2>
+      <div class="loader-subtitle">PREPARANDO APLICACIÓN DE ENTRADAS</div>
+      <div class="progress-shell"><div id="loaderBar" class="progress-bar"></div></div>
+      <p id="loaderMsg" class="loader-msg">Cargando pendientes y catálogo del día…</p>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section class="card">
+      <section id="panelEntradasZapata" class="panel-entradas-zapata">
+        <header class="entradas-appbar">
+          <div class="entradas-brand">
+            <span class="entradas-kicker">PROVSOFT 2026 · OPERACIÓN DE ALMACÉN</span>
+            <strong>Entradas de Abarrotes</strong>
+            <span>Facturas pendientes, proveedores, enlaces de catálogo e historial en un espacio de trabajo independiente.</span>
+          </div>
+
+          <details id="menuEntradasApp" class="entradas-app-menu">
+            <summary aria-label="Menú de Entradas de Abarrotes" title="Menú">⋮</summary>
+            <div class="entradas-app-menu-panel">
+              <div class="entradas-app-menu-title">
+                <b>ENTRADAS DE ABARROTES</b>
+                <span>Navegación del módulo</span>
+              </div>
+              <button class="tab activo" data-vista="facturas" type="button">Facturas pendientes</button>
+              <button class="tab" data-vista="proveedores" type="button">Proveedores autorizados</button>
+              <button class="tab" data-vista="entradas" type="button">Entradas generadas</button>
+              <button class="tab" data-vista="historial" type="button">Historial</button>
+              <div class="entradas-menu-separador"></div>
+              <button id="btnCerrarEntradasZapata" class="entradas-menu-regresar" type="button">↻ Volver a pendientes</button>
+            </div>
+          </details>
+        </header>
+
+        <div class="entradas-layout entradas-workspace">
+          <section class="contenido entradas-contenido">
+            <div id="vistaFacturas" class="vista activa">
+              <div class="encabezado-vista entradas-page-head">
+                <div>
+                  <span class="entradas-section-kicker">BANDEJA OPERATIVA</span>
+                  <h2>Facturas pendientes</h2>
+                  <p class="texto-ayuda">Desde el 17/08/2026 · Solo proveedores autorizados · Sin entrada previa y sin decisión “no entra”.</p>
+                </div>
+                <button id="btnRefrescarFacturas" class="entradas-btn-secondary" type="button">↻ Refrescar</button>
+              </div>
+              <div id="listaFacturas" class="grid entradas-facturas-grid"></div>
+            </div>
+
+            <div id="vistaProveedores" class="vista provsoft-proveedores">
+              <div class="provsoft-prov-head">
+                <div>
+                  <span class="provsoft-kicker">PROVSOFT 2026 · CONTROL DE CATÁLOGO</span>
+                  <h2>Proveedores autorizados</h2>
+                  <p>Administra qué proveedores pueden generar entradas en ABARROTES PDD. La edición y eliminación se realizan desde una ventana segura.</p>
+                </div>
+                <button id="btnNuevoProveedor" type="button" class="provsoft-btn-primary">+ Nuevo proveedor</button>
+              </div>
+
+              <div class="provsoft-prov-toolbar">
+                <label class="provsoft-search">
+                  <span>Buscar proveedor</span>
+                  <input id="buscarProveedor" type="search" placeholder="RFC, nombre o alias..." autocomplete="off" />
+                </label>
+                <div class="provsoft-prov-stat">
+                  <b id="totalProveedoresAutorizados">0</b>
+                  <span>autorizados</span>
+                </div>
+              </div>
+
+              <div id="listaProveedores" class="provsoft-proveedores-grid"></div>
+            </div>
+
+            <div id="vistaEntradas" class="vista">
+              <div class="encabezado-vista entradas-page-head">
+                <div><span class="entradas-section-kicker">MOVIMIENTOS GENERADOS</span><h2>Entradas de Abarrotes</h2></div>
+                <button id="btnCargarEntradas" class="entradas-btn-secondary" type="button">↻ Actualizar</button>
+              </div>
+              <div id="listaEntradas" class="grid"></div>
+            </div>
+
+            <div id="vistaHistorial" class="vista">
+              <div class="encabezado-vista entradas-page-head">
+                <div>
+                  <span class="entradas-section-kicker">AUDITORÍA</span>
+                  <h2>Historial de Abarrotes</h2>
+                  <p class="texto-ayuda">Facturas que generaron entrada y facturas marcadas como no entra.</p>
+                </div>
+                <button id="btnCargarHistorial" class="entradas-btn-secondary" type="button">↻ Actualizar</button>
+              </div>
+              <div id="listaHistorial" class="grid"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <div id="modalProveedor" class="provsoft-provider-modal oculto" role="dialog" aria-modal="true" aria-labelledby="tituloModalProveedor">
+        <div class="provsoft-provider-card">
+          <div class="provsoft-provider-modal-head">
+            <div>
+              <span class="provsoft-kicker">PROVSOFT 2026</span>
+              <h2 id="tituloModalProveedor">Nuevo proveedor autorizado</h2>
+              <p id="subtituloModalProveedor">Registra el proveedor que podrá generar entradas.</p>
+            </div>
+            <button id="btnCerrarModalProveedor" type="button" class="provsoft-modal-x" aria-label="Cerrar">×</button>
+          </div>
+          <div class="provsoft-provider-modal-body">
+            <div class="provsoft-provider-form">
+              <label><span>RFC del proveedor</span><input id="rfcProveedor" maxlength="20" placeholder="Ej. ABC010203XY1" autocomplete="off" /><small id="ayudaRfcProveedor">Se utilizará como identificador único.</small></label>
+              <label><span>Razón social / nombre</span><input id="nombreProveedor" maxlength="160" placeholder="Nombre del proveedor" autocomplete="off" /></label>
+              <label><span>Alias para tabla</span><input id="aliasPivotProveedor" maxlength="5" placeholder="Máx. 5 caracteres" autocomplete="off" /><small>Nombre corto mostrado en el pivot.</small></label>
+            </div>
+            <div id="zonaEliminarProveedor" class="provsoft-danger-zone oculto">
+              <div><b>Eliminar proveedor</b><span>Dejará de formar parte de los proveedores autorizados. Esta acción no elimina entradas históricas.</span></div>
+              <button id="btnEliminarProveedor" type="button">Eliminar</button>
+            </div>
+          </div>
+          <div class="provsoft-provider-modal-footer">
+            <button id="btnCancelarProveedor" type="button" class="provsoft-btn-secondary">Cancelar</button>
+            <button id="btnGuardarProveedor" type="button" class="provsoft-btn-primary">Guardar proveedor</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+    <div id="modalFactura" class="modal oculto">
+
+    <div class="modal-card modal-card-grande">
+
+        <div class="modal-header">
+
+            <button id="btnCerrarModal" class="cerrar">×</button>
+
+            <h2>Revisar y autorizar entrada</h2>
+
+        </div>
+
+        <div class="modal-body">
+
+            <div id="detalleFactura"></div>
+
+            <div class="bloque-decision">
+
+                <label for="motivoNoEntra">
+                    Motivo si esta factura no entra a Abarrotes
+                </label>
+
+                <textarea
+                    id="motivoNoEntra"
+                    placeholder="Motivo..."
+                ></textarea>
+
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button id="btnCancelarModal">
+                Cancelar
+            </button>
+
+            <button id="btnFacturaNoEntra" class="peligro">
+                Marcar como no entra
+            </button>
+
+            <button id="btnGenerarEntrada" class="principal">
+                Generar entrada
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+  <div id="modalProducto" class="modal oculto modal-secundario" role="dialog" aria-modal="true" aria-labelledby="tituloModalProducto">
+    <div class="modal-card modal-producto-card">
+      <div class="producto-modal-header">
+        <div>
+          <span class="producto-modal-kicker">ENLACE DE CATÁLOGO</span>
+          <h2 id="tituloModalProducto">Seleccionar producto interno</h2>
+          <p>Relaciona el concepto de la factura con el SKU correcto. Puedes cerrar sin enlazar y regresar después.</p>
+        </div>
+        <button id="btnCerrarProducto" class="cerrar producto-cerrar" type="button" title="Cerrar sin enlazar" aria-label="Cerrar sin enlazar">×</button>
+      </div>
+
+      <div class="producto-modal-body">
+        <div id="productoConceptoActual" class="producto-concepto-actual"></div>
+
+        <div class="buscador-producto producto-buscador-mejorado">
+          <div class="producto-busqueda-campo">
+            <span class="producto-busqueda-icono">⌕</span>
+            <input id="buscarProductoTexto" placeholder="Código, descripción, marca o departamento..." autocomplete="off" />
+          </div>
+          <button id="btnBuscarProducto" type="button">Buscar</button>
+        </div>
+
+        <div id="listaProductos" class="lista-productos"></div>
+
+        <div id="productoSeleccionadoBox" class="producto-seleccionado oculto">
+          <div class="producto-seleccionado-head">
+            <div>
+              <span class="producto-modal-kicker">PRODUCTO SELECCIONADO</span>
+              <h3><span id="selCodigoProducto"></span></h3>
+              <p id="selDescripcionProducto"></p>
+            </div>
+            <span class="producto-check">✓</span>
+          </div>
+
+          <div class="producto-cantidad-grid">
+            <div class="cantidad-box">
+              <label for="cantidadEntradaProducto">Cantidad que entrará al almacén</label>
+              <input id="cantidadEntradaProducto" type="number" step="0.0001" />
+              <small>Puedes corregirla si la factura viene en cajas y el inventario se controla en piezas, o viceversa.</small>
+            </div>
+
+            <div>
+              <button id="btnMostrarConversion" type="button" class="btn-secundario producto-btn-conversion">Conversión / factor</button>
+              <div id="conversionBox" class="conversion-box oculto">
+                <label for="operacionConversionProducto">Operación de conversión</label>
+                <select id="operacionConversionProducto" class="conversion-operacion-select">
+                  <option value="">Selecciona operación...</option>
+                  <option value="DIVIDIR">÷ Dividir</option>
+                  <option value="MULTIPLICAR">× Multiplicar</option>
+                </select>
+                <label for="factorConversionProducto">Factor de conversión</label>
+                <input id="factorConversionProducto" type="number" step="0.0001" min="0.0001" />
+                <small id="ayudaConversionProducto">Selecciona si la cantidad facturada se divide o se multiplica por el factor.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="producto-modal-footer">
+        <span class="producto-esc-ayuda"><kbd>Esc</kbd> cierra sin guardar</span>
+        <div class="producto-footer-actions">
+          <button id="btnCancelarProducto" type="button">Cerrar sin enlazar</button>
+          <button id="btnGuardarProductoEnlace" class="principal" type="button" disabled>Guardar enlace</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="modalCargando" class="modal oculto modal-cargando">
+    <div class="modal-card cargando-card">
+      <div class="spinner"></div>
+      <h2>Cargando información</h2>
+      <p id="textoCargando">Preparando facturas pendientes...</p>
+    </div>
+  </div>
+
+  <div id="provsoftToastHost" class="provsoft-toast-host" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const applyVisibleViewport = () => {
+        const vv = window.visualViewport;
+        root.style.setProperty('--ps-visible-w', `${Math.max(240, Math.round(vv ? vv.width : innerWidth))}px`);
+        root.style.setProperty('--ps-visible-h', `${Math.max(240, Math.round(vv ? vv.height : innerHeight))}px`);
+      };
+      applyVisibleViewport();
+      addEventListener('resize', applyVisibleViewport, { passive: true });
+      visualViewport?.addEventListener('resize', applyVisibleViewport, { passive: true });
+      visualViewport?.addEventListener('scroll', applyVisibleViewport, { passive: true });
+    })();
+  </script>
+  <script type="module" src="entradasCelular.js?v=20260902"></script>
+</body>
+</html>
+

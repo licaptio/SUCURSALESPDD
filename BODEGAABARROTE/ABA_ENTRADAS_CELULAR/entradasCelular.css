@@ -1,0 +1,170 @@
+:root {
+  color-scheme: light;
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body.modo-entradas-celular {
+  min-width: 0;
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  overflow-x: hidden;
+  background: #eef3f8;
+}
+
+.modo-entradas-celular .app-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 30%, #173b66 0, #071a31 58%, #04101f 100%);
+  pointer-events: all;
+}
+
+.modo-entradas-celular .app-loader.oculto {
+  display: none !important;
+}
+
+.modo-entradas-celular .loader-box {
+  width: min(86vw, 360px);
+  animation: mobileLoaderEntrada .55s ease-out both;
+}
+
+.modo-entradas-celular .loader-logo {
+  animation: mobileLogoPulso 1.25s ease-in-out infinite;
+}
+
+.modo-entradas-celular .progress-bar {
+  width: 42%;
+  animation: mobileCargaBloqueante 1.15s ease-in-out infinite alternate;
+}
+
+@keyframes mobileLoaderEntrada {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes mobileLogoPulso {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
+  50% { transform: scale(1.045); filter: drop-shadow(0 0 14px rgba(96, 165, 250, .58)); }
+}
+
+@keyframes mobileCargaBloqueante {
+  from { width: 18%; transform: translateX(0); }
+  to { width: 86%; transform: translateX(12%); }
+}
+
+.modo-entradas-celular .wrap,
+.modo-entradas-celular .card {
+  width: 100%;
+  max-width: none;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.modo-entradas-celular .card > :not(#panelEntradasZapata) {
+  display: none !important;
+}
+
+.modo-entradas-celular #panelEntradasZapata {
+  display: block !important;
+  min-height: 100dvh;
+}
+
+.modo-entradas-celular .entradas-appbar {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+}
+
+.modo-entradas-celular .entradas-brand > span:last-child {
+  display: none;
+}
+
+.modo-entradas-celular .entradas-workspace,
+.modo-entradas-celular .entradas-contenido {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+}
+
+.modo-entradas-celular .entradas-contenido {
+  padding-bottom: calc(20px + var(--mobile-safe-bottom));
+}
+
+.modo-entradas-celular input,
+.modo-entradas-celular select,
+.modo-entradas-celular textarea,
+.modo-entradas-celular button {
+  font-size: 16px;
+}
+
+.modo-entradas-celular button,
+.modo-entradas-celular summary {
+  touch-action: manipulation;
+}
+
+.modo-entradas-celular .mobile-error {
+  margin: 16px;
+  padding: 16px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  color: #991b1b;
+  background: #fff1f2;
+}
+
+@media (max-width: 640px) {
+  .modo-entradas-celular .entradas-appbar {
+    min-height: 68px;
+    padding-right: 12px;
+    padding-left: 14px;
+  }
+
+  .modo-entradas-celular .entradas-brand strong {
+    font-size: 1.05rem;
+  }
+
+  .modo-entradas-celular .entradas-kicker {
+    font-size: .7rem;
+  }
+
+  .modo-entradas-celular .entradas-page-head {
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .modo-entradas-celular .entradas-page-head button,
+  .modo-entradas-celular .provsoft-prov-head button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .modo-entradas-celular .entradas-facturas-grid,
+  .modo-entradas-celular .provsoft-proveedores-grid,
+  .modo-entradas-celular #listaEntradas,
+  .modo-entradas-celular #listaHistorial {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modo-entradas-celular .modal-card,
+  .modo-entradas-celular .modal-producto-card,
+  .modo-entradas-celular .provsoft-provider-card {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: var(--ps-visible-h, 100dvh) !important;
+    max-height: var(--ps-visible-h, 100dvh) !important;
+    border-radius: 0 !important;
+  }
+
+  .modo-entradas-celular .producto-cantidad-grid,
+  .modo-entradas-celular .provsoft-provider-form {
+    grid-template-columns: 1fr !important;
+  }
+}

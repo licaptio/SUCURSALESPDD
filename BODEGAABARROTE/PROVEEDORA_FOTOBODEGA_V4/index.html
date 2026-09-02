@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>PROVEEDORA · Foto Bodega V4</title>
+  <link rel="stylesheet" href="./assets/css/styles.css?v=4">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="titleline"><h1>PROVEEDORA · Foto Bodega</h1><span class="version">V4</span></div>
+    <p>fotobodega/abarrotespdd/2026/08</p>
+  </div>
+  <div class="live"><span class="dot"></span><span>Automático · cada 2 min</span></div>
+</header>
+
+<main class="container">
+  <section class="summary">
+    <div>
+      <strong id="total">Cargando archivos…</strong>
+      <div id="range" class="muted"></div>
+    </div>
+    <div id="state" class="state">Iniciando Firebase…</div>
+  </section>
+
+  <div id="error" class="error" hidden></div>
+
+  <section id="gallery" class="gallery">
+    <div class="empty">Conectando con Firebase Storage…</div>
+  </section>
+
+  <nav id="pager" class="pager"></nav>
+</main>
+
+<div id="viewer" class="viewer" hidden>
+  <button id="closeViewer" type="button" aria-label="Cerrar">×</button>
+  <img id="viewerImg" alt="Vista ampliada">
+  <div id="viewerText"></div>
+</div>
+
+<script type="module" src="./assets/js/app.js?v=4"></script>
+</body>
+</html>

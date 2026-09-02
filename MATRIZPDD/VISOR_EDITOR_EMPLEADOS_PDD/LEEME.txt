@@ -1,0 +1,18 @@
+VISOR / EDITOR / ALTA DE EMPLEADOS · PROVSOFT
+
+Colección:
+/CLIENTES/PDD031204KL5/EMPLEADOS/{empleadoId}
+
+FUNCIONES
+- Consulta empleados existentes.
+- Edita únicamente los campos ya existentes del documento seleccionado.
+- Agrega empleados nuevos con el botón “+ Nuevo empleado”.
+- Para el alta, detecta las columnas reales presentes en los empleados existentes.
+- Conserva el tipo de dato predominante de cada columna.
+- No permite crear columnas arbitrarias desde la interfaz.
+- Valida que el ID del nuevo documento no exista.
+- Si existe la columna empleadoId y se deja vacía, usa automáticamente el ID del documento.
+- fechaActualizacion se establece automáticamente cuando esa columna existe.
+
+EJECUCIÓN
+Doble clic en INICIAR.bat y abrir la dirección mostrada.

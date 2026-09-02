@@ -1,6 +1,0 @@
-APIKEY=AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM
-AUTHDOMAIN=inventariopv-643f1.firebaseapp.com
-PROJECTID=inventariopv-643f1
-STORAGEBUCKET=inventariopv-643f1.firebasestorage.app
-MESSAGINGSENDERID=96242533231
-APPID=1:96242533231:web:aae75a18fbaf9840529e9a

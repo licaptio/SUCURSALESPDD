@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>PROVEEDORA · Foto Bodega V7</title>
+  <link rel="stylesheet" href="./assets/css/styles.css?v=6">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="titleline"><h1>PROVEEDORA · Foto Bodega</h1><span class="version">V7</span></div>
+    <p id="storagePath">fotobodega/abarrotespdd/…</p>
+  </div>
+  <div class="live"><span class="dot"></span><span>Automático · cada 2 min</span></div>
+</header>
+
+<main class="container">
+  <section class="filters" aria-label="Selector de fecha">
+    <div class="date-control">
+      <label for="datePicker">Fotos del día</label>
+      <div class="date-row">
+        <button id="prevDay" type="button" class="day-btn" title="Día anterior">‹</button>
+        <input id="datePicker" type="date" min="2026-08-29">
+        <button id="nextDay" type="button" class="day-btn" title="Día siguiente">›</button>
+        <button id="todayBtn" type="button" class="today-btn">Hoy</button>
+      </div>
+      <div class="date-note">Disponible desde el 29 de agosto de 2026.</div>
+    </div>
+    <div class="selected-day">
+      <span>Consultando</span>
+      <strong id="selectedDayText">—</strong>
+    </div>
+  </section>
+
+  <section class="summary">
+    <div>
+      <strong id="total">Cargando archivos…</strong>
+      <div id="range" class="muted"></div>
+    </div>
+    <div id="state" class="state">Iniciando Firebase…</div>
+  </section>
+
+  <div id="error" class="error" hidden></div>
+
+  <section id="gallery" class="gallery">
+    <div class="empty">Conectando con Firebase Storage…</div>
+  </section>
+
+  <nav id="pager" class="pager"></nav>
+</main>
+
+<div id="viewer" class="viewer" hidden>
+  <button id="closeViewer" type="button" aria-label="Cerrar">×</button>
+  <img id="viewerImg" alt="Vista ampliada">
+  <div id="viewerText"></div>
+</div>
+
+<script type="module" src="./assets/js/app.js?v=7"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+PROVEEDORA FOTO BODEGA V7
+
+CAMBIOS:
+- Ya NO queda amarrado a fotobodega/abarrotespdd/2026/08.
+- La ruta cambia automaticamente segun la fecha elegida:
+    2026-08-31 -> fotobodega/abarrotespdd/2026/08
+    2026-09-02 -> fotobodega/abarrotespdd/2026/09
+- Selector de fecha para ver fotos por DIA.
+- Fecha minima bloqueada: 29/08/2026.
+- No permite seleccionar fechas futuras.
+- Por defecto abre el dia de HOY.
+- Botones de dia anterior, dia siguiente y Hoy.
+- Para cada dia busca las carpetas ENT-AAAAMMDD... correspondientes.
+- Sigue actualizando automaticamente cada 2 minutos.
+- 15 fotos por pagina y visor ampliado.
+
+ABRIR:
+Doble clic en ABRIR.bat
+URL: http://localhost:8011
+Debe aparecer V7 arriba.

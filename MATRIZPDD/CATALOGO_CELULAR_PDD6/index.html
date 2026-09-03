@@ -1,0 +1,3552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"
+  />
+  <title>Catálogo de Productos - Proveedora de Dulces y Desechables</title>
+  <meta name="theme-color" content="#a80000" />
+  <meta name="description" content="Catálogo PWA de productos de Proveedora de Dulces y Desechables" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="CataInge" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+<style>
+:root{
+  --azul:#a80000;
+  --azul2:#e00000;
+  --azul3:#7f0000;
+  --gris:#e5e7eb;
+  --gris2:#f8fafc;
+  --gris3:#cbd5e1;
+  --texto:#1f2937;
+  --texto2:#475569;
+  --verde:#166534;
+  --rojo:#991b1b;
+  --blanco:#ffffff;
+  --shadow:0 10px 28px rgba(0,0,0,.10);
+  --shadow2:0 16px 40px rgba(15,23,42,.12);
+  --radius:18px;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,body{
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  font-family:Arial, Helvetica, sans-serif;
+  background:linear-gradient(135deg,#fff4f4,#ffffff);
+  color:var(--texto);
+  overflow:hidden;
+}
+
+body{
+  padding:12px;
+  height:100vh;
+}
+
+/* APP */
+.app{
+  width:100%;
+  height:100%;
+  max-width:1600px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.card{
+  background:rgba(255,255,255,.82);
+  backdrop-filter:blur(8px);
+  border:1px solid rgba(226,232,240,.9);
+  border-radius:24px;
+  box-shadow:var(--shadow2);
+  overflow:hidden;
+  flex:1;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+/* HEADER */
+.head{
+  background:linear-gradient(135deg,var(--azul3),var(--azul2));
+  color:#fff;
+  padding:14px 18px 12px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  flex:0 0 auto;
+}
+
+.head h1{
+  margin:0;
+  font-size:20px;
+  line-height:1.15;
+  font-weight:900;
+  letter-spacing:.2px;
+}
+
+.head p{
+  margin:4px 0 0;
+  font-size:12px;
+  opacity:.96;
+}
+
+
+.brand-head{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.brand-logo{
+  width:190px;
+  max-height:78px;
+  object-fit:contain;
+  background:#fff;
+  border-radius:12px;
+  padding:5px;
+  flex:0 0 auto;
+}
+.brand-copy{min-width:0;}
+.brand-copy h1{text-transform:uppercase;}
+
+/* COSTOS */
+.costos-wrap{grid-area:costos;min-height:0;}
+.costos-panel{
+  height:100%;
+  border:1px solid #ffd0d0;
+  border-radius:22px;
+  background:linear-gradient(180deg,#fff 0%,#fff5f5 100%);
+  box-shadow:0 8px 24px rgba(127,0,0,.08);
+  overflow:hidden;
+}
+.costos-head{
+  padding:11px 15px;
+  background:linear-gradient(135deg,#7f0000,#e00000);
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.costos-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  padding:12px;
+}
+.costo-card{
+  border:1px solid #ffd5d5;
+  border-radius:16px;
+  padding:12px;
+  background:#fff;
+}
+.costo-card.destacado{
+  background:linear-gradient(135deg,#a80000,#e00000);
+  color:#fff;
+  border:none;
+}
+.costo-label{
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#7f1d1d;
+  margin-bottom:6px;
+}
+.costo-card.destacado .costo-label{color:#ffe5e5;}
+.costo-valor{font-size:26px;font-weight:900;line-height:1;}
+.costo-detalle{font-size:10px;font-weight:700;margin-top:7px;color:#7f1d1d;}
+.costo-card.destacado .costo-detalle{color:#ffe5e5;}
+
+/* PANEL DE BUSQUEDA */
+.panel{
+  padding:12px 16px 10px;
+  background:linear-gradient(180deg,#ffffff 0%, #fff7f7 100%);
+  border-bottom:1px solid #e5e7eb;
+  flex:0 0 auto;
+}
+
+.panel-grid{
+  display:grid;
+  grid-template-columns:minmax(320px,560px) auto;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.buscador-wrap{
+  position:relative;
+  width:100%;
+  max-width:560px;
+}
+
+input{
+  width:100%;
+  height:44px;
+  padding:0 14px;
+  border-radius:14px;
+  border:1px solid #d1d5db;
+  background:#fff;
+  color:#0f172a;
+  font-size:15px;
+  font-weight:600;
+  transition:.18s ease;
+}
+
+input::placeholder{
+  color:#94a3b8;
+  font-weight:500;
+}
+
+input:focus{
+  outline:none;
+  border-color:var(--azul2);
+  box-shadow:0 0 0 4px rgba(12,108,189,.12);
+}
+
+.acciones{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+}
+
+.btn-sec{
+  height:44px;
+  padding:0 16px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#fff1f1,#ffe0e0);
+  color:#820000;
+  font-weight:800;
+  font-size:13px;
+  cursor:pointer;
+  white-space:nowrap;
+  box-shadow:0 4px 10px rgba(12,108,189,.08);
+  transition:.18s ease;
+}
+
+.btn-sec:hover{
+  transform:translateY(-1px);
+  background:linear-gradient(135deg,#ffe0e0,#ffc2c2);
+}
+
+.status{
+  margin-top:10px;
+  padding:9px 12px;
+  border-radius:12px;
+  font-size:12px;
+  display:none;
+  font-weight:700;
+}
+
+.status.ok{
+  display:block;
+  background:#ecfdf3;
+  color:var(--verde);
+  border:1px solid #bbf7d0;
+}
+
+.status.error{
+  display:block;
+  background:#fef2f2;
+  color:var(--rojo);
+  border:1px solid #fecaca;
+}
+
+.status.info{
+  display:block;
+  background:#fff3f3;
+  color:#b00000;
+  border:1px solid #ffc2c2;
+}
+
+/* SUGERENCIAS */
+.sugerencias{
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  right:0;
+  background:#fff;
+  border:1px solid #dbe2ea;
+  border-radius:16px;
+  box-shadow:0 18px 40px rgba(0,0,0,.14);
+  display:none;
+  z-index:50;
+  max-height:320px;
+  overflow:auto;
+}
+
+.sugerencias.show{
+  display:block;
+}
+
+.sugerencia-item{
+  padding:10px 12px;
+  border-bottom:1px solid #eef2f7;
+  cursor:pointer;
+  transition:.15s;
+}
+
+.sugerencia-item:last-child{
+  border-bottom:none;
+}
+
+.sugerencia-item:hover,
+.sugerencia-item.active{
+  background:#fff2f2;
+}
+
+.sugerencia-title{
+  font-size:14px;
+  font-weight:900;
+  color:#111827;
+  margin-bottom:3px;
+}
+
+.sugerencia-meta{
+  font-size:11px;
+  color:#475569;
+  line-height:1.35;
+}
+
+.main{
+  flex:1;
+  min-height:0;
+  padding:12px 16px 16px;
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(420px,1fr);
+  grid-template-rows:130px 170px 150px minmax(190px,1fr);
+  grid-template-areas:
+    "producto fotos"
+    "precio fotos"
+    "costos ficha"
+    "especial ficha";
+  gap:12px;
+  overflow:hidden;
+  align-items:stretch;
+}
+
+
+/* AREAS */
+.concepto-main{
+  grid-area:producto;
+  min-height:0;
+}
+
+.precio-publico-wrap{
+  grid-area:precio;
+  min-height:0;
+}
+
+.precio-especial-wrap-col{
+  grid-area:especial;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.ficha-col{
+  grid-area:ficha;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.fotos-col{
+  grid-area:fotos;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+/* TARJETAS GENERALES */
+.box{
+  background:linear-gradient(180deg,#ffffff 0%, #fff7f7 100%);
+  border:1px solid #e7edf5;
+  border-radius:22px;
+  padding:14px;
+  min-height:0;
+  height:100%;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 6px 18px rgba(15,23,42,.05);
+}
+
+.concepto-section{
+  position:relative;
+  background:linear-gradient(180deg,#ffffff 0%, #fff7f7 100%);
+  border:1px solid #dbe7f3;
+  border-radius:22px;
+  box-shadow:0 8px 24px rgba(15,23,42,.08);
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.concepto-section::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  bottom:0;
+  width:5px;
+  background:linear-gradient(180deg,#f59e0b,#fbbf24);
+}
+
+.concepto-label{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#92400e;
+  padding:12px 16px 8px 18px;
+  border-bottom:1px solid rgba(148,163,184,.18);
+  background:linear-gradient(180deg,#fffdf7 0%, #fff7df 100%);
+  margin:0;
+}
+
+.concepto-texto{
+  font-size:30px;
+  font-weight:900;
+  color:#78350f;
+  line-height:1.08;
+  letter-spacing:-.02em;
+  padding:14px 16px 4px 18px;
+  word-break:break-word;
+}
+
+.codigo-texto{
+  font-size:13px;
+  color:#92400e;
+  font-weight:800;
+  padding:0 16px 14px 18px;
+  margin:0;
+  font-family:inherit;
+}
+
+/* PANEL PRECIO */
+.precio-panel{
+  position:relative;
+  border-radius:22px;
+  overflow:hidden;
+  border:1px solid #dbe7f3;
+  box-shadow:0 8px 24px rgba(15,23,42,.08);
+  background:#fff;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+.precio-panel::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  bottom:0;
+  width:5px;
+  background:linear-gradient(180deg,#a80000,#e00000);
+}
+
+.precio-panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 16px 10px;
+  border-bottom:1px solid rgba(148,163,184,.18);
+  flex:0 0 auto;
+}
+
+.precio-panel-kicker{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#a80000;
+}
+
+.precio-panel-mini{
+  margin-top:3px;
+  font-size:11px;
+  color:#64748b;
+  font-weight:700;
+}
+
+.precio-panel-icon{
+  width:40px;
+  height:40px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:19px;
+  background:linear-gradient(135deg,#fff1f1,#ffe0e0);
+  border:1px solid #ffc2c2;
+  flex:0 0 auto;
+}
+
+.precio-panel-body{
+  padding:12px 16px 14px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height:0;
+}
+
+.precio-publico{
+  background:linear-gradient(135deg,#a80000 0%, #e00000 100%);
+  border:none;
+  min-height:140px;
+}
+
+.precio-publico .precio-panel-head{
+  border-bottom:1px solid rgba(255,255,255,.14);
+}
+
+.precio-publico .precio-panel-kicker{
+  color:#ffe0e0;
+}
+
+.precio-publico .precio-panel-icon{
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.18);
+}
+
+.precio-publico .precio-panel-body{
+  justify-content:center;
+}
+
+.precio-panel-amount{
+  font-size:40px;
+  font-weight:900;
+  line-height:1.02;
+  letter-spacing:-.02em;
+  margin-bottom:8px;
+  color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,.12);
+  word-break:break-word;
+}
+
+.precio-panel-note{
+  font-size:13px;
+  font-weight:700;
+  color:#ffe5e5;
+}
+
+.precio-especial{
+  background:linear-gradient(180deg,#ffffff 0%, #fff7f7 100%);
+  min-height:0;
+  height:100%;
+}
+
+.precio-especial .precio-panel-body{
+  padding:10px 14px 14px;
+  overflow:visible;
+  height:auto;
+  display:block;
+}
+
+.precio-especial-scroller{
+  height:auto;
+  min-height:0;
+  overflow:visible;
+  padding-right:0;
+}
+
+
+
+.precio-especial-empty{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:120px;
+  border:1px dashed #cbd5e1;
+  border-radius:18px;
+  background:#f8fafc;
+  color:#64748b;
+  font-size:13px;
+  font-weight:800;
+  text-align:center;
+  padding:16px;
+}
+
+.tabla-precios-pro{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 6px;
+}
+
+.tabla-precios-pro thead th{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:#64748b;
+  text-align:left;
+  padding:0 8px 2px;
+  font-weight:900;
+}
+
+.tabla-precios-pro tbody td{
+  padding:7px 8px;
+  font-size:12px;
+  font-weight:800;
+  color:#0f172a;
+  border-top:1px solid #eef2f7;
+  border-bottom:1px solid #eef2f7;
+}
+
+.tag-cantidad{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 8px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#ffe8e8,#ffe0e0);
+  border:1px solid #ffc2c2;
+  color:#a80000;
+  font-size:10px;
+  font-weight:900;
+}
+
+.tabla-precios-pro tbody td:first-child{
+  border-left:1px solid #eef2f7;
+  border-radius:14px 0 0 14px;
+}
+
+.tabla-precios-pro tbody td:last-child{
+  border-right:1px solid #eef2f7;
+  border-radius:0 14px 14px 0;
+}
+
+.tag-cantidad{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:5px 10px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#ffe8e8,#ffe0e0);
+  border:1px solid #ffc2c2;
+  color:#a80000;
+  font-size:11px;
+  font-weight:900;
+}
+
+.precio-unit{
+  color:#0f172a;
+  font-weight:900;
+}
+
+.precio-total{
+  color:#a80000;
+  font-weight:900;
+}
+
+/* FICHA */
+.section-title{
+  margin:0 0 10px;
+  font-size:14px;
+  font-weight:900;
+  color:var(--azul);
+  flex:0 0 auto;
+}
+
+.info-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:8px;
+  overflow:auto;
+  min-height:0;
+  padding-right:2px;
+  flex:1;
+}
+
+.info-item{
+  background:#f8fafc;
+  border-radius:14px;
+  padding:10px;
+  border:1px solid #eef2ff;
+}
+
+.info-item-label{
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  color:#64748b;
+  margin-bottom:5px;
+  font-weight:900;
+}
+
+.info-item-value{
+  font-size:12px;
+  font-weight:800;
+  color:#1e293b;
+  word-break:break-word;
+  line-height:1.35;
+}
+
+/* FOTOS */
+.fotos-box{
+  min-height:100%;
+  max-height:none;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+.fotos-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.fotos-count{
+  font-size:11px;
+  font-weight:800;
+  color:#64748b;
+  background:#f1f5f9;
+  border:1px solid #e2e8f0;
+  padding:5px 9px;
+  border-radius:999px;
+}
+
+.fotos-scroller{
+  display:flex;
+  gap:12px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:4px 4px 10px;
+  scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;
+  min-height:0;
+  flex:1;
+  align-items:stretch;
+}
+
+.fotos-empty{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:100%;
+  min-height:260px;
+  border:1px dashed #cbd5e1;
+  border-radius:18px;
+  background:#f8fafc;
+  color:#64748b;
+  font-size:13px;
+  font-weight:800;
+  text-align:center;
+  padding:16px;
+}
+
+.foto-card{
+  width:240px;
+  min-width:240px;
+  max-width:240px;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(15,23,42,.08);
+  scroll-snap-align:start;
+  flex-shrink:0;
+}
+
+.foto-stage{
+  width:100%;
+  height:220px;
+  background:#f1f5f9;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+.foto-stage img{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+}
+
+.foto-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px 10px;
+  border-top:1px solid #eef2f7;
+  background:#fff;
+}
+
+.foto-label{
+  font-size:11px;
+  font-weight:800;
+  color:#0f172a;
+}
+
+.btn-rotar{
+  border:none;
+  background:#a80000;
+  color:#fff;
+  padding:6px 10px;
+  border-radius:10px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+/* OVERLAY DE CARGA REAL */
+.overlay-carga{
+  position:fixed;
+  inset:0;
+  background:rgba(248,250,252,.88);
+  backdrop-filter:blur(4px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:2000;
+}
+
+.overlay-carga.hidden{
+  display:none;
+}
+
+.caja-carga{
+  width:min(460px, calc(100% - 40px));
+  background:#fff;
+  border:1px solid #dbe2ea;
+  border-radius:24px;
+  box-shadow:0 24px 60px rgba(0,0,0,.18);
+  padding:22px 20px 18px;
+  text-align:center;
+}
+
+.caja-carga h2{
+  margin:0 0 8px;
+  font-size:22px;
+  color:#a80000;
+  font-weight:900;
+}
+
+.caja-carga .sub{
+  font-size:13px;
+  color:#64748b;
+  font-weight:700;
+}
+
+.barra{
+  height:14px;
+  background:#e5e7eb;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:18px;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.08);
+}
+
+.barra-fill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(135deg,#a80000,#e00000);
+  border-radius:999px;
+  transition:width .25s ease;
+}
+
+.carga-texto{
+  margin-top:10px;
+  font-size:13px;
+  color:#334155;
+  font-weight:700;
+}
+
+/* SCANNER */
+.scanner-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.75);
+  z-index:3000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
+
+.scanner-modal.hidden{
+  display:none;
+}
+
+.scanner-box{
+  width:min(100%, 500px);
+  background:#fff;
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.28);
+}
+
+.scanner-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 16px;
+  background:linear-gradient(135deg,#a80000,#e00000);
+  color:#fff;
+}
+
+.scanner-head h3{
+  margin:0;
+  font-size:17px;
+}
+
+.scanner-close{
+  border:none;
+  background:transparent;
+  color:#fff;
+  font-size:24px;
+  cursor:pointer;
+}
+
+.scanner-body{
+  position:relative;
+  background:#000;
+  aspect-ratio:3/4;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+#scannerVideo{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.scanner-line{
+  position:absolute;
+  left:10%;
+  right:10%;
+  top:50%;
+  height:2px;
+  background:#22c55e;
+  box-shadow:0 0 12px rgba(34,197,94,.8);
+}
+
+.scanner-msg{
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:12px;
+  background:rgba(0,0,0,.55);
+  color:#fff;
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:12px;
+  text-align:center;
+}
+
+.scanner-actions{
+  display:flex;
+  gap:10px;
+  padding:12px;
+  flex-wrap:wrap;
+}
+
+.scanner-actions .btn-sec{
+  flex:1;
+}
+
+
+/* RESPONSIVE */
+@media (max-width: 1100px){
+  html,body{
+    overflow:auto;
+    height:auto;
+  }
+
+  body{
+    padding:10px;
+    height:auto;
+  }
+
+  .app{
+    height:auto;
+    min-height:100vh;
+  }
+
+  .card{
+    height:auto;
+  }
+
+  .panel-grid{
+    grid-template-columns:1fr;
+  }
+
+  .buscador-wrap{
+    max-width:none;
+  }
+
+  .main{
+    grid-template-columns:1fr;
+    grid-template-rows:auto;
+    grid-template-areas:
+      "producto"
+      "precio"
+      "costos"
+      "especial"
+      "fotos"
+      "ficha";
+    overflow:visible;
+  }
+
+  .ficha-col,
+  .precio-especial-wrap-col,
+  .fotos-col,
+  .info-grid,
+  .precio-especial-scroller{
+    height:auto;
+    max-height:none;
+    overflow:visible;
+  }
+
+  .fotos-box{
+    min-height:200px;
+    max-height:none;
+  }
+}
+
+@media (max-width: 768px){
+  body{
+    padding:8px;
+  }
+
+  .head{
+    padding:10px 12px;
+  }
+
+  .head h1{
+    font-size:18px;
+  }
+
+  .head p{
+    font-size:10px;
+  }
+
+  .panel{
+    padding:10px 12px;
+  }
+
+  .input{
+    font-size:15px;
+  }
+
+  .main{
+    padding:10px;
+    gap:10px;
+  }
+
+  .concepto-texto{
+    font-size:15px;
+  }
+
+  .precio-panel-amount{
+    font-size:34px;
+  }
+
+  .info-grid{
+    grid-template-columns:1fr;
+  }
+
+  .brand-head{align-items:flex-start;gap:9px;}
+  .brand-logo{width:110px;max-height:58px;padding:3px;border-radius:9px;}
+  .brand-copy h1{font-size:14px;line-height:1.15;}
+  .brand-copy p{font-size:9px;}
+  .costos-grid{grid-template-columns:1fr;padding:10px;}
+  .costo-valor{font-size:24px;}
+}
+/* RESULTADOS EN MODAL MOVIL */
+.resultados-mobile-head{
+  display:none;
+}
+
+/* VISOR / CARRUSEL DE FOTOS */
+.foto-viewer-modal{
+  position:fixed;
+  inset:0;
+  z-index:5000;
+  background:rgba(0,0,0,.94);
+  display:flex;
+  flex-direction:column;
+}
+.foto-viewer-modal.hidden{display:none;}
+.foto-viewer-head{
+  min-height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 14px;
+  color:#fff;
+  background:rgba(0,0,0,.78);
+  flex:0 0 auto;
+}
+.foto-viewer-title{font-size:14px;font-weight:900;}
+.foto-viewer-close{
+  width:42px;height:42px;border:0;border-radius:12px;
+  background:rgba(255,255,255,.12);color:#fff;font-size:24px;cursor:pointer;
+}
+.foto-viewer-body{
+  position:relative;
+  flex:1;
+  min-height:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  touch-action:pan-y;
+}
+.foto-viewer-img{
+  max-width:100%;max-height:100%;object-fit:contain;
+  user-select:none;-webkit-user-drag:none;
+}
+.foto-viewer-nav{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:48px;height:56px;border:0;border-radius:14px;
+  background:rgba(255,255,255,.15);color:#fff;font-size:30px;cursor:pointer;
+}
+.foto-viewer-prev{left:10px;}
+.foto-viewer-next{right:10px;}
+.foto-viewer-count{
+  position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+  color:#fff;background:rgba(0,0,0,.65);padding:7px 12px;border-radius:999px;
+  font-size:12px;font-weight:900;
+}
+.foto-stage img{cursor:pointer;}
+
+@media (max-width: 768px){
+  .head{display:none;}
+  html,body{height:100%;overflow:hidden;}
+  body{padding:0;background:#fff;}
+  .app,.card{height:100vh;min-height:100vh;border-radius:0;}
+  .card{border:0;}
+  .head{padding:8px 10px;}
+  .brand-logo{width:92px;max-height:48px;}
+  .brand-copy h1{font-size:12px;}
+  .brand-copy p{display:none;}
+  .panel{padding:12px;flex:1;display:flex;flex-direction:column;justify-content:flex-start;border-bottom:0;}
+  .panel-grid{display:flex;flex-direction:column;gap:12px;}
+  .buscador-wrap{width:100%;}
+  input{height:52px;font-size:16px;border-radius:16px;}
+  .acciones{width:100%;}
+  .acciones .btn-sec{height:50px;flex:1;font-size:14px;}
+  #btnInstalar:not([hidden]){display:none;}
+  .status{margin-top:10px;}
+
+  .main{
+    position:fixed;
+    inset:0;
+    z-index:4000;
+    display:none;
+    grid-template-columns:1fr;
+    grid-template-rows:auto;
+    grid-template-areas:
+      "producto"
+      "precio"
+      "costos"
+      "especial"
+      "fotos"
+      "ficha";
+    gap:10px;
+    padding:68px 10px 18px;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    background:#f8fafc;
+  }
+  .main.resultados-abiertos{display:grid;}
+  .resultados-mobile-head{
+    position:fixed;
+    top:0;left:0;right:0;
+    z-index:4010;
+    height:58px;
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:8px 10px;
+    background:linear-gradient(135deg,#7f0000,#e00000);
+    color:#fff;
+    box-shadow:0 6px 18px rgba(0,0,0,.18);
+  }
+  .main.resultados-abiertos .resultados-mobile-head{display:flex;}
+  .resultados-mobile-title{font-weight:900;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .resultados-mobile-close{border:0;background:rgba(255,255,255,.16);color:#fff;width:42px;height:42px;border-radius:12px;font-size:22px;}
+  .ficha-col,.precio-especial-wrap-col,.fotos-col,.info-grid,.precio-especial-scroller{height:auto;max-height:none;overflow:visible;}
+  .fotos-box{min-height:auto;}
+  .fotos-scroller{min-height:118px;gap:8px;}
+  .foto-card{width:106px;min-width:106px;max-width:106px;border-radius:14px;}
+  .foto-stage{height:92px;}
+  .foto-toolbar{padding:6px;}
+  .foto-label{font-size:10px;}
+  .btn-rotar{display:none;}
+  .fotos-empty{min-height:100px;}
+  .foto-viewer-nav{width:42px;height:50px;}
+}
+
+/* MENÚ PRINCIPAL DESPUÉS DE SINCRONIZAR */
+.menu-inicial{
+  position:fixed;
+  inset:0;
+  z-index:1900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:linear-gradient(135deg,#fff4f4,#ffffff);
+}
+.menu-inicial.hidden{display:none;}
+.menu-inicial-card{
+  width:min(560px,100%);
+  background:rgba(255,255,255,.96);
+  border:1px solid #e2e8f0;
+  border-radius:28px;
+  box-shadow:0 24px 70px rgba(0,0,0,.16);
+  padding:28px;
+  text-align:center;
+}
+.menu-inicial-logo{
+  width:110px;
+  max-width:34vw;
+  border-radius:18px;
+  box-shadow:0 8px 22px rgba(0,0,0,.10);
+  margin-bottom:14px;
+}
+.menu-inicial-card h2{margin:0;color:#8f0000;font-size:25px;font-weight:900;}
+.menu-inicial-card p{margin:8px 0 22px;color:#64748b;font-size:14px;font-weight:700;}
+.menu-opciones{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.menu-opcion{
+  min-height:128px;
+  border:0;
+  border-radius:22px;
+  padding:18px 14px;
+  cursor:pointer;
+  font-weight:900;
+  font-size:18px;
+  line-height:1.2;
+  box-shadow:0 10px 24px rgba(0,0,0,.12);
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.menu-opcion:active{transform:scale(.98);}
+.menu-opcion.articulo{background:linear-gradient(135deg,#8f0000,#e00000);color:white;}
+.menu-opcion.catalogo{background:#fff;color:#8f0000;border:2px solid #d90000;}
+.menu-opcion .menu-icono{display:block;font-size:36px;margin-bottom:10px;}
+.menu-instalar{
+  margin-top:14px;
+  width:100%;
+  min-height:58px;
+  border:0;
+  border-radius:16px;
+  background:#111827;
+  color:white;
+  font-size:16px;
+  font-weight:900;
+  cursor:pointer;
+}
+.menu-instalar:active{transform:scale(.99);}
+.install-info{margin-top:10px!important;font-size:12px!important;line-height:1.4;color:#64748b!important;}
+.app.oculta-por-menu{display:none;}
+.btn-volver-menu{
+  border:1px solid rgba(255,255,255,.45);
+  background:rgba(255,255,255,.14);
+  color:#fff;
+  border-radius:10px;
+  padding:7px 10px;
+  font-weight:800;
+  cursor:pointer;
+  margin-left:auto;
+}
+@media(max-width:600px){
+  .menu-inicial{padding:14px;}
+  .menu-inicial-card{padding:22px 16px;border-radius:22px;}
+  .menu-inicial-card h2{font-size:22px;}
+  .menu-opciones{grid-template-columns:1fr;gap:12px;}
+  .menu-opcion{min-height:112px;font-size:17px;}
+}
+
+
+
+/* ===== MODAL MOVIL COMPACTO SIN SCROLL V2 ===== */
+@media (max-width: 768px){
+  .main{
+    height:100dvh !important;
+    max-height:100dvh !important;
+    overflow:hidden !important;
+    padding:56px 8px 8px !important;
+    gap:6px !important;
+    grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr) !important;
+    grid-template-rows:64px 104px 108px minmax(0,1fr) 88px !important;
+    grid-template-areas:
+      "producto producto"
+      "precio costos"
+      "especial especial"
+      "ficha ficha"
+      "fotos fotos" !important;
+    align-items:stretch !important;
+    font-family:Arial,Helvetica,sans-serif !important;
+  }
+
+  .resultados-mobile-head{
+    height:50px !important;
+    padding:5px 8px !important;
+  }
+  .resultados-mobile-title{font-size:12px !important;}
+  .resultados-mobile-close{width:38px !important;height:38px !important;border-radius:10px !important;font-size:20px !important;}
+
+  .concepto-section{
+    padding:8px 10px !important;
+    border-radius:14px !important;
+    overflow:hidden !important;
+  }
+  .concepto-label{font-size:8px !important;margin-bottom:2px !important;}
+  .concepto-texto{
+    font-size:12px !important;
+    line-height:1.15 !important;
+    max-height:29px !important;
+    overflow:hidden !important;
+    display:-webkit-box !important;
+    -webkit-line-clamp:2 !important;
+    -webkit-box-orient:vertical !important;
+  }
+  .codigo-texto{font-size:9px !important;margin-top:3px !important;}
+
+  .precio-publico-wrap,.costos-wrap,.precio-especial-wrap-col,.ficha-col,.fotos-col{
+    min-width:0 !important;
+    min-height:0 !important;
+    height:100% !important;
+    overflow:hidden !important;
+  }
+
+  .precio-panel,.costos-panel,.box,.fotos-box{
+    border-radius:14px !important;
+    box-shadow:0 3px 10px rgba(15,23,42,.06) !important;
+  }
+  .precio-panel-head{padding:7px 9px !important;min-height:0 !important;}
+  .precio-panel-kicker{font-size:9px !important;letter-spacing:.05em !important;}
+  .precio-panel-mini,.precio-panel-note{font-size:8px !important;line-height:1.1 !important;}
+  .precio-panel-icon{width:30px !important;height:30px !important;border-radius:9px !important;font-size:15px !important;}
+  .precio-panel-body{padding:7px 9px !important;}
+  .precio-panel-amount{font-size:28px !important;line-height:.95 !important;margin:0 0 4px !important;}
+
+  .costos-head{padding:6px 8px !important;font-size:8px !important;}
+  .costos-grid{
+    grid-template-columns:1fr !important;
+    grid-template-rows:1fr 1fr !important;
+    gap:4px !important;
+    padding:5px !important;
+    height:calc(100% - 26px) !important;
+  }
+  .costo-card{padding:5px 7px !important;border-radius:9px !important;min-height:0 !important;overflow:hidden !important;}
+  .costo-label{font-size:7px !important;margin-bottom:2px !important;line-height:1 !important;}
+  .costo-valor{font-size:17px !important;line-height:1 !important;}
+  .costo-detalle{font-size:6.8px !important;margin-top:2px !important;line-height:1.05 !important;white-space:nowrap !important;overflow:hidden !important;text-overflow:ellipsis !important;}
+
+  .precio-especial-wrap-col .precio-panel{height:100% !important;overflow:hidden !important;}
+  .precio-especial-wrap-col .precio-panel-head{height:34px !important;}
+  .precio-especial-wrap-col .precio-panel-body{height:calc(100% - 34px) !important;padding:3px 7px 5px !important;overflow:hidden !important;}
+  .precio-especial-scroller{height:100% !important;overflow:hidden !important;max-height:none !important;}
+  .tabla-precios-pro{font-size:8px !important;line-height:1 !important;width:100% !important;}
+  .tabla-precios-pro th{font-size:7px !important;padding:3px 4px !important;}
+  .tabla-precios-pro td{font-size:8px !important;padding:3px 4px !important;}
+  .tag-cantidad{font-size:7px !important;padding:2px 5px !important;white-space:nowrap !important;}
+  .precio-especial-empty{font-size:9px !important;min-height:0 !important;padding:10px !important;}
+
+  .ficha-col{padding:7px !important;}
+  .ficha-col .section-title{font-size:10px !important;margin:0 0 4px !important;line-height:1 !important;}
+  .info-grid{
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    grid-auto-rows:minmax(0,1fr) !important;
+    gap:4px !important;
+    overflow:hidden !important;
+    height:100% !important;
+    padding:0 !important;
+  }
+  .info-item{padding:4px 5px !important;border-radius:7px !important;overflow:hidden !important;min-height:0 !important;}
+  .info-item-label{font-size:6.5px !important;line-height:1 !important;letter-spacing:.15px !important;margin-bottom:2px !important;white-space:nowrap !important;overflow:hidden !important;text-overflow:ellipsis !important;}
+  .info-item-value{font-size:8.5px !important;line-height:1.05 !important;word-break:break-word !important;max-height:20px !important;overflow:hidden !important;}
+
+  .fotos-col .fotos-box{padding:6px 8px !important;}
+  .fotos-head{height:22px !important;min-height:22px !important;margin:0 !important;align-items:center !important;}
+  .fotos-head .section-title{font-size:9px !important;margin:0 !important;}
+  .fotos-count{font-size:7px !important;padding:2px 6px !important;}
+  .fotos-scroller{
+    min-height:0 !important;
+    height:54px !important;
+    gap:5px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    align-items:center !important;
+    padding:2px 0 0 !important;
+  }
+  .foto-card{width:50px !important;min-width:50px !important;max-width:50px !important;height:50px !important;border-radius:8px !important;overflow:hidden !important;}
+  .foto-stage{height:50px !important;}
+  .foto-stage img{width:100% !important;height:100% !important;object-fit:cover !important;}
+  .foto-toolbar{display:none !important;}
+  .fotos-empty{min-height:50px !important;height:50px !important;font-size:8px !important;padding:6px !important;display:flex !important;align-items:center !important;justify-content:center !important;}
+}
+
+@media (max-width: 380px){
+  .main{grid-template-rows:60px 100px 104px minmax(0,1fr) 82px !important;gap:4px !important;}
+  .info-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
+  .info-item-label{font-size:6px !important;}
+  .info-item-value{font-size:7.5px !important;}
+  .precio-panel-amount{font-size:24px !important;}
+}
+
+/* ===== AJUSTE MOVIL V3: SIN FICHA, NOMBRE VISIBLE Y FOTOS COMO ACCESO ===== */
+.foto-acceso-btn{
+  width:100%;height:100%;border:1px solid #dbe7f3;border-radius:14px;background:#fff;
+  display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px;
+  color:#991b1b;font:900 13px Arial,Helvetica,sans-serif;cursor:pointer;
+}
+.foto-acceso-icono{font-size:22px;line-height:1;}
+.foto-acceso-texto{white-space:nowrap;}
+.foto-acceso-flecha{font-size:24px;line-height:1;color:#64748b;}
+
+@media (max-width: 768px){
+  .main{
+    padding:56px 8px 8px !important;
+    gap:6px !important;
+    grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr) !important;
+    grid-template-rows:82px 112px minmax(108px,1fr) 72px !important;
+    grid-template-areas:
+      "producto producto"
+      "precio costos"
+      "especial especial"
+      "fotos fotos" !important;
+  }
+
+  .ficha-col{display:none !important;}
+
+  .concepto-section{
+    padding:0 !important;
+    display:grid !important;
+    grid-template-rows:22px minmax(0,1fr) 18px !important;
+  }
+  .concepto-label{
+    padding:5px 10px 3px 14px !important;
+    margin:0 !important;
+    font-size:8px !important;
+    line-height:1 !important;
+  }
+  .concepto-texto{
+    padding:5px 10px 2px 14px !important;
+    margin:0 !important;
+    font-size:14px !important;
+    line-height:1.08 !important;
+    max-height:none !important;
+    align-self:center !important;
+    -webkit-line-clamp:2 !important;
+  }
+  .codigo-texto{
+    padding:1px 10px 4px 14px !important;
+    margin:0 !important;
+    font-size:8px !important;
+    line-height:1 !important;
+  }
+
+  .precio-publico .precio-panel-head{
+    display:flex !important;
+    min-height:30px !important;
+    height:30px !important;
+    padding:5px 7px 4px 9px !important;
+  }
+  .precio-publico .precio-panel-kicker{
+    display:block !important;
+    font-size:8.5px !important;
+    line-height:1 !important;
+    color:#fff !important;
+    font-weight:900 !important;
+    text-transform:uppercase !important;
+  }
+  .precio-publico .precio-panel-body{
+    padding:7px 8px 5px 9px !important;
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content:center !important;
+    min-height:0 !important;
+  }
+  .precio-publico .precio-panel-amount{font-size:25px !important;line-height:1 !important;margin:0 0 3px !important;}
+  .precio-publico .precio-panel-note{font-size:7px !important;line-height:1 !important;}
+
+  .costos-head{height:30px !important;display:flex !important;align-items:center !important;padding:5px 7px !important;font-size:8px !important;}
+  .costos-grid{height:calc(100% - 30px) !important;padding:4px !important;gap:4px !important;}
+  .costo-card{padding:4px 6px !important;}
+  .costo-label{font-size:6.8px !important;}
+  .costo-valor{font-size:15px !important;}
+  .costo-detalle{display:none !important;}
+
+  .precio-especial-wrap-col .precio-panel-head{height:32px !important;padding:5px 8px !important;}
+  .precio-especial-wrap-col .precio-panel-body{height:calc(100% - 32px) !important;}
+
+  .fotos-col .fotos-box{padding:5px 7px !important;}
+  .fotos-head{height:18px !important;min-height:18px !important;}
+  .fotos-head .section-title{font-size:8px !important;}
+  .fotos-count{font-size:6.5px !important;padding:1px 5px !important;}
+  .fotos-scroller{height:43px !important;min-height:43px !important;padding:2px 0 0 !important;overflow:hidden !important;}
+  .foto-acceso-btn{height:41px !important;border-radius:10px !important;padding:4px 10px !important;font-size:10px !important;gap:7px !important;}
+  .foto-acceso-icono{font-size:18px !important;}
+  .foto-acceso-flecha{font-size:19px !important;}
+  .fotos-empty{height:41px !important;min-height:41px !important;font-size:8px !important;}
+}
+
+@media (max-width: 380px){
+  .main{grid-template-rows:76px 106px minmax(100px,1fr) 68px !important;}
+  .concepto-texto{font-size:12px !important;}
+  .precio-publico .precio-panel-amount{font-size:22px !important;}
+}
+
+
+/* ===== AJUSTE MOVIL V4: PRECIO PUBLICO + MEDIO MAYOREO + MAYOREO ===== */
+.mayoreo-wrap{display:none;}
+.mayoreo-panel{height:100%;border-radius:14px;background:#fff;border:1px solid #f1c9c9;overflow:hidden;box-shadow:0 3px 10px rgba(15,23,42,.06);}
+.mayoreo-head{background:linear-gradient(135deg,#a90000,#e00000);color:#fff;font-weight:900;text-transform:uppercase;letter-spacing:.04em;}
+.mayoreo-grid{display:grid;grid-template-rows:1fr 1fr;}
+.mayoreo-card{background:#fff;border:1px solid #f2d6d6;}
+.mayoreo-card.mayor{background:linear-gradient(135deg,#fff8f8,#fff);}
+.mayoreo-label{color:#7f1d1d;font-weight:900;text-transform:uppercase;}
+.mayoreo-valor{color:#111827;font-weight:900;}
+
+@media (max-width:768px){
+  .main{
+    grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr) !important;
+    grid-template-rows:78px 112px 88px minmax(86px,1fr) 64px !important;
+    grid-template-areas:
+      "producto producto"
+      "precio mayoreo"
+      "costos costos"
+      "especial especial"
+      "fotos fotos" !important;
+    gap:6px !important;
+  }
+  .mayoreo-wrap{display:block !important;grid-area:mayoreo;min-width:0;min-height:0;height:100%;overflow:hidden;}
+  .mayoreo-panel{display:grid;grid-template-rows:29px minmax(0,1fr);}
+  .mayoreo-head{display:flex;align-items:center;padding:5px 8px;font-size:8px;line-height:1;}
+  .mayoreo-grid{height:100%;gap:4px;padding:4px;}
+  .mayoreo-card{border-radius:8px;padding:4px 7px;display:flex;align-items:center;justify-content:space-between;gap:6px;overflow:hidden;}
+  .mayoreo-label{font-size:7px;line-height:1;white-space:nowrap;}
+  .mayoreo-valor{font-size:17px;line-height:1;white-space:nowrap;}
+
+  .costos-wrap{grid-area:costos !important;}
+  .costos-grid{grid-template-columns:1fr 1fr !important;grid-template-rows:1fr !important;height:calc(100% - 28px) !important;}
+  .costos-head{height:28px !important;min-height:28px !important;}
+  .costo-card{display:flex !important;flex-direction:column !important;justify-content:center !important;}
+  .costo-valor{font-size:16px !important;}
+
+  .precio-publico-wrap{grid-area:precio !important;}
+  .precio-especial-wrap-col{grid-area:especial !important;}
+  .fotos-col{grid-area:fotos !important;}
+  .precio-publico .precio-panel-amount{font-size:27px !important;}
+}
+
+@media (max-width:380px){
+  .main{grid-template-rows:74px 106px 84px minmax(82px,1fr) 60px !important;gap:4px !important;}
+  .mayoreo-valor{font-size:15px !important;}
+  .mayoreo-label{font-size:6.5px !important;}
+  .precio-publico .precio-panel-amount{font-size:23px !important;}
+}
+</style>
+
+
+<style id="mockup-mobile-final">
+@media (max-width: 768px) {
+  /* Modal completo sin scroll; distribución exacta tipo mockup */
+  .resultados-modal,
+  .results-modal,
+  #resultadosModal,
+  #modalResultados {
+    overflow: hidden !important;
+  }
+
+  .resultados-modal .modal-content,
+  .results-modal .modal-content,
+  #resultadosModal .modal-content,
+  #modalResultados .modal-content {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .resultados-layout, .main {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-areas:
+      "top top"
+      "producto producto"
+      "publico mayoreo"
+      "costos costos"
+      "especial especial"
+      "fotos fotos" !important;
+    grid-template-rows: auto auto auto auto auto auto !important;
+    align-content: start !important;
+    gap: 6px !important;
+    padding: 6px 8px 8px !important;
+    overflow: hidden !important;
+    min-height: 0 !important;
+  }
+
+  .resultado-topbar, .resultados-topbar, .mobile-result-header { grid-area: top !important; }
+  .concepto-section { grid-area: producto !important; margin:0 !important; min-height:0 !important; padding:8px 10px !important; }
+  .precio-publico-wrap { grid-area: publico !important; margin:0 !important; min-width:0 !important; }
+  .mayoreo-wrap { grid-area: mayoreo !important; margin:0 !important; min-width:0 !important; }
+  .costos-wrap { grid-area: costos !important; margin:0 !important; }
+  .especial-wrap, .precio-especial-wrap { grid-area: especial !important; margin:0 !important; min-height:0 !important; }
+  .fotos-col { grid-area: fotos !important; margin:0 !important; min-height:0 !important; }
+
+  .precio-panel, .mayoreo-panel, .costos-panel,
+  .precio-especial, .especial-panel, .fotos-box {
+    margin:0 !important;
+    min-height:0 !important;
+    height:auto !important;
+  }
+
+  /* Producto compacto */
+  .concepto-label { font-size:9px !important; margin-bottom:3px !important; }
+  .concepto-texto { font-size:14px !important; line-height:1.15 !important; margin:0 0 3px !important; }
+  .codigo-texto { font-size:8px !important; line-height:1.1 !important; }
+
+  /* Precio público: compacto como la imagen editada */
+  .precio-panel-head { padding:6px 8px !important; min-height:26px !important; }
+  .precio-panel-kicker { font-size:8px !important; }
+  .precio-panel-icon { font-size:13px !important; width:24px !important; height:24px !important; }
+  .precio-panel-body { padding:9px 8px 7px !important; }
+  .precio-panel-amount { font-size:28px !important; line-height:.95 !important; white-space:nowrap !important; }
+  .precio-panel-note { font-size:7px !important; margin-top:3px !important; }
+
+  /* Mayoreo justo a la derecha del precio público */
+  .mayoreo-head { padding:6px 8px !important; font-size:8px !important; min-height:26px !important; }
+  .mayoreo-grid { padding:5px !important; gap:4px !important; }
+  .mayoreo-card { padding:5px 7px !important; min-height:34px !important; }
+  .mayoreo-label { font-size:7px !important; }
+  .mayoreo-valor { font-size:16px !important; line-height:1 !important; }
+
+  /* Costos inmediatamente debajo */
+  .costos-head { padding:5px 8px !important; font-size:8px !important; }
+  .costos-grid { padding:4px !important; gap:4px !important; grid-template-columns:1fr 1fr !important; }
+  .costo-card { padding:5px 7px !important; min-height:38px !important; }
+  .costo-label { font-size:6.5px !important; margin-bottom:2px !important; }
+  .costo-valor { font-size:16px !important; line-height:1 !important; }
+  .costo-detalle { display:none !important; }
+
+  /* Precio especial: sólo altura de contenido, jamás crecer */
+  .especial-wrap, .precio-especial-wrap,
+  .especial-panel, .precio-especial {
+    flex:none !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:105px !important;
+    overflow:hidden !important;
+  }
+  .especial-head, .precio-especial-head { padding:5px 8px !important; }
+  .especial-title, .precio-especial-title { font-size:8px !important; }
+  .especial-subtitle, .precio-especial-subtitle { font-size:7px !important; }
+  .especial-table, .precio-especial-table { font-size:7px !important; }
+  .especial-table th, .especial-table td,
+  .precio-especial-table th, .precio-especial-table td { padding:4px 6px !important; }
+
+  /* Fotos: exactamente como el mockup, franja baja y compacta */
+  .fotos-box { padding:5px 7px !important; max-height:64px !important; overflow:hidden !important; }
+  .fotos-head { min-height:18px !important; margin-bottom:3px !important; }
+  .fotos-head .section-title { font-size:8px !important; }
+  .fotos-count { font-size:7px !important; padding:2px 6px !important; }
+  .fotos-scroller { min-height:30px !important; max-height:34px !important; height:34px !important; overflow:hidden !important; }
+  .fotos-empty { font-size:7px !important; padding:9px 4px !important; }
+
+  /* Si existe el botón VER FOTOS, que sea una sola franja compacta */
+  .btn-ver-fotos, #btnVerFotos, .ver-fotos-btn {
+    min-height:30px !important;
+    height:30px !important;
+    padding:4px 8px !important;
+    font-size:8px !important;
+    margin:0 !important;
+  }
+
+  /* Evitar que reglas anteriores vuelvan a crear huecos */
+  .main > * { align-self:start !important; }
+}
+</style>
+
+
+<style id="objetivo-vertical-mobile">
+@media (max-width:768px){
+
+  /* Estructura vertical exacta del mockup */
+  .resultados-layout, .main {
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    grid-template-areas:
+      "top"
+      "producto"
+      "publico"
+      "mayoreo"
+      "costos"
+      "especial"
+      "fotos" !important;
+    grid-template-rows:auto auto auto auto auto auto auto !important;
+    align-content:start !important;
+    gap:5px !important;
+    padding:5px 7px 7px !important;
+    overflow:hidden !important;
+    min-height:0 !important;
+  }
+
+  .resultado-topbar, .resultados-topbar, .mobile-result-header { grid-area:top !important; }
+  .concepto-section { grid-area:producto !important; }
+  .precio-publico-wrap { grid-area:publico !important; }
+  .mayoreo-wrap { grid-area:mayoreo !important; }
+  .costos-wrap { grid-area:costos !important; }
+  .especial-wrap, .precio-especial-wrap { grid-area:especial !important; }
+  .fotos-col { grid-area:fotos !important; }
+
+  /* Producto superior */
+  .concepto-section{
+    margin:0 !important;
+    padding:6px 8px !important;
+    min-height:0 !important;
+  }
+  .concepto-label{font-size:8px !important;margin-bottom:2px !important;}
+  .concepto-texto{font-size:12px !important;line-height:1.12 !important;margin:0 0 2px !important;}
+  .codigo-texto{font-size:7px !important;line-height:1.05 !important;}
+
+  /* Precio público CENTRADO y más angosto */
+  .precio-publico-wrap{
+    width:44% !important;
+    max-width:180px !important;
+    min-width:132px !important;
+    justify-self:center !important;
+    margin:0 auto !important;
+  }
+  .precio-panel{
+    width:100% !important;
+    margin:0 !important;
+    min-height:0 !important;
+  }
+  .precio-panel-head{
+    min-height:22px !important;
+    padding:4px 6px !important;
+  }
+  .precio-panel-kicker{font-size:7px !important;}
+  .precio-panel-icon{
+    width:22px !important;height:22px !important;font-size:12px !important;
+  }
+  .precio-panel-body{padding:7px 7px 6px !important;}
+  .precio-panel-amount{
+    font-size:25px !important;
+    line-height:.95 !important;
+    white-space:nowrap !important;
+  }
+  .precio-panel-note{font-size:6px !important;margin-top:2px !important;}
+
+  /* Mayoreo debajo del precio público y centrado */
+  .mayoreo-wrap{
+    width:56% !important;
+    max-width:230px !important;
+    min-width:170px !important;
+    justify-self:center !important;
+    margin:0 auto !important;
+  }
+  .mayoreo-panel{margin:0 !important;height:auto !important;min-height:0 !important;}
+  .mayoreo-head{
+    padding:4px 6px !important;
+    min-height:20px !important;
+    font-size:7px !important;
+  }
+  .mayoreo-grid{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:3px !important;
+    padding:4px !important;
+  }
+  .mayoreo-card{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    padding:4px 6px !important;
+    min-height:27px !important;
+  }
+  .mayoreo-label{font-size:6.5px !important;}
+  .mayoreo-valor{font-size:14px !important;line-height:1 !important;}
+
+  /* Costos a todo lo ancho, justo debajo */
+  .costos-wrap{
+    width:100% !important;
+    margin:0 !important;
+  }
+  .costos-panel{margin:0 !important;height:auto !important;min-height:0 !important;}
+  .costos-head{padding:4px 6px !important;font-size:7px !important;}
+  .costos-grid{
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:3px !important;
+    padding:3px !important;
+  }
+  .costo-card{
+    padding:4px 6px !important;
+    min-height:30px !important;
+  }
+  .costo-label{font-size:5.8px !important;margin-bottom:1px !important;}
+  .costo-valor{font-size:14px !important;line-height:1 !important;}
+  .costo-detalle{display:none !important;}
+
+  /* Precio especial sólo ocupa lo necesario */
+  .especial-wrap, .precio-especial-wrap,
+  .especial-panel, .precio-especial{
+    margin:0 !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:95px !important;
+    overflow:hidden !important;
+    flex:none !important;
+  }
+  .especial-head, .precio-especial-head{padding:4px 6px !important;}
+  .especial-title, .precio-especial-title{font-size:7px !important;}
+  .especial-subtitle, .precio-especial-subtitle{font-size:6px !important;}
+  .especial-table, .precio-especial-table{font-size:6px !important;}
+  .especial-table th, .especial-table td,
+  .precio-especial-table th, .precio-especial-table td{
+    padding:3px 4px !important;
+  }
+
+  /* Fotos al final, franja baja */
+  .fotos-col{margin:0 !important;min-height:0 !important;}
+  .fotos-box{
+    margin:0 !important;
+    padding:4px 6px !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:55px !important;
+    overflow:hidden !important;
+  }
+  .fotos-head{min-height:15px !important;margin-bottom:2px !important;}
+  .fotos-head .section-title{font-size:7px !important;}
+  .fotos-count{font-size:6px !important;padding:1px 5px !important;}
+  .fotos-scroller{
+    height:28px !important;
+    min-height:28px !important;
+    max-height:28px !important;
+    overflow:hidden !important;
+  }
+  .fotos-empty{font-size:6px !important;padding:7px 3px !important;}
+
+  /* No scroll dentro del modal */
+  .resultados-modal, .results-modal, #resultadosModal, #modalResultados,
+  .resultados-modal .modal-content, .results-modal .modal-content,
+  #resultadosModal .modal-content, #modalResultados .modal-content {
+    overflow:hidden !important;
+  }
+
+  .main > * {align-self:start !important;}
+}
+</style>
+
+
+<style id="fix-buscador-modal-mobile">
+@media (max-width:768px){
+  /* El modal NO debe existir encima del buscador hasta seleccionar un producto */
+  #resultadosModal{
+    position:fixed !important;
+    inset:0 !important;
+    z-index:4000 !important;
+    background:#f8fafc !important;
+    display:none !important;
+    height:100dvh !important;
+    max-height:100dvh !important;
+  }
+  #resultadosModal.resultados-abiertos{
+    display:grid !important;
+  }
+  #resultadosModal:not(.resultados-abiertos){
+    pointer-events:none !important;
+    visibility:hidden !important;
+  }
+  #resultadosModal.resultados-abiertos{
+    pointer-events:auto !important;
+    visibility:visible !important;
+  }
+}
+</style>
+
+<style id="fix-separacion-superior-mobile">
+@media (max-width:768px){
+
+  /* Separar claramente encabezado rojo, ficha de producto y precios */
+  .resultado-topbar,
+  .resultados-topbar,
+  .mobile-result-header,
+  .modal-header-resultados,
+  #resultadosModal .modal-header,
+  #modalResultados .modal-header {
+    position:relative !important;
+    z-index:3 !important;
+    margin:0 0 8px 0 !important;
+    min-height:42px !important;
+    height:auto !important;
+  }
+
+  .concepto-section{
+    position:relative !important;
+    z-index:2 !important;
+    margin:0 0 8px 0 !important;
+    clear:both !important;
+  }
+
+  .precio-publico-wrap{
+    margin-top:2px !important;
+  }
+
+  /* Evitar que transformaciones/posicionamientos previos suban los bloques */
+  .concepto-section,
+  .precio-publico-wrap,
+  .mayoreo-wrap,
+  .costos-wrap,
+  .especial-wrap,
+  .precio-especial-wrap,
+  .fotos-col{
+    transform:none !important;
+    top:auto !important;
+    bottom:auto !important;
+  }
+
+  /* Un poco más de aire al inicio del contenido del modal */
+  .resultados-layout,
+  .main{
+    padding-top:8px !important;
+    row-gap:6px !important;
+  }
+}
+</style>
+
+</head>
+<body>
+  <div class="overlay-carga" id="overlayCarga">
+    <div class="caja-carga">
+      <h2>Cargando catálogo</h2>
+      <div>Preparando catálogo local...</div>
+      <div class="barra">
+        <div class="barra-fill" id="barraFill"></div>
+      </div>
+      <div class="carga-texto" id="cargaTexto">Iniciando...</div>
+    </div>
+  </div>
+
+
+  <div class="menu-inicial hidden" id="menuInicial">
+    <div class="menu-inicial-card">
+      <img src="assets/logo-proveedora.jpg" alt="Proveedora" class="menu-inicial-logo">
+      <h2>¿Qué deseas consultar?</h2>
+      <p>Selecciona una opción para continuar.</p>
+      <div class="menu-opciones">
+        <button type="button" class="menu-opcion articulo" id="btnConsultarArticulo">
+          <span class="menu-icono">🔎</span>
+          CONSULTAR ARTÍCULO
+        </button>
+        <button type="button" class="menu-opcion catalogo" id="btnConsultarCatalogo">
+          <span class="menu-icono">🛒</span>
+          CONSULTAR CATÁLOGO
+        </button>
+      </div>
+      <button type="button" class="menu-instalar" id="btnInstalarMenu">📲 INSTALAR APP</button>
+      <p class="install-info" id="installInfo">Instálala para abrirla como aplicación en tu celular.</p>
+    </div>
+  </div>
+
+  <div class="app oculta-por-menu" id="appPrincipal">
+    <div class="card">
+      <div class="head">
+        <div class="brand-head">
+          <img src="assets/logo-proveedora.jpg" alt="Proveedora" class="brand-logo">
+          <div class="brand-copy">
+            <h1>Catálogo de Productos Proveedora de Dulces y Desechables</h1>
+            <p>Consulta por código o descripción · Costos antes y después de impuestos · Optimizado para celular</p>
+          </div>
+        </div>
+        <button type="button" class="btn-volver-menu" id="btnVolverMenu">Menú</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-grid">
+          <div class="buscador-wrap">
+            <input
+              type="text"
+              id="busquedaInput"
+              placeholder="Escribe código de barras o nombre del producto..."
+              autocomplete="off"
+            />
+            <div class="sugerencias" id="sugerenciasBox"></div>
+          </div>
+
+          <div class="acciones">
+            <button class="btn-sec" id="btnInstalar" hidden>Instalar app</button>
+            <button class="btn-sec" id="btnEscanear">Escanear código</button>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="main" id="resultadosModal">
+        <div class="resultados-mobile-head">
+          <div class="resultados-mobile-title" id="resultadosMobileTitle">Resultado del producto</div>
+          <button type="button" class="resultados-mobile-close" id="btnCerrarResultados" aria-label="Cerrar resultados">✕</button>
+        </div>
+
+        <div class="concepto-section concepto-main">
+          <div class="concepto-label">PRODUCTO</div>
+          <div class="concepto-texto" id="conceptoValor">Sin consultar</div>
+          <div class="codigo-texto" id="codigoTexto">Código: --</div>
+        </div>
+
+        <div class="fotos-col">
+          <section class="box fotos-box">
+            <div class="fotos-head">
+              <div class="section-title" style="margin:0;">📸 Fotos del producto</div>
+              <div class="fotos-count" id="fotosCount">0 fotos</div>
+            </div>
+            <div class="fotos-scroller" id="fotosScroller">
+              <div class="fotos-empty" style="min-width:100%;">Sin fotos por ahora</div>
+            </div>
+          </section>
+        </div>
+
+        <div class="precio-publico-wrap">
+          <section class="precio-panel precio-publico">
+            <div class="precio-panel-head">
+              <div class="precio-panel-kicker">Precio público</div>
+              <div class="precio-panel-icon">💰</div>
+            </div>
+            <div class="precio-panel-body">
+              <div class="precio-panel-amount" id="precioPublicoValor">$---</div>
+              <div class="precio-panel-note">Precio de lista / mostrador</div>
+            </div>
+          </section>
+        </div>
+
+        <div class="mayoreo-wrap">
+          <section class="mayoreo-panel">
+            <div class="mayoreo-head">Precios de mayoreo</div>
+            <div class="mayoreo-grid">
+              <div class="mayoreo-card medio">
+                <div class="mayoreo-label">Medio mayoreo</div>
+                <div class="mayoreo-valor" id="medioMayoreoValor">$---</div>
+              </div>
+              <div class="mayoreo-card mayor">
+                <div class="mayoreo-label">Mayoreo</div>
+                <div class="mayoreo-valor" id="mayoreoValor">$---</div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="costos-wrap">
+          <section class="costos-panel">
+            <div class="costos-head">Costos e impuestos</div>
+            <div class="costos-grid">
+              <div class="costo-card">
+                <div class="costo-label">Costo antes de impuestos</div>
+                <div class="costo-valor" id="costoAntesValor">$---</div>
+                <div class="costo-detalle" id="costoBaseDetalle">Costo base registrado</div>
+              </div>
+              <div class="costo-card destacado">
+                <div class="costo-label">Costo después de impuestos</div>
+                <div class="costo-valor" id="costoDespuesValor">$---</div>
+                <div class="costo-detalle" id="impuestosDetalle">IVA: -- · IEPS: --</div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="box ficha-col">
+          <div class="section-title">📋 Ficha técnica</div>
+          <div class="info-grid" id="infoGrid"></div>
+        </div>
+
+        <div class="precio-especial-wrap-col">
+          <section class="precio-panel precio-especial">
+            <div class="precio-panel-head">
+              <div>
+                <div class="precio-panel-kicker">Precio especial</div>
+                <div class="precio-panel-mini">Escalas por volumen</div>
+              </div>
+              <div class="precio-panel-icon">📦</div>
+            </div>
+            <div class="precio-panel-body">
+              <div class="precio-especial-scroller" id="preciosVolumenBox">
+                <div class="precio-especial-empty">Sin precios especiales definidos</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="scannerModal" class="scanner-modal hidden">
+    <div class="scanner-box">
+      <div class="scanner-head">
+        <h3>Escanear código</h3>
+        <button type="button" class="scanner-close" id="btnCerrarScanner">✕</button>
+      </div>
+
+      <div class="scanner-body">
+        <video id="scannerVideo" playsinline autoplay muted></video>
+        <div class="scanner-line"></div>
+        <div class="scanner-msg" id="scannerMsg">Apunta la cámara al código de barras</div>
+      </div>
+
+      <div class="scanner-actions">
+        <button type="button" class="btn-sec" id="btnCambiarCamara">Cambiar cámara</button>
+        <button type="button" class="btn-sec" id="btnDetenerScanner">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="fotoViewerModal" class="foto-viewer-modal hidden" aria-hidden="true">
+    <div class="foto-viewer-head">
+      <div class="foto-viewer-title" id="fotoViewerTitle">Fotos del producto</div>
+      <button type="button" class="foto-viewer-close" id="btnCerrarFotoViewer" aria-label="Cerrar fotos">✕</button>
+    </div>
+    <div class="foto-viewer-body" id="fotoViewerBody">
+      <button type="button" class="foto-viewer-nav foto-viewer-prev" id="btnFotoPrev" aria-label="Foto anterior">‹</button>
+      <img id="fotoViewerImg" class="foto-viewer-img" alt="Foto del producto" />
+      <button type="button" class="foto-viewer-nav foto-viewer-next" id="btnFotoNext" aria-label="Foto siguiente">›</button>
+      <div class="foto-viewer-count" id="fotoViewerCount">1 / 1</div>
+    </div>
+  </div>
+
+  <script type="module">
+  import { firebaseConfig } from "./config.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    query,
+    where,
+    Timestamp,
+    doc,
+    getDoc,
+    limit
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  import {
+    getStorage,
+    ref,
+    getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+  function configuracionFirebaseValida(config) {
+    const requeridos = ["apiKey", "authDomain", "projectId", "storageBucket", "appId"];
+    return requeridos.every(campo => typeof config?.[campo] === "string" && config[campo].trim());
+  }
+
+  let firebaseApp = null;
+  let db = null;
+  let storage = null;
+  const FIREBASE_CONFIGURADO = configuracionFirebaseValida(firebaseConfig);
+
+  if (FIREBASE_CONFIGURADO) {
+    firebaseApp = initializeApp(firebaseConfig);
+    db = getFirestore(firebaseApp);
+    storage = getStorage(firebaseApp);
+  } else {
+    console.warn("Firebase no está configurado. Completa config.js para descargar el catálogo.");
+  }
+
+  const COLECCION = "productos";
+  const COLECCION_FOTOS_META = "productos_fotos_meta";
+
+  const DB_NAME = "provsoft_local_db";
+  const DB_VERSION = 2;
+  const STORE_NAME = "catalogo_productos";
+  const META_STORE = "meta_store";
+  const FOTO_META_STORE = "productos_fotos_meta_cache";
+  const FOTO_BLOB_STORE = "productos_fotos_blob_cache";
+  const CATALOGO_KEY = "productos";
+  const META_CATALOGO_SYNC_KEY = "ultima_sync";
+  const META_FOTOS_SYNC_KEY = "fotos_ultima_sync";
+  const FOTO_BACKGROUND_CONCURRENCY = 3;
+  let sincronizacionFotosEnCurso = false;
+  let productoSeleccionadoActual = null;
+
+  const busquedaInput = document.getElementById("busquedaInput");
+  const sugerenciasBox = document.getElementById("sugerenciasBox");
+  const statusBox = document.getElementById("status");
+
+  const conceptoValor = document.getElementById("conceptoValor");
+  const codigoTexto = document.getElementById("codigoTexto");
+  const precioPublicoValor = document.getElementById("precioPublicoValor");
+  const medioMayoreoValor = document.getElementById("medioMayoreoValor");
+  const mayoreoValor = document.getElementById("mayoreoValor");
+  const costoAntesValor = document.getElementById("costoAntesValor");
+  const costoDespuesValor = document.getElementById("costoDespuesValor");
+  const costoBaseDetalle = document.getElementById("costoBaseDetalle");
+  const impuestosDetalle = document.getElementById("impuestosDetalle");
+  const infoGrid = document.getElementById("infoGrid");
+  const preciosVolumenBoxEl = document.getElementById("preciosVolumenBox");
+  const fotosScroller = document.getElementById("fotosScroller");
+  const fotosCount = document.getElementById("fotosCount");
+  const resultadosModal = document.getElementById("resultadosModal");
+  const btnCerrarResultados = document.getElementById("btnCerrarResultados");
+  const resultadosMobileTitle = document.getElementById("resultadosMobileTitle");
+  const fotoViewerModal = document.getElementById("fotoViewerModal");
+  const fotoViewerImg = document.getElementById("fotoViewerImg");
+  const fotoViewerCount = document.getElementById("fotoViewerCount");
+  const fotoViewerTitle = document.getElementById("fotoViewerTitle");
+  const btnCerrarFotoViewer = document.getElementById("btnCerrarFotoViewer");
+  const btnFotoPrev = document.getElementById("btnFotoPrev");
+  const btnFotoNext = document.getElementById("btnFotoNext");
+  const fotoViewerBody = document.getElementById("fotoViewerBody");
+
+  const overlayCarga = document.getElementById("overlayCarga");
+  const barraFill = document.getElementById("barraFill");
+  const cargaTexto = document.getElementById("cargaTexto");
+  const menuInicial = document.getElementById("menuInicial");
+  const appPrincipal = document.getElementById("appPrincipal");
+  const btnConsultarArticulo = document.getElementById("btnConsultarArticulo");
+  const btnConsultarCatalogo = document.getElementById("btnConsultarCatalogo");
+  const btnVolverMenu = document.getElementById("btnVolverMenu");
+  const URL_CATALOGO_TIENDA = "https://licaptio.github.io/SUCURSALESPDD/MATRIZPDD/PROVEEDORA_REPOSTERIA_CATALOGO_V5/index.html";
+
+  const btnEscanear = document.getElementById("btnEscanear");
+  const btnInstalar = document.getElementById("btnInstalar");
+  const btnInstalarMenu = document.getElementById("btnInstalarMenu");
+  const installInfo = document.getElementById("installInfo");
+  const scannerModal = document.getElementById("scannerModal");
+  const scannerVideo = document.getElementById("scannerVideo");
+  const scannerMsg = document.getElementById("scannerMsg");
+  const btnCerrarScanner = document.getElementById("btnCerrarScanner");
+  const btnDetenerScanner = document.getElementById("btnDetenerScanner");
+  const btnCambiarCamara = document.getElementById("btnCambiarCamara");
+
+  let scannerStream = null;
+  let scannerInterval = null;
+  let currentFacingMode = "environment";
+  let barcodeDetector = null;
+
+  let catalogoProductos = [];
+  let sugerenciasActuales = [];
+  let indiceActivo = -1;
+
+  // cache simple para no releer metas de fotos ya consultadas
+  const cacheFotosMeta = new Map();
+  let currentPhotoObjectUrls = [];
+  let fotosViewerUrls = [];
+  let fotoViewerIndex = 0;
+  let touchStartX = null;
+
+  function mostrarStatus(msg, tipo = "ok") {
+    statusBox.className = `status ${tipo}`;
+    statusBox.textContent = msg;
+  }
+
+  function limpiarVista() {
+    conceptoValor.textContent = "Sin datos";
+    codigoTexto.textContent = "Código: --";
+    precioPublicoValor.textContent = "$---";
+    if (medioMayoreoValor) medioMayoreoValor.textContent = "$---";
+    if (mayoreoValor) mayoreoValor.textContent = "$---";
+    costoAntesValor.textContent = "$---";
+    costoDespuesValor.textContent = "$---";
+    costoBaseDetalle.textContent = "Costo base registrado";
+    impuestosDetalle.textContent = "IVA: -- · IEPS: --";
+    infoGrid.innerHTML = "";
+    preciosVolumenBoxEl.innerHTML = `<div class="precio-especial-empty">Sin consultar</div>`;
+    limpiarFotosUI("Sin fotos por ahora");
+  }
+
+  function liberarObjectUrlsActuales() {
+    if (!Array.isArray(currentPhotoObjectUrls) || !currentPhotoObjectUrls.length) return;
+    currentPhotoObjectUrls.forEach(url => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {}
+    });
+    currentPhotoObjectUrls = [];
+  }
+
+  function limpiarFotosUI(texto = "Sin fotos por ahora") {
+    fotosViewerUrls = [];
+    liberarObjectUrlsActuales();
+    fotosCount.textContent = "0 fotos";
+    fotosScroller.innerHTML = `<div class="fotos-empty" style="min-width:100%;">${texto}</div>`;
+  }
+
+  function formatearFecha(valor) {
+    try {
+      if (!valor) return "--";
+
+      let fecha = null;
+
+      if (valor instanceof Timestamp) {
+        fecha = valor.toDate();
+      } else if (valor?.seconds !== undefined) {
+        fecha = new Date(valor.seconds * 1000);
+      } else if (valor instanceof Date) {
+        fecha = valor;
+      } else {
+        fecha = new Date(valor);
+      }
+
+      if (isNaN(fecha.getTime())) return "--";
+
+      return new Intl.DateTimeFormat("es-MX", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(fecha);
+    } catch {
+      return "--";
+    }
+  }
+
+  function normalizarTexto(txt) {
+    return String(txt || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .trim();
+  }
+
+  function tokenizarTexto(txt) {
+    return normalizarTexto(txt)
+      .split(/\s+/)
+      .map(x => x.trim())
+      .filter(Boolean);
+  }
+
+  function valorLegible(v) {
+    if (v === null || v === undefined || v === "") return "--";
+    if (v instanceof Timestamp) return formatearFecha(v);
+    if (typeof v === "boolean") return v ? "Sí" : "No";
+    if (Array.isArray(v)) return v.length ? v.join(", ") : "--";
+    if (typeof v === "object") return JSON.stringify(v);
+    return String(v);
+  }
+
+  function toNumberSeguro(v) {
+    if (v === null || v === undefined || v === "") return 0;
+    if (typeof v === "number") return isFinite(v) ? v : 0;
+
+    const limpio = String(v).replace(/[^0-9.-]/g, "");
+    const num = Number(limpio);
+    return isNaN(num) ? 0 : num;
+  }
+
+  function tomarPrimerValor(obj, keys = []) {
+    for (const key of keys) {
+      const value = obj?.[key];
+      if (value !== undefined && value !== null && value !== "") {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  function renderPreciosVolumen(data) {
+    let lista =
+      tomarPrimerValor(data, ["preciosPorCantidad", "preciosVolumen", "precioEspecial", "precios_especiales"]) || [];
+
+    if (!Array.isArray(lista)) lista = [];
+    lista = lista.filter(item => item && typeof item === "object");
+
+    if (!lista.length) {
+      preciosVolumenBoxEl.innerHTML = `
+        <div class="precio-especial-empty">
+          Sin precios especiales definidos
+        </div>
+      `;
+      return;
+    }
+
+    const filas = lista
+      .sort((a, b) => {
+        const ca = toNumberSeguro(a.cantidadMinima ?? a.cantidad ?? a.desde ?? 0);
+        const cb = toNumberSeguro(b.cantidadMinima ?? b.cantidad ?? b.desde ?? 0);
+        return ca - cb;
+      })
+      .map(item => {
+        const cantidad = toNumberSeguro(item.cantidadMinima ?? item.cantidad ?? item.desde ?? 0);
+        const unitario = toNumberSeguro(item.precioUnitario ?? item.precio ?? item.unitario ?? 0);
+        const total = toNumberSeguro(item.precioTotal ?? item.total ?? (cantidad * unitario));
+
+        return `
+          <tr>
+            <td><span class="tag-cantidad">${cantidad}+ unidades</span></td>
+            <td class="precio-unit">$${unitario.toFixed(2)}</td>
+            <td class="precio-total">$${total.toFixed(2)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    preciosVolumenBoxEl.innerHTML = `
+      <table class="tabla-precios-pro">
+        <thead>
+          <tr>
+            <th>Cantidad</th>
+            <th>Precio unitario</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function abrirDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = (event) => {
+        const dbLocal = event.target.result;
+
+        if (!dbLocal.objectStoreNames.contains(STORE_NAME)) {
+          dbLocal.createObjectStore(STORE_NAME, { keyPath: "key" });
+        }
+
+        if (!dbLocal.objectStoreNames.contains(META_STORE)) {
+          dbLocal.createObjectStore(META_STORE, { keyPath: "key" });
+        }
+
+        if (!dbLocal.objectStoreNames.contains(FOTO_META_STORE)) {
+          dbLocal.createObjectStore(FOTO_META_STORE, { keyPath: "key" });
+        }
+
+        if (!dbLocal.objectStoreNames.contains(FOTO_BLOB_STORE)) {
+          const fotoBlobStore = dbLocal.createObjectStore(FOTO_BLOB_STORE, { keyPath: "key" });
+          fotoBlobStore.createIndex("codigo", "codigo", { unique: false });
+        } else {
+          const tx = event.target.transaction;
+          const fotoBlobStore = tx.objectStore(FOTO_BLOB_STORE);
+          if (!fotoBlobStore.indexNames.contains("codigo")) {
+            fotoBlobStore.createIndex("codigo", "codigo", { unique: false });
+          }
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function renderFotos(urls = [], opciones = {}) {
+    liberarObjectUrlsActuales();
+
+    const lista = Array.isArray(urls)
+      ? urls.filter(u => typeof u === "string" && u.trim())
+      : [];
+
+    if (!lista.length) {
+      limpiarFotosUI("Sin fotos por ahora");
+      return;
+    }
+
+    if (opciones.trackObjectUrls) {
+      currentPhotoObjectUrls = [...lista];
+    }
+
+    fotosViewerUrls = [...lista];
+    fotosCount.textContent = `${lista.length} foto${lista.length === 1 ? "" : "s"}`;
+
+    fotosScroller.innerHTML = `
+      <button type="button" class="foto-acceso-btn" id="btnAbrirFotosProducto" aria-label="Abrir fotos del producto">
+        <span class="foto-acceso-icono">📷</span>
+        <span class="foto-acceso-texto">VER ${lista.length} FOTO${lista.length === 1 ? "" : "S"}</span>
+        <span class="foto-acceso-flecha">›</span>
+      </button>
+    `;
+
+    document.getElementById("btnAbrirFotosProducto")?.addEventListener("click", () => abrirFotoViewer(0));
+  }
+
+
+  function abrirFotoViewer(index = 0) {
+    if (!fotosViewerUrls.length) return;
+    fotoViewerIndex = Math.max(0, Math.min(index, fotosViewerUrls.length - 1));
+    actualizarFotoViewer();
+    fotoViewerModal.classList.remove("hidden");
+    fotoViewerModal.setAttribute("aria-hidden", "false");
+  }
+
+  function cerrarFotoViewer() {
+    fotoViewerModal.classList.add("hidden");
+    fotoViewerModal.setAttribute("aria-hidden", "true");
+  }
+
+  function actualizarFotoViewer() {
+    if (!fotosViewerUrls.length) return;
+    fotoViewerImg.src = fotosViewerUrls[fotoViewerIndex];
+    fotoViewerCount.textContent = `${fotoViewerIndex + 1} / ${fotosViewerUrls.length}`;
+    btnFotoPrev.style.visibility = fotosViewerUrls.length > 1 ? "visible" : "hidden";
+    btnFotoNext.style.visibility = fotosViewerUrls.length > 1 ? "visible" : "hidden";
+  }
+
+  function moverFotoViewer(delta) {
+    if (fotosViewerUrls.length < 2) return;
+    fotoViewerIndex = (fotoViewerIndex + delta + fotosViewerUrls.length) % fotosViewerUrls.length;
+    actualizarFotoViewer();
+  }
+
+  btnCerrarFotoViewer.addEventListener("click", cerrarFotoViewer);
+  btnFotoPrev.addEventListener("click", () => moverFotoViewer(-1));
+  btnFotoNext.addEventListener("click", () => moverFotoViewer(1));
+  fotoViewerModal.addEventListener("click", (e) => {
+    if (e.target === fotoViewerModal) cerrarFotoViewer();
+  });
+  fotoViewerBody.addEventListener("touchstart", (e) => {
+    touchStartX = e.touches?.[0]?.clientX ?? null;
+  }, { passive:true });
+  fotoViewerBody.addEventListener("touchend", (e) => {
+    if (touchStartX == null) return;
+    const endX = e.changedTouches?.[0]?.clientX ?? touchStartX;
+    const dx = endX - touchStartX;
+    touchStartX = null;
+    if (Math.abs(dx) < 45) return;
+    moverFotoViewer(dx < 0 ? 1 : -1);
+  }, { passive:true });
+
+  async function resolverUrlsDesdeStoragePaths(storagePaths = []) {
+    if (!Array.isArray(storagePaths) || !storagePaths.length) return [];
+
+    const urls = await Promise.all(
+      storagePaths.map(async (path) => {
+        try {
+          if (!path || typeof path !== "string") return null;
+          const storageRef = ref(storage, path);
+          return await getDownloadURL(storageRef);
+        } catch (error) {
+          console.warn("No se pudo resolver storagePath:", path, error);
+          return null;
+        }
+      })
+    );
+
+    return urls.filter(Boolean);
+  }
+
+  function esFechaVigente(fechaIso, horasMaximas) {
+    if (!fechaIso) return false;
+
+    const fecha = new Date(fechaIso).getTime();
+    if (isNaN(fecha)) return false;
+
+    const ahora = Date.now();
+    const diffHoras = (ahora - fecha) / (1000 * 60 * 60);
+    return diffHoras <= horasMaximas;
+  }
+
+
+  function construirFirmaMeta(meta = {}) {
+    const firma = {
+      estatus: meta?.estatus || null,
+      versionFotos: meta?.versionFotos || meta?.version || null,
+      updatedAt: meta?.updatedAt || meta?.fechaActualizacion || null,
+      urlsFotos: Array.isArray(meta?.urlsFotos) ? meta.urlsFotos : [],
+      storagePaths: Array.isArray(meta?.storagePaths) ? meta.storagePaths : [],
+      totalFotos: meta?.totalFotos || meta?.cantidadFotos || null
+    };
+
+    return JSON.stringify(firma);
+  }
+
+  async function leerMetaFotosIndexedDB(codigo) {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_META_STORE, "readonly");
+      const request = tx.objectStore(FOTO_META_STORE).get(String(codigo));
+
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function guardarMetaFotosIndexedDB(codigo, meta, firma) {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_META_STORE, "readwrite");
+      tx.objectStore(FOTO_META_STORE).put({
+        key: String(codigo),
+        codigo: String(codigo),
+        meta,
+        firma,
+        fecha_cache: new Date().toISOString()
+      });
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function leerFotosBlobIndexedDB(codigo) {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_BLOB_STORE, "readonly");
+      const index = tx.objectStore(FOTO_BLOB_STORE).index("codigo");
+      const request = index.getAll(String(codigo));
+
+      request.onsuccess = () => {
+        const items = Array.isArray(request.result) ? request.result : [];
+        items.sort((a, b) => (a.index || 0) - (b.index || 0));
+        resolve(items);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function borrarFotosBlobIndexedDB(codigo) {
+    const existentes = await leerFotosBlobIndexedDB(codigo);
+    if (!existentes.length) return true;
+
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_BLOB_STORE, "readwrite");
+      const store = tx.objectStore(FOTO_BLOB_STORE);
+
+      existentes.forEach(item => {
+        if (item?.key) store.delete(item.key);
+      });
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function guardarFotosBlobIndexedDB(codigo, blobs = [], firma = "") {
+    const codigoLimpio = String(codigo || "").trim();
+    if (!codigoLimpio || !Array.isArray(blobs) || !blobs.length) return false;
+
+    await borrarFotosBlobIndexedDB(codigoLimpio);
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(FOTO_BLOB_STORE, "readwrite");
+      const store = tx.objectStore(FOTO_BLOB_STORE);
+      const fechaCache = new Date().toISOString();
+
+      blobs.forEach((blob, index) => {
+        store.put({
+          key: `${codigoLimpio}::${index}`,
+          codigo: codigoLimpio,
+          index,
+          blob,
+          mimeType: blob?.type || "image/jpeg",
+          firma,
+          fecha_cache: fechaCache
+        });
+      });
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function leerFotosCacheLocal(codigo) {
+    const codigoLimpio = String(codigo || "").trim();
+    if (!codigoLimpio) return null;
+
+    const [metaCache, blobsCache] = await Promise.all([
+      leerMetaFotosIndexedDB(codigoLimpio).catch(() => null),
+      leerFotosBlobIndexedDB(codigoLimpio).catch(() => [])
+    ]);
+
+    const blobsValidos = Array.isArray(blobsCache)
+      ? blobsCache.filter(item => item?.blob instanceof Blob)
+      : [];
+
+    return {
+      metaCache,
+      blobsCache: blobsValidos
+    };
+  }
+
+  function construirObjectUrlsDesdeBlobs(blobsCache = []) {
+    return blobsCache
+      .filter(item => item?.blob instanceof Blob)
+      .map(item => URL.createObjectURL(item.blob));
+  }
+
+  async function descargarBlobsDesdeUrls(urls = []) {
+    if (!Array.isArray(urls) || !urls.length) return [];
+
+    const blobs = await Promise.all(
+      urls.map(async (url) => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return await response.blob();
+        } catch (error) {
+          console.warn("No se pudo descargar blob de imagen:", url, error);
+          return null;
+        }
+      })
+    );
+
+    return blobs.filter(blob => blob instanceof Blob);
+  }
+
+  async function resolverUrlsDeMeta(meta = {}) {
+    let urls = Array.isArray(meta?.urlsFotos) ? meta.urlsFotos.filter(Boolean) : [];
+
+    if (!urls.length && Array.isArray(meta?.storagePaths) && meta.storagePaths.length) {
+      urls = await resolverUrlsDesdeStoragePaths(meta.storagePaths);
+    }
+
+    return urls;
+  }
+
+  async function obtenerMetaFotosPorCodigo(codigo) {
+    const codigoLimpio = String(codigo || "").trim();
+    if (!codigoLimpio) return null;
+
+    if (cacheFotosMeta.has(codigoLimpio)) {
+      return cacheFotosMeta.get(codigoLimpio);
+    }
+
+    // 1) intento directo por ID del documento
+    try {
+      const docRef = doc(db, COLECCION_FOTOS_META, codigoLimpio);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        cacheFotosMeta.set(codigoLimpio, data);
+        return data;
+      }
+    } catch (error) {
+      console.warn("No se pudo leer meta por ID:", codigoLimpio, error);
+    }
+
+    // 2) fallback por campo codigoBarra
+    try {
+      const q = query(
+        collection(db, COLECCION_FOTOS_META),
+        where("codigoBarra", "==", codigoLimpio),
+        limit(1)
+      );
+
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const data = snap.docs[0].data();
+        cacheFotosMeta.set(codigoLimpio, data);
+        return data;
+      }
+    } catch (error) {
+      console.warn("No se pudo leer meta por codigoBarra:", codigoLimpio, error);
+    }
+
+    cacheFotosMeta.set(codigoLimpio, null);
+    return null;
+  }
+
+  async function cargarFotosProducto(producto) {
+    try {
+      const data = producto?.data || {};
+      const codigo = String(tomarPrimerValor(data, ["codigoBarra", "codigo", "barcode"]) || producto?.id || "").trim();
+
+      if (!codigo) {
+        limpiarFotosUI("Producto sin código válido");
+        return;
+      }
+
+      if (data.tieneFotos === false) {
+        limpiarFotosUI("Este producto no tiene fotos");
+        return;
+      }
+
+      const cacheLocal = await leerFotosCacheLocal(codigo);
+
+      if (cacheLocal?.blobsCache?.length) {
+        const urlsLocales = construirObjectUrlsDesdeBlobs(cacheLocal.blobsCache);
+        renderFotos(urlsLocales, { trackObjectUrls: true });
+        return;
+      }
+
+      limpiarFotosUI(
+        sincronizacionFotosEnCurso
+          ? "Fotos descargándose en segundo plano…"
+          : "Sin fotos descargadas en este dispositivo"
+      );
+    } catch (error) {
+      console.error("Error leyendo fotos locales del producto:", error);
+      limpiarFotosUI("Error leyendo fotos locales");
+    }
+  }
+
+  function renderProducto(producto) {
+    const data = producto?.data || {};
+
+    const codigo = tomarPrimerValor(data, ["codigoBarra", "codigo", "barcode"]) || producto.id || "--";
+    const concepto = tomarPrimerValor(data, ["concepto", "descripcion", "nombre", "producto"]) || "Sin concepto";
+
+    const precioPublicoRaw = tomarPrimerValor(data, [
+      "precioPublico",
+      "precio",
+      "precio_mostrador",
+      "precioLista",
+      "precio_publico"
+    ]);
+
+    const precioPublico = toNumberSeguro(precioPublicoRaw);
+
+    conceptoValor.textContent = concepto;
+    codigoTexto.textContent = `Código: ${codigo}`;
+    precioPublicoValor.textContent = precioPublico > 0 ? `$${precioPublico.toFixed(2)}` : "$0.00";
+
+    const medioMayoreo = toNumberSeguro(tomarPrimerValor(data, ["medioMayoreo", "medio_mayoreo", "precioMedioMayoreo"]));
+    const mayoreo = toNumberSeguro(tomarPrimerValor(data, ["mayoreo", "precioMayoreo", "precio_mayoreo"]));
+    if (medioMayoreoValor) medioMayoreoValor.textContent = medioMayoreo > 0 ? `$${medioMayoreo.toFixed(2)}` : "--";
+    if (mayoreoValor) mayoreoValor.textContent = mayoreo > 0 ? `$${mayoreo.toFixed(2)}` : "--";
+
+    const costoSinImpuesto = toNumberSeguro(tomarPrimerValor(data, ["costoSinImpuesto", "costo_sin_impuesto", "costo"]));
+    const ivaTasa = toNumberSeguro(tomarPrimerValor(data, ["ivaTasa", "iva_tasa", "iva"]));
+    const iepsTasa = toNumberSeguro(tomarPrimerValor(data, ["iepsTasa", "ieps_tasa", "ieps"]));
+    const costoConIeps = costoSinImpuesto * (1 + iepsTasa);
+    const costoDespuesImpuestos = costoConIeps * (1 + ivaTasa);
+    const importeImpuestos = costoDespuesImpuestos - costoSinImpuesto;
+
+    costoAntesValor.textContent = `$${costoSinImpuesto.toFixed(2)}`;
+    costoDespuesValor.textContent = `$${costoDespuesImpuestos.toFixed(2)}`;
+    costoBaseDetalle.textContent = `Base registrada · Impuestos: $${importeImpuestos.toFixed(2)}`;
+    impuestosDetalle.textContent = `IVA: ${(ivaTasa * 100).toFixed(2)}% · IEPS: ${(iepsTasa * 100).toFixed(2)}%`;
+
+    const camposSecundarios = [
+      ["Código de barras", codigo],
+      ["Clave SAT", tomarPrimerValor(data, ["claveSat", "claveSAT", "sat", "clave_sat"])],
+      ["Unidad SAT", tomarPrimerValor(data, ["unidadMedidaSat", "unidadSAT", "unidadSat", "unidad_medida_sat"])],
+      ["Departamento", tomarPrimerValor(data, ["departamento", "depto", "categoria"])],
+      ["Marca", tomarPrimerValor(data, ["marca", "brand"])],
+      ["Costo antes de impuestos", `$${costoSinImpuesto.toFixed(2)}`],
+      ["Costo después de impuestos", `$${costoDespuesImpuestos.toFixed(2)}`],
+      ["IVA", `${(ivaTasa * 100).toFixed(2)}%`],
+      ["IEPS", `${(iepsTasa * 100).toFixed(2)}%`],
+      ["Activo", tomarPrimerValor(data, ["activo"])],
+      ["Última actualización", tomarPrimerValor(data, ["updatedAt", "fechaActualizacion", "updated_at"])],
+      ["Creado", tomarPrimerValor(data, ["createdAt", "fechaCreacion", "created_at"])]
+    ];
+
+    infoGrid.innerHTML = camposSecundarios.map(([label, valor]) => `
+      <div class="info-item">
+        <div class="info-item-label">${label}</div>
+        <div class="info-item-value">${valorLegible(valor)}</div>
+      </div>
+    `).join("");
+
+    renderPreciosVolumen(data);
+
+    // importante: primero limpiamos y luego cargamos async
+    limpiarFotosUI("Cargando fotos...");
+    cargarFotosProducto(producto);
+  }
+
+  function ocultarSugerencias() {
+    sugerenciasBox.classList.remove("show");
+    sugerenciasBox.innerHTML = "";
+    sugerenciasActuales = [];
+    indiceActivo = -1;
+  }
+
+  function seleccionarProducto(producto) {
+    const data = producto.data || {};
+    productoSeleccionadoActual = producto;
+    busquedaInput.value = data.codigoBarra || data.codigo || data.concepto || data.descripcion || producto.id || "";
+    renderProducto(producto);
+    ocultarSugerencias();
+    mostrarStatus(`Producto cargado: ${data.concepto || data.descripcion || producto.id}`, "ok");
+    resultadosMobileTitle.textContent = data.concepto || data.descripcion || "Resultado del producto";
+    if (window.matchMedia("(max-width: 768px)").matches) {
+      resultadosModal.classList.add("resultados-abiertos");
+      resultadosModal.scrollTop = 0;
+    }
+  }
+
+  function cerrarResultadosMobile(enfocarBuscador = true) {
+    cerrarFotoViewer();
+    resultadosModal.classList.remove("resultados-abiertos");
+    if (enfocarBuscador) {
+      setTimeout(() => {
+        busquedaInput.focus({ preventScroll:true });
+        busquedaInput.select();
+      }, 50);
+    }
+  }
+
+  btnCerrarResultados.addEventListener("click", () => cerrarResultadosMobile(true));
+
+  function renderSugerencias(lista) {
+    sugerenciasBox.innerHTML = "";
+    sugerenciasActuales = lista;
+    indiceActivo = -1;
+
+    if (!lista.length) {
+      ocultarSugerencias();
+      return;
+    }
+
+    lista.forEach((producto, i) => {
+      const data = producto.data || {};
+      const codigo = data.codigoBarra || data.codigo || producto.id || "--";
+      const concepto = data.concepto || data.descripcion || data.nombre || "Sin concepto";
+      const marca = data.marca || "--";
+      const precio = tomarPrimerValor(data, ["precioPublico", "precio", "precio_mostrador", "precioLista"]);
+
+      const div = document.createElement("div");
+      div.className = "sugerencia-item";
+      div.dataset.index = i;
+      div.innerHTML = `
+        <div class="sugerencia-title">${concepto}</div>
+        <div class="sugerencia-meta">
+          <strong>Código:</strong> ${codigo}
+          &nbsp; | &nbsp;
+          <strong>Marca:</strong> ${marca}
+          &nbsp; | &nbsp;
+          <strong>Precio:</strong> ${precio !== null && precio !== undefined ? precio : "--"}
+        </div>
+      `;
+
+      div.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        seleccionarProducto(producto);
+      });
+
+      sugerenciasBox.appendChild(div);
+    });
+
+    sugerenciasBox.classList.add("show");
+  }
+
+  function actualizarItemActivo() {
+    const items = sugerenciasBox.querySelectorAll(".sugerencia-item");
+    items.forEach((item, idx) => item.classList.toggle("active", idx === indiceActivo));
+
+    if (indiceActivo >= 0 && items[indiceActivo]) {
+      items[indiceActivo].scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function buscarLocal(texto) {
+    const t = normalizarTexto(texto);
+    if (!t) return [];
+
+    const tokens = tokenizarTexto(texto);
+    const esNumerico = /^[0-9]+$/.test(t);
+
+    return catalogoProductos
+      .map(p => {
+        const codigo = p.busquedaCodigo;
+        const concepto = p.busquedaConcepto;
+        const equivalentes = p.busquedaEquivalentes;
+        const textoGeneral = p.busquedaGeneral;
+
+        let score = 9999;
+
+        if (codigo === t) score = 1;
+        else if (equivalentes.includes(t)) score = 2;
+        else if (codigo.startsWith(t)) score = 3;
+        else if (concepto.startsWith(t)) score = 4;
+        else if (concepto.includes(t)) score = 5;
+        else if (!esNumerico && equivalentes.some(eq => eq.includes(t))) score = 6;
+        else if (codigo.includes(t)) score = 7;
+        else if (tokens.length && tokens.every(tok => textoGeneral.includes(tok))) score = 8;
+        else if (tokens.length && tokens.some(tok => textoGeneral.includes(tok))) score = 9;
+
+        return { ...p, score };
+      })
+      .filter(x => x.score < 9999)
+      .sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        return String(a.data.concepto || a.data.descripcion || "").localeCompare(
+          String(b.data.concepto || b.data.descripcion || ""),
+          "es"
+        );
+      })
+      .slice(0, 12);
+  }
+
+  function manejarInput() {
+    const texto = busquedaInput.value.trim();
+    if (!texto) {
+      ocultarSugerencias();
+      return;
+    }
+
+    const resultados = buscarLocal(texto);
+    renderSugerencias(resultados);
+  }
+
+  async function guardarCatalogoIndexedDB(lista) {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction([STORE_NAME, META_STORE], "readwrite");
+
+      tx.objectStore(STORE_NAME).put({
+        key: CATALOGO_KEY,
+        items: lista
+      });
+
+      tx.objectStore(META_STORE).put({
+        key: META_CATALOGO_SYNC_KEY,
+        fecha: new Date().toISOString(),
+        total: lista.length
+      });
+
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function leerCatalogoIndexedDB() {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(STORE_NAME, "readonly");
+      const request = tx.objectStore(STORE_NAME).get(CATALOGO_KEY);
+
+      request.onsuccess = () => resolve(request.result ? request.result.items : null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function leerMetaIndexedDB() {
+    const dbLocal = await abrirDB();
+
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(META_STORE, "readonly");
+      const request = tx.objectStore(META_STORE).get(META_CATALOGO_SYNC_KEY);
+
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function prepararCatalogo(lista) {
+    catalogoProductos = (Array.isArray(lista) ? lista : [])
+      .filter(item => item?.data?.activo === true)
+      .map(item => {
+        const data = item.data || {};
+        const equivalentesRaw = tomarPrimerValor(data, ["codigosEquivalentes", "equivalentes", "codigos_alt"]);
+        const equivalentes = Array.isArray(equivalentesRaw) ? equivalentesRaw : [];
+
+        const codigo = normalizarTexto(data.codigoBarra || data.codigo || item.id);
+        const concepto = normalizarTexto(data.concepto || data.descripcion || data.nombre);
+        const marca = normalizarTexto(data.marca || "");
+        const depto = normalizarTexto(data.departamento || data.depto || data.categoria || "");
+
+        return {
+          id: item.id,
+          data,
+          busquedaCodigo: codigo,
+          busquedaConcepto: concepto,
+          busquedaEquivalentes: equivalentes.map(x => normalizarTexto(x)),
+          busquedaGeneral: [codigo, concepto, marca, depto, ...equivalentes.map(x => normalizarTexto(x))].join(" ")
+        };
+      });
+  }
+
+  async function descargarCatalogoDesdeFirebase() {
+    if (!db) {
+      throw new Error("Firebase no está configurado. Abre config.js y coloca las claves de tu proyecto.");
+    }
+
+    cargaTexto.textContent = "Consultando productos activos...";
+    barraFill.style.width = "15%";
+
+    const q = query(
+      collection(db, COLECCION),
+      where("activo", "==", true)
+    );
+
+    const snap = await getDocs(q);
+    const total = snap.size || 1;
+    let procesados = 0;
+    const lista = [];
+
+    snap.forEach(docSnap => {
+      procesados++;
+      lista.push({
+        id: docSnap.id,
+        data: docSnap.data()
+      });
+
+      const porcentaje = 15 + Math.round((procesados / total) * 85);
+      barraFill.style.width = `${porcentaje}%`;
+      cargaTexto.textContent = `Bajando catálogo... ${procesados} / ${total}`;
+    });
+
+    return lista;
+  }
+
+  function esMismoDiaLocal(fechaIso) {
+    if (!fechaIso) return false;
+    const fecha = new Date(fechaIso);
+    if (isNaN(fecha.getTime())) return false;
+    const ahora = new Date();
+    return fecha.getFullYear() === ahora.getFullYear() &&
+      fecha.getMonth() === ahora.getMonth() &&
+      fecha.getDate() === ahora.getDate();
+  }
+
+  async function leerMetaGenerica(key) {
+    const dbLocal = await abrirDB();
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(META_STORE, "readonly");
+      const request = tx.objectStore(META_STORE).get(key);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function guardarMetaGenerica(key, datos = {}) {
+    const dbLocal = await abrirDB();
+    return new Promise((resolve, reject) => {
+      const tx = dbLocal.transaction(META_STORE, "readwrite");
+      tx.objectStore(META_STORE).put({ key, ...datos });
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  function codigoDesdeMetaFoto(docSnap) {
+    const data = docSnap.data() || {};
+    return String(
+      tomarPrimerValor(data, ["codigoBarra", "codigo", "barcode"]) || docSnap.id || ""
+    ).trim();
+  }
+
+  async function sincronizarUnaMetaFoto(item) {
+    const codigo = item.codigo;
+    const meta = item.meta;
+    if (!codigo) return { descargadas: 0, sinCambios: 0 };
+
+    const firmaRemota = construirFirmaMeta(meta);
+    const cacheLocal = await leerFotosCacheLocal(codigo).catch(() => null);
+    const firmaLocal = cacheLocal?.metaCache?.firma || "";
+    const tieneBlobs = !!cacheLocal?.blobsCache?.length;
+
+    if (meta?.estatus && String(meta.estatus).toUpperCase() !== "OK") {
+      await guardarMetaFotosIndexedDB(codigo, meta, firmaRemota);
+      return { descargadas: 0, sinCambios: 1 };
+    }
+
+    if (firmaLocal === firmaRemota && tieneBlobs) {
+      await guardarMetaFotosIndexedDB(codigo, meta, firmaRemota);
+      return { descargadas: 0, sinCambios: 1 };
+    }
+
+    const urls = await resolverUrlsDeMeta(meta);
+    if (!urls.length) {
+      await guardarMetaFotosIndexedDB(codigo, meta, firmaRemota);
+      if (tieneBlobs) await borrarFotosBlobIndexedDB(codigo);
+      return { descargadas: 0, sinCambios: 1 };
+    }
+
+    const blobs = await descargarBlobsDesdeUrls(urls);
+    if (blobs.length) {
+      await guardarMetaFotosIndexedDB(codigo, meta, firmaRemota);
+      await guardarFotosBlobIndexedDB(codigo, blobs, firmaRemota);
+
+      const codigoActual = String(
+        tomarPrimerValor(productoSeleccionadoActual?.data || {}, ["codigoBarra", "codigo", "barcode"]) ||
+        productoSeleccionadoActual?.id || ""
+      ).trim();
+      if (codigoActual === codigo) {
+        cargarFotosProducto(productoSeleccionadoActual);
+      }
+      return { descargadas: blobs.length, sinCambios: 0 };
+    }
+
+    return { descargadas: 0, sinCambios: 0 };
+  }
+
+  async function sincronizarFotosDiariasEnSegundoPlano() {
+    if (!db || sincronizacionFotosEnCurso) return;
+
+    const metaFotosSync = await leerMetaGenerica(META_FOTOS_SYNC_KEY).catch(() => null);
+    if (esMismoDiaLocal(metaFotosSync?.fecha)) {
+      console.log("Fotos: sincronización diaria ya realizada hoy.");
+      return;
+    }
+
+    sincronizacionFotosEnCurso = true;
+    try {
+      mostrarStatus("Catálogo listo. Actualizando fotos en segundo plano…", "info");
+      const snap = await getDocs(collection(db, COLECCION_FOTOS_META));
+      const items = snap.docs.map(docSnap => ({
+        codigo: codigoDesdeMetaFoto(docSnap),
+        meta: docSnap.data()
+      })).filter(x => x.codigo);
+
+      let siguiente = 0;
+      let procesadas = 0;
+      let fotosDescargadas = 0;
+
+      async function trabajador() {
+        while (true) {
+          const indice = siguiente++;
+          if (indice >= items.length) return;
+          try {
+            const r = await sincronizarUnaMetaFoto(items[indice]);
+            fotosDescargadas += r.descargadas || 0;
+          } catch (error) {
+            console.warn("No se pudo sincronizar foto:", items[indice]?.codigo, error);
+          } finally {
+            procesadas++;
+            if (procesadas % 25 === 0 || procesadas === items.length) {
+              mostrarStatus(`Fotos en segundo plano: ${procesadas} / ${items.length}`, "info");
+            }
+          }
+        }
+      }
+
+      const cantidadTrabajadores = Math.max(1, Math.min(FOTO_BACKGROUND_CONCURRENCY, items.length || 1));
+      await Promise.all(Array.from({ length: cantidadTrabajadores }, () => trabajador()));
+
+      await guardarMetaGenerica(META_FOTOS_SYNC_KEY, {
+        fecha: new Date().toISOString(),
+        totalMetas: items.length,
+        fotosDescargadas
+      });
+      mostrarStatus(`Fotos listas para hoy (${items.length} productos revisados).`, "ok");
+    } catch (error) {
+      console.error("Error en sincronización diaria de fotos:", error);
+      mostrarStatus("Catálogo disponible. Las fotos no pudieron actualizarse por completo.", "info");
+    } finally {
+      sincronizacionFotosEnCurso = false;
+    }
+  }
+
+  function mostrarMenuPrincipal() {
+    overlayCarga.classList.add("hidden");
+    appPrincipal.classList.add("oculta-por-menu");
+    menuInicial.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function abrirConsultaArticulo() {
+    menuInicial.classList.add("hidden");
+    appPrincipal.classList.remove("oculta-por-menu");
+    setTimeout(() => busquedaInput.focus(), 80);
+  }
+
+  function abrirCatalogoTienda() {
+    window.location.href = URL_CATALOGO_TIENDA;
+  }
+
+  async function iniciarCatalogo() {
+    try {
+      limpiarVista();
+      overlayCarga.classList.remove("hidden");
+      barraFill.style.width = "8%";
+      cargaTexto.textContent = "Cargando catálogo…";
+      mostrarStatus("Preparando catálogo local…", "info");
+
+      const [local, meta] = await Promise.all([
+        leerCatalogoIndexedDB(),
+        leerMetaIndexedDB()
+      ]);
+
+      const hayCatalogoLocal = Array.isArray(local) && local.length > 0;
+      const catalogoActualizadoHoy = hayCatalogoLocal && esMismoDiaLocal(meta?.fecha);
+
+      if (catalogoActualizadoHoy) {
+        prepararCatalogo(local);
+        barraFill.style.width = "100%";
+        cargaTexto.textContent = `Catálogo local listo: ${catalogoProductos.length} productos`;
+        mostrarMenuPrincipal();
+        mostrarStatus(`Catálogo listo (${catalogoProductos.length} productos). Actualizado hoy.`, "ok");
+        sincronizarFotosDiariasEnSegundoPlano();
+        return;
+      }
+
+      if (FIREBASE_CONFIGURADO) {
+        try {
+          mostrarStatus(
+            hayCatalogoLocal ? "Actualización diaria del catálogo…" : "Descargando catálogo inicial…",
+            "info"
+          );
+          barraFill.style.width = "12%";
+          cargaTexto.textContent = hayCatalogoLocal
+            ? "Actualizando catálogo del día…"
+            : "Descargando catálogo inicial…";
+
+          const lista = await descargarCatalogoDesdeFirebase();
+          prepararCatalogo(lista);
+          await guardarCatalogoIndexedDB(lista);
+
+          barraFill.style.width = "100%";
+          cargaTexto.textContent = `Catálogo listo: ${catalogoProductos.length} productos`;
+          mostrarMenuPrincipal();
+          mostrarStatus(`Catálogo actualizado hoy (${catalogoProductos.length} productos).`, "ok");
+          sincronizarFotosDiariasEnSegundoPlano();
+          return;
+        } catch (error) {
+          console.error("Falló actualización diaria del catálogo:", error);
+          if (!hayCatalogoLocal) throw error;
+        }
+      }
+
+      if (hayCatalogoLocal) {
+        prepararCatalogo(local);
+        barraFill.style.width = "100%";
+        cargaTexto.textContent = "Usando catálogo local";
+        mostrarMenuPrincipal();
+        mostrarStatus(`Sin conexión: usando catálogo local (${catalogoProductos.length} productos).`, "info");
+        return;
+      }
+
+      mostrarMenuPrincipal();
+      mostrarStatus("No hay catálogo local y Firebase no está disponible.", "error");
+    } catch (error) {
+      console.error(error);
+      mostrarMenuPrincipal();
+      mostrarStatus("Error cargando catálogo: " + error.message, "error");
+    }
+  }
+
+  async function iniciarScanner() {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        mostrarStatus("Este navegador no permite abrir la cámara.", "error");
+        return;
+      }
+
+      if (!("BarcodeDetector" in window)) {
+        mostrarStatus("Este celular/navegador no soporta escaneo nativo. Usa Chrome actualizado en Android.", "error");
+        return;
+      }
+
+      const formatosSoportados = await BarcodeDetector.getSupportedFormats();
+      const formatosDeseados = ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e"];
+      const formatosFinales = formatosDeseados.filter(f => formatosSoportados.includes(f));
+
+      if (!formatosFinales.length) {
+        mostrarStatus("El navegador no soporta formatos de código compatibles.", "error");
+        return;
+      }
+
+      barcodeDetector = new BarcodeDetector({ formats: formatosFinales });
+
+      scannerModal.classList.remove("hidden");
+      scannerMsg.textContent = "Abriendo cámara...";
+
+      scannerStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: currentFacingMode } },
+        audio: false
+      });
+
+      scannerVideo.srcObject = scannerStream;
+      await scannerVideo.play();
+
+      scannerMsg.textContent = "Apunta la cámara al código de barras";
+
+      if (scannerInterval) clearInterval(scannerInterval);
+
+      scannerInterval = setInterval(async () => {
+        try {
+          if (!barcodeDetector || scannerVideo.readyState < 2) return;
+
+          const barcodes = await barcodeDetector.detect(scannerVideo);
+
+          if (barcodes && barcodes.length) {
+            const codigo = (barcodes[0].rawValue || "").trim();
+            if (!codigo) return;
+
+            detenerScanner();
+            busquedaInput.value = codigo;
+
+            const resultados = buscarLocal(codigo);
+            if (resultados.length) {
+              seleccionarProducto(resultados[0]);
+              mostrarStatus(`Código escaneado: ${codigo}`, "ok");
+            } else {
+              renderSugerencias([]);
+              mostrarStatus(`Código escaneado: ${codigo}, pero no existe en el catálogo local.`, "error");
+            }
+          }
+        } catch (err) {
+          console.error("Error detectando código:", err);
+        }
+      }, 400);
+    } catch (error) {
+      console.error(error);
+      detenerScanner();
+      mostrarStatus("No se pudo abrir la cámara: " + error.message, "error");
+    }
+  }
+
+  function detenerScanner() {
+    if (scannerInterval) {
+      clearInterval(scannerInterval);
+      scannerInterval = null;
+    }
+
+    if (scannerStream) {
+      scannerStream.getTracks().forEach(track => track.stop());
+      scannerStream = null;
+    }
+
+    scannerVideo.srcObject = null;
+    scannerModal.classList.add("hidden");
+  }
+
+  async function cambiarCamara() {
+    currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+    detenerScanner();
+    await iniciarScanner();
+  }
+
+  busquedaInput.addEventListener("input", manejarInput);
+
+  busquedaInput.addEventListener("keydown", (e) => {
+    if (!sugerenciasActuales.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      indiceActivo = Math.min(indiceActivo + 1, sugerenciasActuales.length - 1);
+      actualizarItemActivo();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      indiceActivo = Math.max(indiceActivo - 1, 0);
+      actualizarItemActivo();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (indiceActivo >= 0 && sugerenciasActuales[indiceActivo]) {
+        seleccionarProducto(sugerenciasActuales[indiceActivo]);
+      } else if (sugerenciasActuales[0]) {
+        seleccionarProducto(sugerenciasActuales[0]);
+      }
+    } else if (e.key === "Escape") {
+      ocultarSugerencias();
+    }
+  });
+
+  busquedaInput.addEventListener("focus", () => {
+    if (busquedaInput.value.trim()) manejarInput();
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".buscador-wrap")) {
+      ocultarSugerencias();
+    }
+  });
+
+  btnConsultarArticulo.addEventListener("click", abrirConsultaArticulo);
+  btnConsultarCatalogo.addEventListener("click", abrirCatalogoTienda);
+  btnVolverMenu.addEventListener("click", () => {
+    ocultarSugerencias();
+    cerrarResultadosMobile(false);
+    detenerScanner();
+    mostrarMenuPrincipal();
+  });
+
+  btnEscanear.addEventListener("click", iniciarScanner);
+  btnCerrarScanner.addEventListener("click", detenerScanner);
+  btnDetenerScanner.addEventListener("click", detenerScanner);
+  btnCambiarCamara.addEventListener("click", cambiarCamara);
+
+  window.addEventListener("beforeunload", () => {
+    liberarObjectUrlsActuales();
+    detenerScanner();
+  });
+
+  let eventoInstalacion = null;
+
+  function ejecutandoComoApp(){
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
+
+  function actualizarEstadoInstalacion(){
+    const instalada = ejecutandoComoApp();
+    if (btnInstalar) btnInstalar.hidden = !eventoInstalacion || instalada;
+    if (btnInstalarMenu) {
+      btnInstalarMenu.hidden = instalada;
+      btnInstalarMenu.textContent = eventoInstalacion ? "📲 INSTALAR APP" : "📲 CÓMO INSTALAR APP";
+    }
+    if (installInfo) {
+      if (instalada) installInfo.textContent = "La aplicación ya está instalada en este dispositivo.";
+      else if (!window.isSecureContext) installInfo.textContent = "Para instalar en Android, abre esta app desde una dirección HTTPS. Una dirección http://192.168... del server.py sirve para probar, pero no para instalar la PWA.";
+      else if (eventoInstalacion) installInfo.textContent = "Lista para instalar en este dispositivo.";
+      else installInfo.textContent = "Si Chrome todavía no ofrece la instalación, usa ⋮ > Agregar a pantalla principal / Instalar aplicación.";
+    }
+  }
+
+  window.addEventListener("beforeinstallprompt", (evento) => {
+    evento.preventDefault();
+    eventoInstalacion = evento;
+    actualizarEstadoInstalacion();
+  });
+
+  async function solicitarInstalacion(){
+    if (ejecutandoComoApp()) {
+      if (installInfo) installInfo.textContent = "La aplicación ya está instalada.";
+      return;
+    }
+    if (!window.isSecureContext) {
+      alert("Para instalar CataInge como PWA en tu Samsung debes abrirla desde HTTPS.\n\nSi entraste desde http://192.168.x.x:8000 usando server.py, podrás usarla pero Android no permitirá instalarla como PWA. Súbela a Firebase Hosting o GitHub Pages y ábrela desde https://...");
+      return;
+    }
+    if (eventoInstalacion) {
+      eventoInstalacion.prompt();
+      await eventoInstalacion.userChoice;
+      eventoInstalacion = null;
+      actualizarEstadoInstalacion();
+      return;
+    }
+    alert("Chrome/Samsung Internet todavía no mostró el aviso automático. Abre el menú del navegador (⋮) y selecciona ‘Instalar aplicación’ o ‘Agregar a pantalla principal’. Si esa opción no aparece, recarga una vez la página HTTPS.");
+  }
+
+  btnInstalar.addEventListener("click", solicitarInstalacion);
+  btnInstalarMenu.addEventListener("click", solicitarInstalacion);
+
+  window.addEventListener("appinstalled", () => {
+    eventoInstalacion = null;
+    actualizarEstadoInstalacion();
+    mostrarStatus("Aplicación instalada correctamente.", "ok");
+  });
+
+  window.addEventListener("DOMContentLoaded", actualizarEstadoInstalacion);
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+      try {
+        await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+        console.log("PWA: service worker registrado.");
+      } catch (error) {
+        console.error("No se pudo registrar el service worker:", error);
+      }
+    });
+  }
+
+  iniciarCatalogo();
+</script>
+</body>
+</html>

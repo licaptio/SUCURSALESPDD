@@ -1,0 +1,15 @@
+CATÁLOGO DE PRODUCTOS - PROVEEDORA (PWA)
+
+1. Copia las claves de tu proyecto Firebase dentro de config.js.
+2. Ejecuta server.py con doble clic o desde CMD: python server.py
+3. La aplicación abre en http://127.0.0.1:8000
+4. En Chrome o Edge aparecerá el botón "Instalar app" cuando la PWA esté lista.
+
+IMPORTANTE:
+- No abras index.html directamente con doble clic. Los módulos, Firebase y la PWA requieren HTTP/HTTPS.
+- La primera descarga del catálogo requiere internet.
+- Después de guardar el catálogo en IndexedDB, la consulta funciona con los datos locales.
+- La cámara requiere HTTPS o localhost.
+
+Cálculo implementado:
+Costo después de impuestos = costoSinImpuesto × (1 + iepsTasa) × (1 + ivaTasa)

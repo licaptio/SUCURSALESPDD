@@ -1,0 +1,22 @@
+ARCHIVOS DE INSTALACION PWA ALINEADOS
+
+Entrada de la app:
+- indexasdasdsa321323.html
+
+Instalacion:
+- manifest.json -> start_url: ./indexasdasdsa321323.html
+- service-worker.js -> cachea la misma entrada y usa cache v4
+- indexasdasdsa321323.html -> registra ./service-worker.js
+
+Iconos:
+- icons/icon-192.png -> 192x192
+- icons/icon-512.png -> 512x512
+- icons/maskable_icon.png -> 512x512
+
+Sincronizacion catalogo:
+- Base local en IndexedDB
+- Primera migracion/instalacion: descarga activos una vez
+- Cambios posteriores: listener incremental por updatedAt (Timestamp)
+- activo=true: inserta/actualiza local
+- activo=false: elimina local
+- Cada escritura de producto debe actualizar updatedAt con serverTimestamp()

@@ -1,0 +1,33 @@
+SALIDA ABARROTES PDD - V32 AHORRO FIREBASE
+
+CAMBIOS APLICADOS
+- Se eliminó el polling del catálogo cada 10 minutos.
+- Se eliminó la descarga completa automática cada 24 horas.
+- El catálogo completo se descarga solamente en la primera preparación del equipo.
+- El botón del menú ahora es "Actualizar catálogo" y ejecuta sincronización incremental manual.
+- La app escucha UN SOLO documento centinela de Firestore para enterarse de cambios.
+- Cuando cambia el centinela, espera 7 segundos y descarga solamente productos con actualizadoEn posterior a la última sincronización.
+- Empleados y configuración usan caché por 6 horas.
+- Usuario fijo usa caché por 12 horas.
+- Códigos bloqueados usan caché por 6 horas.
+
+DOCUMENTO CENTINELA
+Ruta Firestore:
+almacenes/abarrotespdd/configuracion/catalogo_version
+
+Campos recomendados:
+version: número entero
+actualizadoEn: serverTimestamp()
+
+IMPORTANTE
+El sistema que ALTA / EDITA / ACTIVA / DESACTIVA documentos de /productos debe hacer dos cosas:
+1) actualizar actualizadoEn: serverTimestamp() en el producto;
+2) incrementar el campo version del documento catalogo_version.
+
+Ejemplo conceptual después de guardar cambios de productos:
+  updateDoc(doc(db,'almacenes','abarrotespdd','configuracion','catalogo_version'), {
+    version: increment(1),
+    actualizadoEn: serverTimestamp()
+  });
+
+Con esto los equipos reciben el aviso automáticamente sin consultar el catálogo periódicamente.

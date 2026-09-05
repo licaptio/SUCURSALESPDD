@@ -1,0 +1,17 @@
+TABLACIG V11 - RAPIDEZ + AHORRO
+
+- Se eliminaron los textos técnicos de la cabecera.
+- Se dejó únicamente el Pivot semanal en la tabla principal.
+- Se eliminó el acceso a Detalle semana.
+- Se eliminó la fila TOTAL del Pivot semanal.
+- Los accesos se movieron al botón de tres puntos y se muestran en un modal centrado.
+- Inventario inicial y existencia final teórica negativos: rojo, negrita y parpadeo.
+- Loader de entrada con cronómetro real de carga.
+- IndexedDB nueva e independiente: PROVSOFT_CIGARROS_V2.
+- La caché local ya no caduca cada 24 horas.
+- La app usa la copia local mientras exista; "Recargar desde Firebase" fuerza una actualización completa.
+- En una carga desde Firebase se redujeron lecturas duplicadas: cada colección principal se consulta una sola vez hasta el fin de la semana y se divide localmente entre acumulado anterior y semana actual.
+- Fecha base visible/configurada: 23/06/2026.
+
+IMPORTANTE:
+La sincronización incremental por updated_at no se activa todavía porque los documentos históricos no garantizan un campo updated_at uniforme. Activarla sin normalizar ese dato podría omitir cambios reales. Esta V11 prioriza ahorro seguro: persistencia local + recarga manual + eliminación de consultas duplicadas.

@@ -1,0 +1,8 @@
+PROVSOFT CIGARRO V15 INTEGRADO
+
+Este paquete contiene las dos apps conectadas:
+1) APPSALCIG: genera salidas con timestamps de sincronización.
+2) TABLACIG_V2: tabla de inventario con sincronización incremental de SALIDAS.
+
+Puede copiar la carpeta CIGARRO sobre su carpeta actual conservando los mismos nombres/rutas.
+La primera apertura de TABLACIG V15 usa una IndexedDB nueva (PROVSOFT_CIGARROS_V4), por lo que hará la carga inicial necesaria una sola vez. Después conserva datos localmente y recibe novedades incrementales.

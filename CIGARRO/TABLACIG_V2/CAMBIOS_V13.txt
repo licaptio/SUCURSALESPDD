@@ -1,0 +1,13 @@
+TABLACIG V13 RAPIDA + AHORRO + TIEMPO REAL
+
+- IndexedDB exclusiva PROVSOFT_CIGARROS_V3.
+- Pivot abre desde local cuando existe.
+- Entradas: sincronización incremental por creado_en.
+- CIGMAN: sincronización incremental por creado_en.
+- Ajustes: sincronización incremental por actualizado_en.
+- Salidas: como el histórico no tiene creado_en/actualizado_en, se usa vigilancia económica de conteo cada 60 s y al recuperar foco. Solo si cambia el conteo se releen las salidas y se recalcula el Pivot.
+- Los cambios detectados con la app abierta actualizan el Pivot automáticamente, sin F5 ni cerrar.
+- Se mantiene botón Recargar desde Firebase como recuperación manual.
+
+LIMITACION ACTUAL DE SALIDAS:
+Una edición de una salida existente que no cambie el número total de documentos no puede detectarse de forma incremental porque esos documentos no tienen actualizado_en. Para cubrir también ese caso, la app que genera/edita salidas debe empezar a guardar creado_en y actualizado_en.

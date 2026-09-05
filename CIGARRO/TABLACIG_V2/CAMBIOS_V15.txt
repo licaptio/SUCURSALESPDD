@@ -1,0 +1,16 @@
+TABLACIG V15 - INTEGRACIÓN SALIDAS + AHORRO
+
+- IndexedDB independiente: PROVSOFT_CIGARROS_V4.
+- SALIDAS nuevas se sincronizan por actualizado_en en tiempo real.
+- Se elimina la vigilancia por conteo cada 60 segundos y la relectura completa asociada.
+- ENTRADAS y CIGMAN continúan incrementales por creado_en.
+- AJUSTES continúa incremental por actualizado_en.
+- Históricos sin timestamp se cargan por la ruta inicial/IndexedDB y no se pierden.
+- Mantiene cadena semanal: INVINI = existencia final teórica de la semana anterior.
+- Mantiene bloqueo de semanas anteriores al inventario inicial.
+- Mantiene interfaz limpia, Pivot único, menú de tres puntos y negativos destacados.
+
+APPSALCIG
+- Cada salida nueva guarda creado_en, actualizado_en y eliminado=false.
+- Se conserva creadoEn para compatibilidad.
+- APP_VERSION: 1.1.0-sync-incremental-salidas.

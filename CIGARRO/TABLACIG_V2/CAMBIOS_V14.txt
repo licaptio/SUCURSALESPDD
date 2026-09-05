@@ -1,0 +1,9 @@
+TABLACIG V14
+
+- INVINI semanal se calcula cronológicamente desde el inventario base y todos los movimientos anteriores.
+- AJUINV histórico fija la existencia al físico, por lo que INVINI coincide exactamente con la existencia final teórica de la semana anterior.
+- Encabezado INVINI muestra la fecha de cierre de la semana anterior; en la semana base muestra 23/06/2026.
+- Selector de semana bloqueado desde 2026-W26 hacia atrás mediante min=2026-W26 y validación JS.
+- En Chrome las semanas anteriores aparecen deshabilitadas/gris en el selector nativo.
+- Se elimina el texto/barra de estado inferior de la tabla.
+- Se conservan menú de tres puntos, modal, Pivot único, negativos parpadeando, IndexedDB y sincronización V13.

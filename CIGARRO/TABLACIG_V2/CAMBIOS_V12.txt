@@ -1,0 +1,18 @@
+TABLACIG V12 - RAPIDEZ + AHORRO
+
+- Encabezado técnico eliminado de la vista principal.
+- Accesos movidos al botón de tres puntos con modal centrado.
+- Vista principal exclusivamente Pivot semanal.
+- Detalle semana eliminado de la interfaz y ya no se construye su dataset en cada carga.
+- Fila TOTAL del Pivot eliminada.
+- Valores negativos en INVINI y EXISTENCIA FINAL TEÓRICA: rojo, negrita y parpadeo.
+- Loader inicial con cronómetro real y etapas de carga.
+- IndexedDB exclusiva PROVSOFT_CIGARROS_V2, persistente y sin expiración de 24 horas.
+- El Pivot semanal y estado necesario quedan guardados localmente.
+- Si existe caché local de la semana, la app abre desde IndexedDB sin volver a descargar Firebase.
+- Recarga Firebase solo mediante la opción correspondiente o cuando no existe caché local.
+- Entradas, ajustes y CIGMAN generados desde la app actualizan el Pivot local sin recargar Firestore completo.
+- Un movimiento histórico invalida únicamente las semanas locales que pueden verse afectadas; esas semanas se recalculan cuando se vuelvan a abrir.
+- Fecha base real: 23/06/2026.
+
+NOTA: La sincronización incremental por updated_at queda para la siguiente fase, después de adaptar SALIDAS, ENTRADAS y CIGMAN en sus sistemas de origen.

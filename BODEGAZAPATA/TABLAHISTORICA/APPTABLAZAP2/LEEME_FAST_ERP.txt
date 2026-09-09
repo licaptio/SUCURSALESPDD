@@ -1,0 +1,15 @@
+PROVSOFT - APPTABLAZAP FAST ERP
+
+Cambios aplicados:
+- Revisión de factura convertida a pantalla completa dentro de Entradas Zapata.
+- Botones fijos de Cancelar, Marcar no entra y Generar entrada.
+- Confirmaciones propias de PROVSOFT, sin confirm() del navegador.
+- Notificaciones tipo toast, sin alert() para el flujo principal.
+- Caché local para entradas registradas e historial.
+- Al guardar proveedor se actualiza la lista local sin recargar todo Firebase.
+- Al generar entrada o marcar No entra se quita la factura localmente y se actualizan historial/entradas localmente.
+- Tabla principal se sigue actualizando con el callback local existente.
+
+Notas:
+- El botón Refrescar facturas sigue disponible para forzar consulta a Firebase cuando se requiera.
+- El módulo productos activos mantiene caché local al buscar equivalencias.

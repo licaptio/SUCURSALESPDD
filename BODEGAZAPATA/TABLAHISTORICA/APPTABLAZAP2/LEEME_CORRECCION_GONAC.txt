@@ -1,0 +1,18 @@
+CORRECCION FACTURAS PENDIENTES ZAPATA
+
+Problema detectado:
+La aplicación sí consulta las facturas origen en:
+/almacenes/ALMACENCENTRALPDD/entradas
+
+Pero solo cargaba las 300 más recientes antes de aplicar el filtro de proveedor autorizado.
+Una factura del 08/08/2026 podía quedar fuera de esas 300 y nunca llegar al filtro.
+
+Corrección aplicada:
+- facturas.js: cargarFacturasOrigen pasa de 300 a 3000 documentos.
+- entradasModulo.js: la pantalla solicita 3000 documentos.
+- NO se cambió /almacenes/almacen_zapata/entradas, porque esa ruta es el destino de las entradas ya autorizadas/generadas para Zapata.
+
+UUID usado para diagnóstico:
+A927F3F3-1685-4912-A398-52A11F0902D0
+RFC: CGO930212IC6
+Proveedor: COMERCIALIZADORA GONAC

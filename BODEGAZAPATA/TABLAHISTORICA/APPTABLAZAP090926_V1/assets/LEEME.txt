@@ -1,0 +1,239 @@
+PROVSOFT - INVENTARIO ZAPATA
+VERSIÓN V10 - BASE OPERATIVA AISLADA 09/09/2026
+============================================================
+
+OBJETIVO DE ESTA VERSIÓN
+------------------------
+Esta versión deja de reconstruir el inventario desde el inventario histórico de junio.
+El nuevo punto cero es el inventario teórico cerrado el 09/09/2026.
+
+CORTE DEFINITIVO
+----------------
+Inventario base: ZAPATA090926
+Corte teórico: 09/09/2026 12:24 PM
+Inicio operativo nuevo: 09/09/2026 12:25 PM
+Semana de trabajo: domingo a sábado
+
+REGLA PRINCIPAL
+---------------
+EXISTENCIA = INVENTARIO BASE ZAPATA090926
+           + ENTRADAS POSTERIORES AL CORTE
+           - SALIDAS POSTERIORES AL CORTE
+           +/- AJUSTES POSTERIORES AL CORTE
+
+ZAPATA010626 queda como histórico y NO debe participar en el cálculo normal de esta versión.
+Para consultar periodos anteriores al corte se debe usar la versión anterior.
+
+FUENTES REALES DEL CÁLCULO
+--------------------------
+1) INVENTARIO INICIAL
+/almacenes/almacen_zapata/Inventarios/ZAPATA090926/USUARIOS/{usuarioId}/PARTIDAS
+
+El programa primero lee los documentos de USUARIOS de ZAPATA090926 y después sus PARTIDAS.
+La cantidad de cada partida se suma por código y forma inviniOriginal.
+
+2) ENTRADAS YA GENERADAS
+/almacenes/almacen_zapata/entradas
+
+Para el pivot se consulta por campo fecha dentro del rango requerido.
+En el día 09/09/2026 se aplica además el filtro de hora >= 12:25.
+Los artículos usan principalmente:
+- codigo_interno
+- descripcion_interna / descripcion_factura
+- cantidad_entrada
+
+3) SALIDAS
+/almacenes/almacen_zapata/salidas1.0
+
+Se consulta por campo fecha dentro del rango requerido.
+En el día 09/09/2026 se aplica además el filtro de hora >= 12:25.
+La salida resta la cantidad de cada artículo.
+
+4) AJUSTES DE INVENTARIO
+/almacenes/almacen_zapata/ajustes_inventario
+  /{ajusteId}/PARTIDAS/{partidaId}
+
+Los encabezados se consultan por fecha_movimiento.
+En el día 09/09/2026 se aplica además el filtro de hora >= 12:25.
+Cada ajuste se aplica como DIFERENCIA:
+existencia_fisica - existencia_teorica = diferencia
+La diferencia se suma o resta a la existencia calculada.
+
+FUENTES DEL MÓDULO DE ENTRADAS PENDIENTES
+-----------------------------------------
+Facturas origen:
+/almacenes/ALMACENCENTRALPDD/entradas
+
+Entradas generadas Zapata:
+/almacenes/almacen_zapata/entradas
+
+Decisiones NO ENTRA:
+/almacenes/almacen_zapata/decisiones_facturas
+
+Proveedores autorizados:
+/almacenes/almacen_zapata/configuracion/proveedores_autorizados/items
+
+Equivalencias factura -> producto interno:
+/almacenes/almacen_zapata/configuracion/equivalencias_factura/items
+
+REGLA DEL CORTE EN FACTURAS
+---------------------------
+Las facturas origen se consultan en Firestore con:
+timestamp >= 09/09/2026 12:25 PM (-06:00)
+
+No se vuelven a descargar 3000 facturas históricas.
+
+OPTIMIZACIÓN V8 CONSERVADA EN V9
+--------------------------------
+Problema anterior:
+Por cada factura candidata se hacían hasta DOS getDoc individuales:
+- comprobar si ya tenía entrada
+- comprobar si estaba marcada NO_ENTRA_ZAPATA
+
+Eso provocaba tiempos cercanos a 45 segundos.
+
+Solución:
+- 1 consulta de facturas origen desde el corte
+- 1 consulta agrupada de entradas desde el corte
+- 1 consulta agrupada de decisiones desde el corte
+- comparación de UUID en memoria mediante Set
+- proveedores y equivalencias se cargan en paralelo
+
+Resultado validado en operación: aproximadamente 3 segundos de arranque.
+NO REGRESAR al patrón de consultas individuales por factura (N+1).
+
+CÁLCULO DE SEMANA
+-----------------
+Teórico inicial de la semana:
+Inventario ZAPATA090926 + movimientos desde el corte hasta antes de la semana seleccionada.
+
+Teórico final de la semana:
+Teórico inicial + entradas semana - salidas semana +/- ajustes semana.
+
+Nunca se reconstruye desde junio.
+Si una semana toca el día del corte, los movimientos del 09/09/2026 anteriores a 12:25 se descartan por hora.
+
+CAMBIOS V9
+----------
+1. Se elimina completamente el botón/pestaña "Pivot semanal" de la pantalla principal.
+   La tabla aparece directamente y se recupera el espacio vertical.
+
+2. El selector de semana permanece visible en la barra principal.
+
+3. El filtro/buscador permanece visible en la barra principal.
+
+4. Menú de tres puntos conserva:
+   - Ver inventarios
+   - Entradas pendientes
+   - Ajuste inventario
+   - Exportar Excel
+   - Configuración general
+
+5. No existe botón Recargar.
+   La aplicación actualiza en memoria los movimientos generados localmente y usa escucha ligera para cambios externos.
+
+6. Teórico inicial y teórico final:
+   Si el resultado calculado es exactamente 0, el cero PARPADEA.
+   Esto indica que el cálculo ya terminó y el resultado real es cero.
+   No representa una celda pendiente de cálculo.
+
+7. Configuración general muestra las rutas reales de inventario, entradas, salidas, ajustes, facturas origen, decisiones, proveedores y equivalencias.
+
+ACTUALIZACIÓN AUTOMÁTICA
+------------------------
+No usar polling constante.
+La app escucha únicamente el rango de la semana visible para:
+- salidas
+- entradas
+- ajustes
+
+La primera lectura del listener se ignora porque la carga inicial ya trajo esos datos.
+Cuando el movimiento lo genera esta misma app, se actualiza en memoria y se evita una recarga completa inmediata.
+
+ESTRUCTURA DE ARCHIVOS
+----------------------
+RAÍZ:
+- index.html
+- server.py
+- INICIAR_PROVSOFT.bat
+
+ASSETS:
+- app.js
+- ajustesModulo.js
+- config.js
+- configuracion.js
+- entradas.js
+- entradasModulo.js
+- facturas.js
+- styles.css
+- logo.jfif
+- LEEME.txt
+
+No regresar archivos JS, CSS, logo o LEEME a la raíz.
+
+NOTA IMPORTANTE SOBRE EL DÍA DEL CORTE
+--------------------------------------
+Los movimientos del pivot (entradas/salidas/ajustes) usan consultas Firestore por FECHA.
+Por eso, cuando la fecha es 09/09/2026, el navegador puede recibir documentos de ese mismo día y luego descarta los que tengan hora anterior a 12:25.
+Eso NO implica recorrer junio/agosto ni el inventario anterior.
+
+Las facturas origen sí están filtradas directamente en servidor por timestamp exacto >= 09/09/2026 12:25 PM.
+
+REGLAS PARA VERSIONES FUTURAS
+-----------------------------
+- No cambiar ZAPATA090926 sin crear un nuevo cierre formal.
+- No reactivar ZAPATA010626 para cálculos de esta rama.
+- No volver a cargar miles de facturas históricas.
+- No volver a usar getDoc por cada factura para comprobar pendientes.
+- Conservar el corte 09/09/2026 12:25 PM en todos los movimientos.
+- Conservar raíz limpia: index + server + BAT.
+- Documentar en este LEEME cualquier cambio estructural, ruta, regla de cálculo o mejora de rendimiento.
+
+FIN DEL DOCUMENTO
+
+AISLAMIENTO TOTAL V10
+---------------------
+Esta versión se diseñó para NO compartir almacenamiento local ni servidor con otras aplicaciones PROVSOFT.
+
+1) ORIGEN WEB EXCLUSIVO
+server.py utiliza el puerto local 8096:
+http://localhost:8096/index.html
+
+El almacenamiento del navegador (IndexedDB, localStorage, Cache Storage, etc.) se separa por origen.
+Por usar un puerto diferente, esta aplicación queda aislada de aplicaciones que corran en localhost:8000 u otros puertos.
+
+2) APP FIREBASE CON NOMBRE EXCLUSIVO
+config.js inicializa Firebase con:
+APP_NAMESPACE = PROVSOFT_INVENTARIO_ZAPATA_09092026
+
+No usar initializeApp(firebaseConfig) sin nombre en esta rama.
+El nombre exclusivo forma parte del aislamiento de la persistencia Firestore.
+
+3) INDEXEDDB PROPIO
+Firestore se inicializa mediante initializeFirestore() con persistentLocalCache().
+Esto habilita caché persistente en IndexedDB para esta aplicación.
+Se usa persistentMultipleTabManager para permitir varias pestañas de ESTA MISMA app sin pelear por la caché.
+
+Si el navegador bloquea IndexedDB, config.js cae de forma segura a memoria mediante getFirestore().
+No se debe reutilizar una IndexedDB manual de otra aplicación.
+
+4) NO EXISTE ALMACENAMIENTO COMPARTIDO MANUAL
+Al revisar V9 no existían llamadas propias a:
+- indexedDB.open()
+- localStorage
+- sessionStorage
+- caches.open()
+- serviceWorker
+
+Por tanto V10 no hereda una base manual vieja. La persistencia local es la caché Firestore de esta app, aislada por nombre de aplicación y por puerto/origen.
+
+5) REGLA PARA VERSIONES FUTURAS
+NO cambiar el puerto 8096 ni APP_NAMESPACE sin documentarlo aquí.
+NO copiar código de persistencia de otras apps PROVSOFT.
+NO volver a puerto 8000 si se pretende mantener aislamiento con aplicaciones anteriores.
+Mantener toda nueva clave local con prefijo PROVSOFT_INVENTARIO_ZAPATA_09092026.
+
+CAMBIOS FUNCIONALES HEREDADOS
+-----------------------------
+V10 conserva íntegramente la lógica rápida validada en V8/V9 (~3 segundos), el corte 09/09/2026 12:25 PM, las consultas agrupadas de facturas pendientes, el menú de tres puntos, la tabla sin botón Pivot semanal y el parpadeo de ceros teóricos.
+

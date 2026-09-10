@@ -1,4 +1,0 @@
-V61 - 09/09/2026
-- Se conserva la cámara directa/fija de V60.
-- Se eliminó el aviso/confirmación cuando la cantidad de salida supera el inventario inicial.
-- La salida continúa normalmente sin informar ni pedir autorización por inventario menor.

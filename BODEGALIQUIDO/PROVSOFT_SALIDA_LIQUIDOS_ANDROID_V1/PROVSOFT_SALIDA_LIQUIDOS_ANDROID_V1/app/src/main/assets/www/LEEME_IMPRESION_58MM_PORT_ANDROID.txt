@@ -1,0 +1,35 @@
+PROVSOFT - SALIDA ALMACEN LIQUIDOS
+VERSION: PORT JS IMPRESION 58 MM DESDE SALIDAABARROTEVANDROIDV2
+FECHA: 09/09/2026
+
+OBJETIVO
+- Sustituir la antigua salida PDF/impresion del proyecto Liquidos por el motor ESC/POS 58 mm ya probado fisicamente en Salida Abarrotes Android V2.
+- Dejar el JavaScript listo para portar despues a APK Android.
+
+CAMBIOS
+1. Se elimino la generacion automatica de PDF con html2canvas/jsPDF.
+2. Se eliminaron las dependencias html2canvas y jsPDF del index.html.
+3. Se agrego printer58.js.
+4. El ticket ESC/POS se construye completamente en JavaScript.
+5. Se conserva el mismo esquema de puente nativo:
+   window.ProvsoftAndroidPrinter.printBase64(base64, jobJson)
+   window.ProvsoftAndroidPrinter.selectPrinter()
+6. Perfil preparado: Bluetooth Classic SPP, ESC/POS 58 mm, logo GS v 0, corte manual.
+7. Se reutilizo el raster exacto del logo de la version Abarrotes validada.
+8. Se adaptaron los campos de Liquidos:
+   productos[].codigoBarra -> codigo
+   productos[].concepto -> descripcion
+   productos[].cantidad -> cantidad
+   entrega / recibe / destino / firmaRecibe / firmaEntrega
+9. Al guardar una salida intenta impresion automatica si esta activada.
+10. En navegador/PWA sin puente Android la salida queda marcada PENDIENTE; no se simula que imprimio.
+11. Se agrego boton 'Impresora 58 mm' para configuracion y futura seleccion Bluetooth dentro de Android.
+
+PARA EL PORT ANDROID
+- Usar ProvsoftAndroidPrinter.java de SALIDAABARROTEVANDROIDV2 SIN CAMBIAR su logica de conexion/envio ya validada.
+- Registrar el puente en WebView con addJavascriptInterface(..., "ProvsoftAndroidPrinter").
+- Mantener permisos Bluetooth del AndroidManifest de Abarrotes V2.
+- Mantener pacing/envio Bluetooth del Java validado; NO trasladar esa responsabilidad al JS.
+
+IMPORTANTE
+La logica de conexion fisica Bluetooth sigue perteneciendo a Android. Este ZIP deja lista la capa JavaScript ESC/POS del proyecto Liquidos para ese siguiente paso.

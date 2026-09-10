@@ -1,0 +1,52 @@
+PROVSOFT - SALIDA LIQUIDOS ANDROID V1
+=====================================
+
+OBJETIVO
+Proyecto Android Studio listo para abrir/compilar/instalar, basado en la version
+Bluetooth estable y probada de SALIDAABARROTEVANDROIDV2.
+
+BASE WEB
+- APPSALIDALIQ_V7_JS_ESC_POS_ABARROTES
+- El ticket ESC/POS se construye en app/src/main/assets/www/printer58.js
+- El puente esperado por JS es window.ProvsoftAndroidPrinter
+
+BASE ANDROID BLUETOOTH
+- app/src/main/java/mx/proveedora/salidaliquidos/ProvsoftAndroidPrinter.java
+- Portado desde SALIDAABARROTEVANDROIDV2.
+- NO modificar su estrategia de conexion/envio sin una prueba fisica posterior.
+- Bluetooth Classic RFCOMM/SPP.
+- ESC/POS 58 mm.
+- Imagenes GS v 0 enviadas atomicamente.
+- Texto con pacing/chunks, igual a la base ya validada.
+
+IDENTIDAD ANDROID
+- namespace: mx.proveedora.salidaliquidos
+- applicationId: mx.proveedora.salidaliquidos
+- app: Salida Liquidos PDD
+- versionCode: 1
+- versionName: 1.0
+
+INSTALACION / PRUEBA
+1. Extraer este ZIP.
+2. Abrir la carpeta PROVSOFT_SALIDA_LIQUIDOS_ANDROID_V1 en Android Studio.
+3. Esperar sincronizacion de Gradle.
+4. Conectar el telefono por USB y habilitar depuracion USB.
+5. Ejecutar Run > app.
+6. Android solicitara permiso de Dispositivos cercanos/Bluetooth en Android 12+.
+7. La impresora debe estar previamente emparejada desde Android.
+8. En la app usar "Impresora 58 mm" > "Seleccionar impresora".
+9. Registrar una salida y validar impresion real.
+
+IMPORTANTE
+Esta aplicacion usa applicationId distinto a Abarrotes, por lo que ambas pueden
+estar instaladas simultaneamente en el mismo telefono.
+
+WEBVIEW
+Los archivos web viven directamente en:
+app/src/main/assets/www/
+MainActivity carga:
+https://appassets.androidplatform.net/assets/www/index.html
+
+DEPENDENCIAS DE INTERNET
+La app web utiliza Firebase desde gstatic.com y html5-qrcode desde unpkg.com.
+Por ello requiere INTERNET para esas funciones, aunque los archivos propios son locales.

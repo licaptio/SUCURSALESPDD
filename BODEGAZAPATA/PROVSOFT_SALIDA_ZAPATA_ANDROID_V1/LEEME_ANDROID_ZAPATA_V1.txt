@@ -1,0 +1,53 @@
+PROVSOFT - SALIDA ZAPATA ANDROID V1
+Fecha: 10/09/2026
+
+OBJETIVO
+Proyecto Android Studio listo para montar la aplicación Salidas Zapata con impresión térmica Bluetooth directa ESC/POS de 58 mm.
+
+BASE DE IMPRESIÓN
+La clase ProvsoftAndroidPrinter.java conserva la lógica de SALIDAABARROTEVANDROIDV2 ya probada físicamente:
+- Bluetooth Classic RFCOMM / SPP.
+- Primer intento SPP_INSECURE.
+- Pausa de recuperación de 1.4 s y segundo intento SPP_INSECURE.
+- SPP_SECURE como último recurso.
+- Sin barrido de canales RFCOMM privados durante impresión real.
+- Texto enviado con pacing de 192 bytes / 12 ms.
+- Imágenes ESC/POS GS v 0 tratadas de forma atómica.
+- Corte automático deshabilitado / corte manual.
+
+CAMBIOS EN ZAPATA
+- Eliminada impresión por RawBT e intent://.
+- Eliminadas dependencias html2canvas/jsPDF usadas por la impresión anterior.
+- Agregado printer58.js para construir el ticket ESC/POS desde JavaScript.
+- Impresión automática al guardar, configurable.
+- Configuración -> Impresora 58 mm permite seleccionar la impresora emparejada.
+- Historial permite reimprimir directamente por Bluetooth.
+- Ticket adaptado a: folio, fecha/hora, destino, entrega, chofer/recibe, placas, artículos, cantidades, notas y firmas.
+
+IDENTIDAD ANDROID
+- applicationId: mx.proveedora.salidazapata
+- namespace: mx.proveedora.salidazapata
+- nombre: PROVSOFT Salida Zapata
+Puede instalarse junto con las apps Abarrotes y Líquidos sin reemplazarlas.
+
+ABRIR EN ANDROID STUDIO
+1. Descomprimir este ZIP.
+2. Android Studio -> Open.
+3. Seleccionar la carpeta PROVSOFT_SALIDA_ZAPATA_ANDROID_V1.
+4. Permitir Gradle Sync y descarga de dependencias si Android Studio lo solicita.
+5. Conectar el teléfono Android por USB.
+6. Run app.
+7. Emparejar previamente la impresora Bluetooth en Android.
+8. En la app: Configuración -> Impresora 58 mm -> Seleccionar impresora Bluetooth.
+9. Realizar una salida de prueba.
+
+IMPORTANTE
+No modificar ProvsoftAndroidPrinter.java salvo que sea necesario. Es la lógica Bluetooth que ya fue validada con la impresora real de Abarrotes.
+
+VALIDACIONES REALIZADAS
+- app.js: sintaxis JavaScript OK.
+- printer58.js: sintaxis JavaScript OK.
+- sw.js: sintaxis JavaScript OK.
+- Sin referencias a RawBT, intent:rawbt, html2canvas ni jsPDF.
+- La lógica de ProvsoftAndroidPrinter.java es idéntica a la versión Abarrotes validada, excepto el package Java.
+- El entorno de generación no pudo ejecutar assembleDebug porque no tiene acceso de red para descargar la distribución Gradle; la compilación final corresponde hacerla en Android Studio.

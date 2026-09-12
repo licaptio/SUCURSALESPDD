@@ -1,0 +1,275 @@
+PROVSOFT - CONTEO FISICO RUTA 1
+INVENTARIO DEL 12/09/2026
+============================================================
+
+OBJETIVO
+--------
+Esta versión fue preparada específicamente para el inventario físico de RUTA 1
+del día 12 de septiembre de 2026.
+
+Se eliminó la nomenclatura anterior de ABARROTES PDD para evitar que este
+inventario se mezcle con el conteo anterior.
+
+
+1. COMO EJECUTAR
+----------------
+1) Descomprimir toda la carpeta.
+2) Dar doble clic en EJECUTAR.bat.
+3) El archivo ejecutará server.py.
+4) Se abrirá automáticamente el navegador.
+
+El servidor publica la carpeta:
+
+    assets/
+
+La aplicación principal es:
+
+    assets/index.html
+
+
+2. FIREBASE
+-----------
+Proyecto Firebase utilizado:
+
+    inventariopv-643f1
+
+La aplicación conserva la misma configuración Firebase que la versión original.
+
+
+3. INVENTARIO ACTUAL
+--------------------
+Almacén / documento principal:
+
+    Almacen_Ruta_1
+
+Colección del inventario actual:
+
+    INV120926
+
+Fecha lógica del inventario:
+
+    120926
+    12/09/2026
+
+ID lógico del conteo:
+
+    RUTA1-120926
+
+Nombre:
+
+    Inventario RUTA 1 12-09-2026
+
+
+4. RUTA DE GRABADO EN FIRESTORE
+------------------------------
+La raíz solicitada es:
+
+    /almacenes/Almacen_Ruta_1/INV120926
+
+Dentro de esa colección se crea un documento por usuario:
+
+    /almacenes/Almacen_Ruta_1/INV120926/{usuarioId}
+
+Cada documento de usuario contiene su subcolección PARTIDAS:
+
+    /almacenes/Almacen_Ruta_1/INV120926/{usuarioId}/PARTIDAS/{partidaId}
+
+Ejemplo:
+
+    almacenes
+      /Almacen_Ruta_1
+        /INV120926
+          /GERARDO
+            /PARTIDAS
+              /ENT-20260912-083000-123-ABC123
+              /ENT-20260912-083115-456-DEF456
+
+IMPORTANTE:
+Esta versión YA NO escribe en:
+
+    /almacenes/abarrotespdd/...
+
+ni utiliza:
+
+    INV-ABARROTESPDD-170826
+    ABARROTESPDD-170826
+    170826
+
+
+5. DE DONDE TOMA LOS PRODUCTOS
+-----------------------------
+El catálogo de productos no cambió. Se obtiene de Firestore desde:
+
+    /productos
+
+filtrando productos activos:
+
+    activo == true
+
+Después se guarda localmente en IndexedDB para que búsqueda y escaneo trabajen
+rápido y puedan seguir operando aunque se pierda temporalmente Internet.
+
+
+6. DE DONDE TOMA LOS USUARIOS
+-----------------------------
+El login conserva la misma fuente:
+
+    /CLIENTES/PDD031204KL5/USUARIOS
+
+Busca por el campo usuario y valida que:
+
+    activo == true
+
+
+7. BASE LOCAL INDEXEDDB
+----------------------
+Esta versión utiliza una base local NUEVA para no mezclar partidas del inventario
+anterior:
+
+    PROVSOFT_CONTEO_RUTA1_120926
+
+Stores principales:
+
+    productos
+    partidas
+    meta
+
+Esto separa completamente el inventario RUTA 1 del conteo anterior.
+
+
+8. SESION LOCAL
+---------------
+La clave local del usuario también cambió a:
+
+    conteoUser_RUTA1_120926
+
+No reutiliza la sesión identificada como ABARROTESPDD_170826.
+
+
+9. FOLIOS
+---------
+Los folios ahora se generan con prefijo RUTA1:
+
+    RUTA1-120926-HHMMSS
+
+Ejemplo:
+
+    RUTA1-120926-083522
+
+El folio queda asociado a la sesión de conteo y se guarda tanto en el encabezado
+del usuario como en las partidas sincronizadas.
+
+
+10. ID DE CADA ENTRADA
+----------------------
+Cada captura mantiene un identificador único con formato semejante a:
+
+    ENT-20260912-083522-123-ABC123
+
+Esto permite que dos capturas del mismo producto sigan siendo entradas distintas.
+
+
+11. QUE GRABA EN EL DOCUMENTO DEL USUARIO
+-----------------------------------------
+En:
+
+    /almacenes/Almacen_Ruta_1/INV120926/{usuarioId}
+
+se registra, entre otros:
+
+    usuarioId
+    usuario
+    usuarioNombre
+    rol
+    almacenId = Almacen_Ruta_1
+    folio
+    conteoId = RUTA1-120926
+    conteoNombre = Inventario RUTA 1 12-09-2026
+    inventarioFechaId = 120926
+    estado = EN_PROCESO / FINALIZADO
+    ultimaSyncLocal
+    ultimaSyncServer
+    totalPartidas
+
+
+12. QUE GRABA EN CADA PARTIDA
+----------------------------
+Cada partida conserva información semejante a:
+
+    id
+    codigo
+    codigoOriginal
+    codigoEscaneadoUltimo
+    codigosEscaneados
+    productoId
+    descripcion
+    unidadMedidaSat
+    cantidad
+    usuarioId
+    usuario
+    usuarioNombre
+    rol
+    rutaId
+    conteoId
+    conteoNombre
+    fecha
+    hora
+    epochMs
+    origen
+    origenCodigo
+    tipoConteo = ENTRADA_INDIVIDUAL
+    eliminado
+    almacenId = Almacen_Ruta_1
+    folio
+    sincronizado
+    syncServer
+
+
+13. COMO GUARDA
+---------------
+Flujo normal:
+
+    Escaneo / búsqueda
+       -> selección de producto
+       -> captura de cantidad
+       -> guarda primero en IndexedDB
+       -> sincronizado = false
+       -> al existir Internet sincroniza con Firestore
+       -> setDoc(..., { merge:true })
+       -> sincronizado = true
+
+Por eso la operación puede continuar temporalmente sin conexión.
+
+
+14. FINALIZAR CONTEO
+--------------------
+Al presionar Finalizar mi conteo:
+
+1) intenta sincronizar lo pendiente;
+2) actualiza el documento del usuario;
+3) cambia estado a FINALIZADO;
+4) registra fecha/hora de finalización local y del servidor.
+
+
+15. RESUMEN DE CAMBIOS DE ESTA VERSION
+--------------------------------------
+ANTES                                  AHORA
+--------------------------------------------------------------------------
+abarrotespdd                           Almacen_Ruta_1
+170826                                 120926
+INV-ABARROTESPDD-170826               INV120926
+ABARROTESPDD-170826                    RUTA1-120926
+Inventario ABARROTESPDD 17-08-2026    Inventario RUTA 1 12-09-2026
+PROVSOFT_CONTEO_ABARROTESPDD_170826   PROVSOFT_CONTEO_RUTA1_120926
+ABPDD-170826-HHMMSS                    RUTA1-120926-HHMMSS
+conteoUser_ABARROTESPDD_170826         conteoUser_RUTA1_120926
+
+Ruta vieja:
+    /almacenes/abarrotespdd/inventariofisico/INV-ABARROTESPDD-170826/...
+
+Ruta nueva:
+    /almacenes/Almacen_Ruta_1/INV120926/{usuarioId}/PARTIDAS/{partidaId}
+
+============================================================
+PROVSOFT - RUTA 1 - INVENTARIO 12/09/2026
+============================================================

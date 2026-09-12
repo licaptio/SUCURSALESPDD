@@ -1,0 +1,21 @@
+PROVSOFT - MONITOR DE CONTEO FISICO RUTA 2
+Inventario 12/09/2026
+
+Este monitor es exclusivo para RUTA 2.
+
+Lee los usuarios desde:
+  /almacenes/Almacen_Ruta_2/tomafisica/INV120926/USUARIOS
+
+Y las partidas de cada usuario desde:
+  /almacenes/Almacen_Ruta_2/tomafisica/INV120926/USUARIOS/{usuarioId}/PARTIDAS
+
+Documento raíz del inventario:
+  /almacenes/Almacen_Ruta_2/tomafisica/INV120926
+
+No utiliza la IndexedDB del capturador.
+El monitor muestra únicamente información ya sincronizada en Firestore.
+
+Para ejecutar:
+  Doble clic en EJECUTAR_MONITOR_RUTA2.bat
+o:
+  python server.py

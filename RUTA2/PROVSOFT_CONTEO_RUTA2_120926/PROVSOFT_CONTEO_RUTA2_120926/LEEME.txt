@@ -1,0 +1,54 @@
+PROVSOFT - CONTEO FISICO RUTA 2
+Inventario del 12/09/2026
+
+1. DESTINO FIRESTORE
+Documento raíz:
+  /almacenes/Almacen_Ruta_2/tomafisica/INV120926
+
+Usuario:
+  /almacenes/Almacen_Ruta_2/tomafisica/INV120926/USUARIOS/{usuarioId}
+
+Partidas:
+  /almacenes/Almacen_Ruta_2/tomafisica/INV120926/USUARIOS/{usuarioId}/PARTIDAS/{partidaId}
+
+2. IDENTIFICADORES
+Almacén: Almacen_Ruta_2
+Colección: tomafisica
+Inventario: INV120926
+Conteo: RUTA2-120926
+Nombre: Inventario RUTA 2 12-09-2026
+Folios: RUTA2-120926-HHMMSS
+
+3. INDEXEDDB EXCLUSIVA
+Nombre:
+  PROVSOFT_CONTEO_RUTA2_120926
+
+Stores principales:
+  productos
+  partidas
+  meta
+
+Esta base local es exclusiva de este inventario de RUTA 2 y no comparte partidas con otros conteos.
+
+4. SESION LOCAL
+Clave:
+  conteoUser_RUTA2_120926
+
+5. CATALOGO Y USUARIOS
+El catálogo sigue leyendo /productos.
+El login sigue validando en:
+  /CLIENTES/PDD031204KL5/USUARIOS
+
+6. FUNCIONAMIENTO
+- Descarga catálogo y lo guarda localmente.
+- Busca productos en IndexedDB.
+- Cada captura se guarda primero en IndexedDB.
+- Las partidas pendientes tienen sincronizado=false.
+- Cuando hay internet, sincroniza a Firestore.
+- Después de una sincronización correcta marca sincronizado=true.
+- Al finalizar, el documento del usuario queda con estado=FINALIZADO.
+
+7. EJECUCION
+Doble clic en EJECUTAR.bat.
+También puede ejecutarse:
+  python server.py

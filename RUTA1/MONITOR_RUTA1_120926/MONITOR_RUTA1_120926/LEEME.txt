@@ -1,0 +1,165 @@
+PROVSOFT - MONITOR DE CONTEO FISICO RUTA 1
+Inventario: 12/09/2026
+============================================================
+
+1. OBJETIVO
+------------------------------------------------------------
+Este monitor es EXCLUSIVO para el inventario de RUTA 1 del
+12/09/2026. No consulta el inventario anterior de ABARROTES.
+
+2. PROYECTO FIREBASE
+------------------------------------------------------------
+Proyecto:
+    inventariopv-643f1
+
+3. RUTA QUE MONITOREA
+------------------------------------------------------------
+Raiz del inventario:
+    /almacenes/Almacen_Ruta_1/INV120926
+
+En esta estructura, cada documento dentro de INV120926 representa
+un usuario que participa en el inventario:
+
+    /almacenes/Almacen_Ruta_1/INV120926/{usuarioId}
+
+Y las partidas de ese usuario se leen desde:
+
+    /almacenes/Almacen_Ruta_1/INV120926/{usuarioId}/PARTIDAS/{partidaId}
+
+Ejemplo:
+
+    almacenes
+      Almacen_Ruta_1
+        INV120926
+          USUARIO_A
+            PARTIDAS
+              ENT-...
+              ENT-...
+          USUARIO_B
+            PARTIDAS
+              ENT-...
+
+IMPORTANTE:
+El monitor NO usa la estructura antigua:
+    /almacenes/abarrotespdd/inventariofisico/...
+
+4. COMO FUNCIONA
+------------------------------------------------------------
+Al abrir el monitor:
+
+A) Lee todos los documentos de usuario ubicados directamente en:
+       /almacenes/Almacen_Ruta_1/INV120926
+
+B) Por cada usuario abre una escucha en tiempo real sobre:
+       /PARTIDAS
+
+C) Junta las partidas de todos los usuarios en un solo historial.
+
+D) Ordena el historial por epochMs del mas reciente al mas antiguo.
+
+E) Muestra:
+       - Fecha
+       - Hora
+       - Usuario
+       - Cantidad
+       - Concepto
+       - Codigo
+       - Unidad de medida
+
+F) Permite buscar por:
+       - Concepto
+       - Usuario
+       - Codigo
+       - Cantidad
+       - Folio
+       - Nombre del conteo
+
+5. MONITOREO EN TIEMPO REAL
+------------------------------------------------------------
+Utiliza Firestore onSnapshot().
+
+Cuando una aplicacion de conteo sincroniza una nueva partida hacia:
+
+    /almacenes/Almacen_Ruta_1/INV120926/{usuarioId}/PARTIDAS
+
+el monitor recibe el cambio automaticamente sin recargar la pagina.
+
+6. RELACION CON LA APP RUTA 1
+------------------------------------------------------------
+Este monitor esta preparado para la aplicacion:
+    PROVSOFT_CONTEO_RUTA1_120926
+
+Valores relacionados:
+    Almacen:       Almacen_Ruta_1
+    Inventario:    INV120926
+    Conteo:        RUTA1-120926
+    Fecha:         12/09/2026
+
+La aplicacion de captura tiene su propia IndexedDB local. Este monitor
+NO utiliza esa IndexedDB. El monitor lee exclusivamente las partidas
+que ya se encuentran sincronizadas en Firestore.
+
+Por lo tanto:
+    CAPTURA OFFLINE EN CELULAR/PC
+              |
+              v
+    IndexedDB de la app RUTA 1
+              |
+              v
+    SINCRONIZACION
+              |
+              v
+    Firestore INV120926/PARTIDAS
+              |
+              v
+    MONITOR RUTA 1
+
+Una partida que todavia no se haya sincronizado a Firebase no puede
+aparecer en el monitor hasta que la app tenga Internet y la suba.
+
+7. ARCHIVOS
+------------------------------------------------------------
+    assets/index.html
+        Monitor principal.
+
+    assets/logo.jfif
+        Logo utilizado por el monitor.
+
+    assets/config.js
+        Configuracion conservada del proyecto.
+
+    server.py
+        Servidor HTTP local.
+
+    EJECUTAR_MONITOR_RUTA1.bat
+        Ejecuta el servidor y abre el monitor.
+
+    LEEME.txt
+        Este documento.
+
+8. COMO EJECUTAR
+------------------------------------------------------------
+1. Descomprimir la carpeta.
+2. Tener Python instalado en Windows.
+3. Dar doble clic en:
+       EJECUTAR_MONITOR_RUTA1.bat
+4. Se abrira automaticamente:
+       http://127.0.0.1:8001/index.html
+
+Se utiliza el puerto 8001 para que pueda ejecutarse al mismo tiempo que
+la aplicacion de captura, que normalmente utiliza otro puerto local.
+
+9. AISLAMIENTO
+------------------------------------------------------------
+Este monitor esta aislado por ruta Firestore.
+Solo mira:
+    /almacenes/Almacen_Ruta_1/INV120926
+
+No consulta:
+    abarrotespdd
+    INV-ABARROTESPDD-170826
+    ABARROTESPDD-170826
+
+============================================================
+PROVSOFT
+MONITOR RUTA 1 - 12/09/2026

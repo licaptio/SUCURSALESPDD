@@ -1,0 +1,19 @@
+PROVSOFT - CONTEO FISICO LIQUIDO 22/09/2026
+================================================
+
+INICIO:
+1. Descomprimir TODO el ZIP.
+2. Doble clic en EJECUTAR.bat.
+3. La aplicacion abre automaticamente en el navegador.
+4. Mantener abierta la ventana negra mientras se usa la app.
+
+NO REQUIERE PYTHON NI INSTALACIONES ADICIONALES.
+El servidor usa PowerShell incluido en Windows.
+
+FIREBASE:
+/almacenes/Almacen_Liquidos/Inventario/Inv220926
+
+IndexedDB independiente:
+PROVSOFT_CONTEO_LIQUIDO_220926
+
+Si el puerto 8000 esta ocupado, busca automaticamente del 8001 al 8019.

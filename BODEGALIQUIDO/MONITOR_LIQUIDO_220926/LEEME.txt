@@ -1,0 +1,19 @@
+PROVSOFT - MONITOR DE CONTEO FISICO LIQUIDO
+INVENTARIO 22/09/2026
+
+RUTA FIRESTORE:
+/almacenes/Almacen_Liquidos/Inventario/Inv220926
+
+USUARIOS:
+/almacenes/Almacen_Liquidos/Inventario/Inv220926/USUARIOS/{usuarioId}
+
+PARTIDAS:
+/almacenes/Almacen_Liquidos/Inventario/Inv220926/USUARIOS/{usuarioId}/PARTIDAS/{partidaId}
+
+EJECUCION:
+1. Descomprimir el ZIP completo.
+2. Doble clic en EJECUTAR_MONITOR_LIQUIDO.bat.
+3. Se abre el navegador automaticamente.
+4. Mantener abierta la ventana negra mientras se usa el monitor.
+
+No requiere instalar Python. Utiliza PowerShell incluido en Windows.

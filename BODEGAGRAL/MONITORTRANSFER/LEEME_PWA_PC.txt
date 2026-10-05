@@ -1,0 +1,20 @@
+PROVSOFT - MONITOR DE TRANSFERENCIAS - PWA PC
+
+1. Ejecutar INICIAR_MONITOR_TRANSFERENCIAS.bat
+2. Se abre Chrome/Edge en http://127.0.0.1:8765/
+3. Al entrar, la aplicación queda bloqueada por una ventana con:
+   - Instalar en PC
+   - Continuar en navegador
+4. Si se instala, al abrirla como aplicación ya no aparece esa pregunta.
+
+AISLAMIENTO PWA
+- ID único del manifest: ./provsoft-monitor-transferencias-pc-2026
+- start_url propio con identificador de esta PWA
+- cache propio: provsoft-monitor-transferencias-pc-*
+- el Service Worker SOLO elimina versiones antiguas de su propio cache
+- no borra caches de otras PWAs
+
+IMPORTANTE
+Para máxima independencia, conservar esta aplicación en su propia carpeta y no mezclar sus archivos con los de otra PWA. Un Service Worker controla por ruta/scope; dos PWAs servidas desde la misma carpeta del mismo host podrían competir por ese mismo scope.
+
+La lógica Firebase y las rutas operativas del monitor no fueron modificadas.

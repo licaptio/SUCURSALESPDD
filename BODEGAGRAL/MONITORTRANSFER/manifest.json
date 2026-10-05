@@ -1,0 +1,30 @@
+{
+  "name": "PROVSOFT Monitor de Transferencias",
+  "short_name": "Monitor Transf.",
+  "start_url": "./index.html?pwa=provsoft-monitor-transferencias",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef3f8",
+  "theme_color": "#00416A",
+  "description": "Monitor independiente PROVSOFT para transferencias de bodega.",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "./provsoft-monitor-transferencias-pc-2026",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ]
+}
